@@ -1,0 +1,175 @@
+<UserControl x:Class="NezamMonitor.App.Views.SettingsView" FlowDirection="{DynamicResource MainWindowFlowDirection}"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <ScrollViewer Padding="20" VerticalScrollBarVisibility="Auto">
+        <StackPanel>
+            <TextBlock Text="⚙️ تنظیمات رابط کاربری" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,0,20"/>
+
+            <!-- Theme Selection -->
+            <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="#BDC3C7" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="🎨 انتخاب تم" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="250"/>
+                            <ColumnDefinition Width="10"/>
+                            <ColumnDefinition Width="180"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="نام تم:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding SelectedThemeName}" Margin="0,0,0,0"/>
+                        <Button Grid.Column="3" Content="اعمال تم" Command="{Binding ApplyThemeCommand}" Width="120" Height="36"
+                                Background="#3498DB" Foreground="White" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+
+
+            <!-- Fonts -->
+            <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="#BDC3C7" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="📝 فونت‌ها" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="200"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="100"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="35"/>
+                            <RowDefinition Height="35"/>
+                            <RowDefinition Height="35"/>
+                            <RowDefinition Height="35"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="خانواده فونت:" VerticalAlignment="Center"/>
+                        <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding FontFamilies}" SelectedItem="{Binding FontFamily}"/>
+                        <TextBlock Grid.Row="0" Grid.Column="3" Text="اندازه کلی:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="0" Grid.Column="4" Text="{Binding FontSize}" Height="26" VerticalContentAlignment="Center"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="اندازه عنوان:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding HeadingFontSize}" Height="26" VerticalContentAlignment="Center"/>
+                        <TextBlock Grid.Row="1" Grid.Column="3" Text="اندازه دکمه:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="1" Grid.Column="4" Text="{Binding ButtonFontSize}" Height="26" VerticalContentAlignment="Center"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="اندازه ورودی:" VerticalAlignment="Center"/>
+                        <TextBox Grid.Row="2" Grid.Column="1" Text="{Binding InputFontSize}" Height="26" VerticalContentAlignment="Center"/>
+
+                        <Button Grid.Row="3" Grid.Column="1" Content="اعمال فونت‌ها" Command="{Binding ApplyFontsCommand}"
+                                Width="120" Height="32" Background="#8E44AD" Foreground="White" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+
+
+
+
+            <!-- Layout Direction -->
+            <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="#BDC3C7" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="🔄 جهت‌دهی چیدمان" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,5"/>
+                    <TextBlock Text="تنظیم جهت نمایش متن، جدول، منو و پنجره اصلی" FontSize="{DynamicResource LabelFontSize}" Foreground="#7F8C8D" Margin="0,0,0,10"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="20"/>
+                            <ColumnDefinition Width="180"/>
+                            <ColumnDefinition Width="180"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
+                            <RowDefinition Height="40"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Row 0: Text Direction -->
+                        <Border Grid.Row="0" Grid.Column="0" Background="#EBF5FB" CornerRadius="6" Padding="10" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📝" FontSize="{DynamicResource FontSize}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="جهت متن:" VerticalAlignment="Center" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <ComboBox Grid.Row="0" Grid.Column="1" ItemsSource="{Binding FlowDirections}" SelectedItem="{Binding TextDirection}" Height="30" VerticalAlignment="Center"/>
+                        <Border Grid.Row="0" Grid.Column="3" Background="#FEF9E7" CornerRadius="6" Padding="10" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📊" FontSize="{DynamicResource FontSize}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="جهت جدول:" VerticalAlignment="Center" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <ComboBox Grid.Row="0" Grid.Column="4" ItemsSource="{Binding FlowDirections}" SelectedItem="{Binding TableDirection}" Height="30" VerticalAlignment="Center"/>
+
+                        <!-- Row 1: Menu Direction -->
+                        <Border Grid.Row="1" Grid.Column="0" Background="#F5EEF8" CornerRadius="6" Padding="10" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="📋" FontSize="{DynamicResource FontSize}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="جهت منو:" VerticalAlignment="Center" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <ComboBox Grid.Row="1" Grid.Column="1" ItemsSource="{Binding FlowDirections}" SelectedItem="{Binding MenuDirection}" Height="30" VerticalAlignment="Center"/>
+                        <Border Grid.Row="1" Grid.Column="3" Background="#E8F8F5" CornerRadius="6" Padding="10" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="🖥️" FontSize="{DynamicResource FontSize}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                                <TextBlock Text="جهت پنجره:" VerticalAlignment="Center" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+                        <ComboBox Grid.Row="1" Grid.Column="4" ItemsSource="{Binding FlowDirections}" SelectedItem="{Binding MainWindowDirection}" Height="30" VerticalAlignment="Center"/>
+
+                        <!-- Row 2: Quick presets -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="5" Orientation="Horizontal" Margin="0,10,0,0">
+                            <TextBlock Text="پیش‌تنظیم‌ها:" VerticalAlignment="Center" Margin="0,0,10,0" FontWeight="Bold"/>
+                            <Button Content="🇮🇷 فارسی (پیش‌فرض)" Width="140" Height="30" Margin="0,0,5,0" FontSize="{DynamicResource LabelFontSize}"
+                                    Click="PresetRTL_Click" Background="#27AE60" Foreground="White"/>
+                            <Button Content="🇺🇸 انگلیسی" Width="140" Height="30" Margin="0,0,5,0" FontSize="{DynamicResource LabelFontSize}"
+                                    Click="PresetLTR_Click" Background="#3498DB" Foreground="White"/>
+                            <Button Content="🔀 ترکیبی" Width="140" Height="30" Margin="0,0,5,0" FontSize="{DynamicResource LabelFontSize}"
+                                    Click="PresetMixed_Click" Background="#9B59B6" Foreground="White"/>
+                        </StackPanel>
+
+                        <!-- Row 3: Apply button -->
+                        <Button Grid.Row="3" Grid.Column="1" Content="اعمال جهت‌دهی" Command="{Binding ApplyDirectionCommand}"
+                                Width="140" Height="36" Background="#E74C3C" Foreground="White" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" Margin="0,10,0,0"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- Status -->
+            <Border Background="#2C3E50" CornerRadius="8" Padding="12" Margin="0,0,0,15">
+                <TextBlock Text="{Binding StatusMessage}" Foreground="#2ECC71" FontSize="{DynamicResource FontSize}" FontWeight="Bold"/>
+            </Border>
+
+            <!-- Backup / Restore / Import / Reset -->
+            <Border Background="#FFF5F0" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="#E67E22" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="💾 پشتیبان‌گیری و بازیابی" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                        <Button Content="💾 ایجاد پشتیبان" Command="{Binding BackupCommand}"
+                                Width="160" Height="38" Background="#3498DB" Foreground="White" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" Margin="0,0,10,0"/>
+                        <Button Content="♻️ بازیابی پشتیبان" Command="{Binding RestoreCommand}"
+                                Width="160" Height="38" Background="#27AE60" Foreground="White" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" Margin="0,0,10,0"/>
+                        <Button Content="📥 وارد کردن تغییرات اندروید" Command="{Binding ImportAndroidCommand}"
+                                Width="200" Height="38" Background="#9B59B6" Foreground="White" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" Margin="0,0,10,0"/>
+                    </StackPanel>
+                    <TextBlock Text="پشتیبان شامل تمام اطلاعات (تنظیمات، دیتابیس، تاریخچه) می‌باشد. Word Templates حفظ می‌شوند."
+                               FontSize="11" Foreground="#7F8C8D" Margin="0,8,0,0" TextAlignment="Center"/>
+                </StackPanel>
+            </Border>
+
+            <Border Background="#FDEDEC" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="#E74C3C" BorderThickness="1">
+                <StackPanel>
+                    <TextBlock Text="⚠️ بازگشت به تنظیمات اولیه" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="این عملیات تمام اطلاعات برنامه را پاک می‌کند. Word Templates حفظ می‌شوند."
+                               FontSize="11" Foreground="#922B21" Margin="0,0,0,8" TextAlignment="Center"/>
+                    <Button Content="⚠️ پاک‌سازی کامل" Command="{Binding FactoryResetCommand}"
+                            Width="200" Height="42" Background="#E74C3C" Foreground="White"
+                            FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

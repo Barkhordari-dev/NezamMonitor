@@ -1,0 +1,57 @@
+<UserControl x:Class="NezamMonitor.App.Views.HistoryView" FlowDirection="{DynamicResource MainWindowFlowDirection}"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TextBlock Grid.Row="0" Text="📜 تاریخچه اسنپ‌شات‌ها" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
+
+        <!-- Merge Button -->
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <Button Content="🔄 ادغام انتخاب‌شده‌ها" Click="Merge_Click" Width="180" Height="35"
+                    Background="#8E44AD" Foreground="White" FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold"
+                    Margin="0,0,10,0" Cursor="Hand"/>
+            <TextBlock Text="☐ تیک اسنپ‌شات‌ها را بزنید" Foreground="#7F8C8D" FontSize="{DynamicResource LabelFontSize}"
+                       VerticalAlignment="Center"/>
+        </StackPanel>
+
+        <!-- Snapshots List -->
+        <ListBox Grid.Row="2" ItemsSource="{Binding Snapshots}" BorderThickness="1" BorderBrush="#BDC3C7">
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Padding="12,8" Margin="2" CornerRadius="6" Background="White" BorderBrush="#DEE2E6" BorderThickness="1">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+                            <CheckBox Grid.Column="0" IsChecked="{Binding IsSelectedForMerge}"
+                                      Margin="0,0,10,0" VerticalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="{Binding DisplayText}" FontSize="{DynamicResource FontSize}" FontWeight="Bold"
+                                       VerticalAlignment="Center"/>
+                            <Button Grid.Column="2" Tag="{Binding Id}" Click="SetActive_Click"
+                                    Content="✅ فعال" Width="90" Height="30"
+                                    Background="#3498DB" Foreground="White" FontSize="{DynamicResource ButtonFontSize}"
+                                    Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <Button Grid.Column="3" Tag="{Binding Id}" Click="Delete_Click"
+                                    Content="🗑 حذف" Width="80" Height="30"
+                                    Background="#E74C3C" Foreground="White" FontSize="{DynamicResource ButtonFontSize}"
+                                    VerticalAlignment="Center"/>
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" Foreground="#7F8C8D" FontSize="{DynamicResource LabelFontSize}" Margin="0,5,0,0"/>
+    </Grid>
+</UserControl>

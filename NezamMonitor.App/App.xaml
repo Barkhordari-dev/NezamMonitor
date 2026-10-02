@@ -1,0 +1,90 @@
+<Application x:Class="NezamMonitor.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary xmlns:local="clr-namespace:NezamMonitor.App.Converters">
+            <!-- Converters -->
+            <local:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
+            <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <local:StringToVisibilityConverter x:Key="StringToVisConverter"/>
+            <local:BoolToArrowConverter x:Key="BoolToArrowConverter"/>
+            <local:StageConverter x:Key="StageConverter"/>
+            <local:TabToVisibilityConverter x:Key="TabToVisConverter"/>
+            <local:TabBgConverter x:Key="TabBgConverter"/>
+            <local:TabFgConverter x:Key="TabFgConverter"/>
+            <local:ReportCountConverter x:Key="ReportCountConverter"/>
+            <!-- Dashboard converters -->
+            <local:LevelToBrushConverter x:Key="LevelToBrushConverter"/>
+            <local:LevelToBgBrushConverter x:Key="LevelToBgBrushConverter"/>
+            <local:ZeroToGrayConverter x:Key="ZeroToGrayConverter"/>
+            <local:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter"/>
+            <local:CountToBadgeVisibilityConverter x:Key="OverdueBadgeVis"/>
+            <local:CountToBadgeVisibilityConverter x:Key="UpcomingBadgeVis"/>
+            
+            <!-- Default Font Sizes (will be overridden by ThemeManager) -->
+            <sys:Double x:Key="FontSize">14</sys:Double>
+            <sys:Double x:Key="HeadingFontSize">20</sys:Double>
+            <sys:Double x:Key="ButtonFontSize">13</sys:Double>
+            <sys:Double x:Key="InputFontSize">13</sys:Double>
+            <sys:Double x:Key="LabelFontSize">12</sys:Double>
+            <sys:Double x:Key="LogFontSize">11</sys:Double>
+            <sys:Double x:Key="SidebarFontSize">14</sys:Double>
+            <sys:String x:Key="FontFamily">B Nazanin, Tahoma, Arial</sys:String>
+            <sys:String x:Key="HeadingFontFamily">B Nazanin, Tahoma, Arial</sys:String>
+            
+            <!-- Persian RTL Typography -->
+            <Style TargetType="Window">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+            </Style>
+
+            <!-- Frame, Page, UserControl -->
+            <Style TargetType="{x:Type Frame}">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+            </Style>
+            <Style TargetType="{x:Type Page}">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+            </Style>
+            <Style TargetType="{x:Type UserControl}">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+            </Style>
+
+            <!-- Table Controls -->
+            <Style TargetType="{x:Type DataGrid}">
+                <Setter Property="FlowDirection" Value="{DynamicResource TableFlowDirection}"/>
+            </Style>
+
+            <!-- Menu Controls -->
+            <Style TargetType="{x:Type Menu}">
+                <Setter Property="FlowDirection" Value="{DynamicResource MenuFlowDirection}"/>
+            </Style>
+            <Style TargetType="{x:Type ContextMenu}">
+                <Setter Property="FlowDirection" Value="{DynamicResource MenuFlowDirection}"/>
+            </Style>
+            <Style TargetType="{x:Type MenuItem}">
+                <Setter Property="FlowDirection" Value="{DynamicResource MenuFlowDirection}"/>
+            </Style>
+
+            <!-- Navigation Button Style -->
+            <Style x:Key="NavButton" TargetType="RadioButton">
+                <Setter Property="Width" Value="Auto"/>
+                <Setter Property="Height" Value="40"/>
+                <Setter Property="Margin" Value="4"/>
+                <Setter Property="Padding" Value="10,5"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="GroupName" Value="Nav"/>
+            </Style>
+
+            <!-- Card Style -->
+            <Style x:Key="CardBorder" TargetType="Border">
+                <Setter Property="Background" Value="White"/>
+                <Setter Property="CornerRadius" Value="6"/>
+                <Setter Property="Padding" Value="12"/>
+                <Setter Property="Margin" Value="8"/>
+            </Style>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>
