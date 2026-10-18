@@ -26,6 +26,7 @@ public sealed class NezamDatabase : IDisposable
         cmd.ExecuteNonQuery();
     }
 
+
     private static string SafeGetString(SqliteDataReader reader, string column)
     {
         try
@@ -60,9 +61,22 @@ public sealed class NezamDatabase : IDisposable
                 Office TEXT DEFAULT '',
                 ReportDate1 TEXT DEFAULT '',
                 ReportDate2 TEXT DEFAULT '',
-                ReportDate3 TEXT DEFAULT ''
+                ReportDate3 TEXT DEFAULT '',
+                OwnerFather TEXT DEFAULT '',
+                OwnerNationalCode TEXT DEFAULT '',
+                OwnerAddress TEXT DEFAULT '',
+                OwnerZip TEXT DEFAULT '',
+                OwnerTel TEXT DEFAULT '',
+                OwnerBirthLoc TEXT DEFAULT ''
             )
             """);
+        // Migration: ستون‌های مالک برای DBهای قدیمی (اگر پوشه data پاک و دوباره ساخته شد هم پوشش می‌دهد - CREATE بالا شامل آنهاست)
+        try { Execute("ALTER TABLE Cases ADD COLUMN OwnerFather TEXT DEFAULT ''"); } catch { }
+        try { Execute("ALTER TABLE Cases ADD COLUMN OwnerNationalCode TEXT DEFAULT ''"); } catch { }
+        try { Execute("ALTER TABLE Cases ADD COLUMN OwnerAddress TEXT DEFAULT ''"); } catch { }
+        try { Execute("ALTER TABLE Cases ADD COLUMN OwnerZip TEXT DEFAULT ''"); } catch { }
+        try { Execute("ALTER TABLE Cases ADD COLUMN OwnerTel TEXT DEFAULT ''"); } catch { }
+        try { Execute("ALTER TABLE Cases ADD COLUMN OwnerBirthLoc TEXT DEFAULT ''"); } catch { }
 
         Execute("""
             CREATE TABLE IF NOT EXISTS Specifications (

@@ -60,10 +60,30 @@ public sealed class CaseSpecification
 }
 
 /// <summary>Responsible engineer/inspector (ناظر).</summary>
-public sealed record Engineer(string Discipline, string Name, string Role = "", string Phone = "", string DesignLevel = "", string SupervisionLevel = "", string ExecutionLevel = "")
+public sealed class Engineer
 {
-    /// <summary>Stable identity: normalized discipline + name + role.</summary>
+    public string Discipline { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public string Role { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string DesignLevel { get; set; } = string.Empty;
+    public string SupervisionLevel { get; set; } = string.Empty;
+    public string ExecutionLevel { get; set; } = string.Empty;
+
     public string Identity => $"{TextNormalizer.Normalize(Discipline)}|{TextNormalizer.Normalize(Name)}|{TextNormalizer.Normalize(Role)}";
+
+    public Engineer() { }
+
+    public Engineer(string discipline, string name, string role = "", string phone = "", string designLevel = "", string supervisionLevel = "", string executionLevel = "")
+    {
+        Discipline = discipline;
+        Name = name;
+        Role = role;
+        Phone = phone;
+        DesignLevel = designLevel;
+        SupervisionLevel = supervisionLevel;
+        ExecutionLevel = executionLevel;
+    }
 }
 
 /// <summary>A fee/payment record (حق‌الزحمه).</summary>

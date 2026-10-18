@@ -64,46 +64,115 @@
                         </StackPanel>
                     </Border>
                     <!-- Scheduling Card -->
-                    <Border Background="#FFF8E1" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="#FFB300" BorderThickness="1">
-                        <StackPanel>
-                            <TextBlock Text="⏱ تنظیمات زمان‌بندی گزارش‌ها" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="20"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <StackPanel Grid.Column="0">
-                                    <TextBlock Text="فاصله گزارش‌ها (گروه الف - ۳ مرحله):" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,0,5"/>
-                                    <ComboBox ItemsSource="{Binding MonthOptions}" SelectedItem="{Binding IntervalGroupA}" Height="28" Width="120" HorizontalAlignment="Left">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding StringFormat='{}{0} ماه'}"/>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
-                                </StackPanel>
-                                <StackPanel Grid.Column="2">
-                                    <TextBlock Text="فاصله گزارش‌ها (گروه ب - ۴ مرحله):" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,0,5"/>
-                                    <ComboBox ItemsSource="{Binding MonthOptions}" SelectedItem="{Binding IntervalGroupB}" Height="28" Width="120" HorizontalAlignment="Left">
-                                        <ComboBox.ItemTemplate>
-                                            <DataTemplate>
-                                                <TextBlock Text="{Binding StringFormat='{}{0} ماه'}"/>
-                                            </DataTemplate>
-                                        </ComboBox.ItemTemplate>
-                                    </ComboBox>
-                                </StackPanel>
-                            </Grid>
-                        </StackPanel>
-                    </Border>
+                                        <Border Background="#FFF8E1" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="#FFB300" BorderThickness="1">
+                                            <StackPanel>
+                                                <TextBlock Text="⏱ تنظیمات زمان‌بندی گزارش‌ها" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
+                            
+                                                <!-- Building Group Selector -->
+                                                <Grid Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="گروه ساختمانی:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,10,0"/>
+                                                    <ComboBox Grid.Column="1" Width="150" Height="28" HorizontalAlignment="Left"
+                                                              ItemsSource="{Binding BuildingGroups}" SelectedItem="{Binding SelectedBuildingGroup}">
+                                                        <ComboBox.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding}"/>
+                                                            </DataTemplate>
+                                                        </ComboBox.ItemTemplate>
+                                                    </ComboBox>
+                                                </Grid>
+
+                                                <!-- Engineering Discipline Selector -->
+                                                <Grid Margin="0,0,0,10">
+                                                    <Grid.ColumnDefinitions>
+                                                        <ColumnDefinition Width="Auto"/>
+                                                        <ColumnDefinition Width="*"/>
+                                                    </Grid.ColumnDefinitions>
+                                                    <TextBlock Grid.Column="0" Text="رشته مهندسی:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,10,0"/>
+                                                    <ComboBox Grid.Column="1" Width="200" Height="28" HorizontalAlignment="Left"
+                                                              ItemsSource="{Binding EngineeringDisciplines}" SelectedItem="{Binding SelectedEngineeringDiscipline}">
+                                                        <ComboBox.ItemTemplate>
+                                                            <DataTemplate>
+                                                                <TextBlock Text="{Binding}"/>
+                                                            </DataTemplate>
+                                                        </ComboBox.ItemTemplate>
+                                                    </ComboBox>
+                                                </Grid>
+
+                                                <!-- Stage Configuration Table -->
+                                                <Border Background="White" CornerRadius="6" Padding="10" BorderBrush="#BDC3C7" BorderThickness="1">
+                                                    <StackPanel>
+                                                        <TextBlock Text="تنظیم ماه‌ها برای هر مرحله:" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,0,10"/>
+                                    
+                                                        <!-- Column Headers -->
+                                                        <Grid Margin="0,0,0,5">
+                                                            <Grid.ColumnDefinitions>
+                                                                <ColumnDefinition Width="50"/>
+                                                                <ColumnDefinition Width="*"/>
+                                                                <ColumnDefinition Width="100"/>
+                                                                <ColumnDefinition Width="100"/>
+                                                                <ColumnDefinition Width="Auto"/>
+                                                            </Grid.ColumnDefinitions>
+                                                            <TextBlock Grid.Column="0" Text="مرحله" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="1" Text="عنوان گزارش" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                                                            <TextBlock Grid.Column="2" Text="پیش‌فرض (ماه)" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="3" Text="تنظیم شده (ماه)" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
+                                                            <TextBlock Grid.Column="4" Text="نوع مهلت" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="10,0,0,0"/>
+                                                        </Grid>
+
+                                                        <!-- Stage Rows - DataTemplate will be used via ItemsControl -->
+                                                        <ItemsControl ItemsSource="{Binding StageConfigurations}">
+                                                            <ItemsControl.ItemTemplate>
+                                                                <DataTemplate>
+                                                                    <Grid Margin="0,5,0,5">
+                                                                        <Grid.ColumnDefinitions>
+                                                                            <ColumnDefinition Width="50"/>
+                                                                            <ColumnDefinition Width="*"/>
+                                                                            <ColumnDefinition Width="100"/>
+                                                                            <ColumnDefinition Width="100"/>
+                                                                            <ColumnDefinition Width="Auto"/>
+                                                                        </Grid.ColumnDefinitions>
+                                                                        <TextBlock Grid.Column="0" Text="{Binding StageNumber}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                                        <TextBlock Grid.Column="1" Text="{Binding StageTitle}" FontSize="{DynamicResource LabelFontSize}" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                                                                        <TextBlock Grid.Column="2" Text="{Binding DefaultMonths, StringFormat='{}{0} ماه'}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="#7F8C8D"/>
+                                                                        <ComboBox Grid.Column="3" Height="26" Width="80" HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                                                  ItemsSource="{Binding DataContext.MonthOptions, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                                                                  SelectedItem="{Binding ConfiguredMonths, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}">
+                                                                            <ComboBox.ItemTemplate>
+                                                                                <DataTemplate>
+                                                                                    <TextBlock Text="{Binding StringFormat='{}{0} ماه'}"/>
+                                                                                </DataTemplate>
+                                                                            </ComboBox.ItemTemplate>
+                                                                        </ComboBox>
+                                                                        <TextBlock Grid.Column="4" Text="{Binding DeadlineType}" FontSize="{DynamicResource LabelFontSize}" VerticalAlignment="Center" Margin="10,0,0,0" Foreground="#2980B9"/>
+                                                                    </Grid>
+                                                                </DataTemplate>
+                                                            </ItemsControl.ItemTemplate>
+                                                        </ItemsControl>
+                                                    </StackPanel>
+                                                </Border>
+
+                                                <!-- Buttons -->
+                                                <StackPanel Orientation="Horizontal" Margin="0,10,0,0">
+                                                    <Button Content="🔄 بازگردانی مقادیر پیش‌فرض" Command="{Binding ResetToDefaultsCommand}" 
+                                                            Height="30" Background="#E67E22" Foreground="White" Margin="0,0,10,0" FontSize="{DynamicResource LabelFontSize}"/>
+                                                    <TextBlock Text="نکته: مقادیر پیش‌فرض بر اساس نوبت‌های پرداخت حق‌الزحمه است و فاصله اجباری قانونی بین گزارش‌ها نیست." 
+                                                               FontSize="{DynamicResource LogFontSize}" Foreground="#C0392B" VerticalAlignment="Center" TextWrapping="Wrap" MaxWidth="600"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
                     <!-- Action Buttons -->
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                        <Button Content="🔄 اسکن پرونده‌ها" Command="{Binding ScanCommand}" Width="120" Height="32" Background="#3498DB" Foreground="White" Margin="0,0,5,0"/>
-                        <Button Content="👁 پیش‌نمایش" Command="{Binding PreviewCommand}" Width="100" Height="32" Background="#9B59B6" Foreground="White" Margin="0,0,5,0"/>
-                        <Button Content="☑️ انتخاب همه" Command="{Binding SelectAllCommand}" Width="100" Height="32" Background="#27AE60" Foreground="White" Margin="0,0,5,0"/>
-                        <Button Content="☐ حذف انتخاب" Command="{Binding DeselectAllCommand}" Width="100" Height="32" Background="#E74C3C" Foreground="White" Margin="0,0,10,0"/>
-                        <Button Content="📝 تولید گزارش‌های انتخاب‌شده" Command="{Binding GenerateCommand}" Width="210" Height="32" Background="#F39C12" Foreground="White" FontWeight="Bold"/>
-                    </StackPanel>
+                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                            <Button Content="🔄 اسکن پرونده‌ها" Command="{Binding ScanCommand}" Width="120" Height="32" Background="#3498DB" Foreground="White" Margin="0,0,5,0"/>
+                                            <Button Content="⏹ لغو اسکن" Command="{Binding CancelScanCommand}" Width="100" Height="32" Background="#E74C3C" Foreground="White" Margin="0,0,5,0" IsEnabled="{Binding IsScanning}"/>
+                                            <Button Content="👁 پیش‌نمایش" Command="{Binding PreviewCommand}" Width="100" Height="32" Background="#9B59B6" Foreground="White" Margin="0,0,5,0"/>
+                                            <Button Content="☑️ انتخاب همه" Command="{Binding SelectAllCommand}" Width="100" Height="32" Background="#27AE60" Foreground="White" Margin="0,0,5,0"/>
+                                            <Button Content="☐ حذف انتخاب" Command="{Binding DeselectAllCommand}" Width="100" Height="32" Background="#E74C3C" Foreground="White" Margin="0,0,10,0"/>
+                                            <Button Content="📝 تولید گزارش‌های انتخاب‌شده" Command="{Binding GenerateCommand}" Width="210" Height="32" Background="#F39C12" Foreground="White" FontWeight="Bold"/>
+                                        </StackPanel>
                     <!-- Progress -->
                     <Grid Margin="0,0,0,15">
                         <ProgressBar Height="18" Value="{Binding Progress}" Maximum="100" Foreground="#2ECC71" Background="#ECF0F1" BorderThickness="0"/>
@@ -160,6 +229,7 @@
                             <DataGridTextColumn Header="ردیف" Binding="{Binding RowNumber}" SortMemberPath="RowNumber" Width="40" IsReadOnly="True"/>
                             <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" SortMemberPath="Owner" Width="130" IsReadOnly="True"/>
                             <DataGridTextColumn Header="شماره پروانه" Binding="{Binding PermitNumber}" SortMemberPath="PermitNumber" Width="90" IsReadOnly="True"/>
+                            <DataGridTextColumn Header="گروه ساختمانی" Binding="{Binding BuildingGroup}" SortMemberPath="BuildingGroup" Width="100" IsReadOnly="True"/>
                             <DataGridTextColumn Header="مرحله" Binding="{Binding StageName}" SortMemberPath="Stage" Width="60" IsReadOnly="True"/>
                             <DataGridTextColumn Header="وضعیت" Binding="{Binding Status}" SortMemberPath="Status" Width="100" IsReadOnly="True"/>
                             <DataGridTextColumn Header="تاریخ تولید" Binding="{Binding GeneratedAt}" SortMemberPath="GeneratedAt" Width="110" IsReadOnly="True"/>

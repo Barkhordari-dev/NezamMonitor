@@ -278,6 +278,20 @@ public class StageReportGenerator
         {
             var fileName = Path.GetFileNameWithoutExtension(file);
             var stage = 0;
+
+            // Check for numbered templates (1.docx, 2.docx, 3.docx, 4.docx)
+            if (int.TryParse(fileName, out int stageNum) && stageNum >= 1 && stageNum <= 4)
+            {
+                stage = stageNum;
+            }
+            else
+            {
+                // Fallback: check for old naming patterns
+                if (fileName.Contains("اول")) stage = 1;
+                else if (fileName.Contains("دوم")) stage = 2;
+                else if (fileName.Contains("سوم")) stage = 3;
+                else if (fileName.Contains("چهارم")) stage = 4;
+            }
             if (fileName.Contains("اول")) stage = 1;
             else if (fileName.Contains("دوم")) stage = 2;
             else if (fileName.Contains("سوم")) stage = 3;
@@ -309,42 +323,48 @@ public class StageReportGenerator
     }
 
     private string? FindTemplate(int stage)
-    {
-        var stageWord = StageReportRules.StageName(stage);
-        var stageNum = StageReportRules.ToPersianNum(stage);
+        {
+            var stageWord = StageReportRules.StageName(stage);
+            var stageNum = StageReportRules.ToPersianNum(stage);
 
-        if (!Directory.Exists(_templateDir))
+            if (!Directory.Exists(_templateDir))
+                return null;
+
+            var allTemplates = Directory.GetFiles(_templateDir, "*.docx", SearchOption.AllDirectories);
+
+            // First priority: numbered templates (1.docx, 2.docx, 3.docx, 4.docx)
+            var numberedTemplate = allTemplates.FirstOrDefault(t =>
+                Path.GetFileNameWithoutExtension(t) == stage.ToString());
+            if (numberedTemplate != null)
+                return numberedTemplate;
+
+            // Second priority: old naming patterns
+            var patterns = new[]
+            {
+                $"مکانیک مرحله {stageWord}.docx",
+                $"مکانیک مرحله {stageNum}.docx",
+                $"مرحله {stageWord}.docx",
+                $"مرحله {stageNum}.docx",
+            };
+
+            foreach (var pattern in patterns)
+            {
+                var match = allTemplates.FirstOrDefault(t =>
+                    Path.GetFileNameWithoutExtension(t) == Path.GetFileNameWithoutExtension(pattern));
+                if (match != null) return match;
+            }
+
+            // Fuzzy search — only match templates that contain the stage word/number
+            foreach (var t in allTemplates)
+            {
+                var fileName = Path.GetFileNameWithoutExtension(t);
+                if (fileName.Contains(stageWord) || fileName.Contains(stageNum))
+                    return t;
+            }
+
+            // NO FALLBACK — do not silently use another stage's template
             return null;
-
-        var allTemplates = Directory.GetFiles(_templateDir, "*.docx", SearchOption.AllDirectories);
-
-        // Try exact match patterns
-        var patterns = new[]
-        {
-            $"مکانیک مرحله {stageWord}.docx",
-            $"مکانیک مرحله {stageNum}.docx",
-            $"مرحله {stageWord}.docx",
-            $"مرحله {stageNum}.docx",
-        };
-
-        foreach (var pattern in patterns)
-        {
-            var match = allTemplates.FirstOrDefault(t =>
-                Path.GetFileNameWithoutExtension(t) == Path.GetFileNameWithoutExtension(pattern));
-            if (match != null) return match;
         }
-
-        // Fuzzy search — only match templates that contain the stage word/number
-        foreach (var t in allTemplates)
-        {
-            var fileName = Path.GetFileNameWithoutExtension(t);
-            if (fileName.Contains(stageWord) || fileName.Contains(stageNum))
-                return t;
-        }
-
-        // NO FALLBACK — do not silently use another stage's template
-        return null;
-    }
 
     /// <summary>
     /// Replace all placeholders in the DOCX file.

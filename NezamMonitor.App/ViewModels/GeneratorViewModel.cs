@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Runtime.CompilerServices;
 using System.Windows;
 using System.Windows.Input;
+using System.Windows.Threading;
 using Microsoft.Win32;
 using System.IO;
 using NezamMonitor.Core;
@@ -124,41 +125,81 @@ public sealed class GeneratorViewModel : ViewModelBase
     private List<CaseReportItem> _allReportItems = new();
 
     // کش مقایسه اسکن‌ها از دیتابیس
-    private Dictionary<string, bool> _previousScanState = new();
-    private bool _hasLoadedFromDb = false;
+        private Dictionary<string, bool> _previousScanState = new();
+            private bool _hasLoadedFromDb = false;
+            private CancellationTokenSource? _scanCts;
 
-    // زمان‌بندی
-    private int _intervalGroupA = 4; // ماه - گروه الف
-    private int _intervalGroupB = 3; // ماه - گروه ب
+            // زمان‌بندی - آرایه ماه‌ها برای هر گروه و هر مرحله (اندیس ۱-۴ استفاده می‌شود)
+        private readonly int[] _groupAMonths = new int[5]; // الف: ۳ مرحله
+        private readonly int[] _groupBMonths = new int[5]; // ب: ۴ مرحله
+        private readonly int[] _groupCMonths = new int[5]; // ج: ۴ مرحله
+        private readonly int[] _groupDMonths = new int[5]; // د: ۴ مرحله
 
-    public int IntervalGroupA
-    {
-        get => _intervalGroupA;
-        set
+        // Properties for each stage's months per group (for direct binding if needed)
+        public int GroupAStage1Months { get => _groupAMonths[1]; set { if (SetProperty(ref _groupAMonths[1], value)) { _db.SaveSetting("report_group_a_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupAStage2Months { get => _groupAMonths[2]; set { if (SetProperty(ref _groupAMonths[2], value)) { _db.SaveSetting("report_group_a_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupAStage3Months { get => _groupAMonths[3]; set { if (SetProperty(ref _groupAMonths[3], value)) { _db.SaveSetting("report_group_a_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
+
+        public int GroupBStage1Months { get => _groupBMonths[1]; set { if (SetProperty(ref _groupBMonths[1], value)) { _db.SaveSetting("report_group_b_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupBStage2Months { get => _groupBMonths[2]; set { if (SetProperty(ref _groupBMonths[2], value)) { _db.SaveSetting("report_group_b_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupBStage3Months { get => _groupBMonths[3]; set { if (SetProperty(ref _groupBMonths[3], value)) { _db.SaveSetting("report_group_b_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupBStage4Months { get => _groupBMonths[4]; set { if (SetProperty(ref _groupBMonths[4], value)) { _db.SaveSetting("report_group_b_stage_4_months", value.ToString()); ApplyReportFilters(); } } }
+
+        public int GroupCStage1Months { get => _groupCMonths[1]; set { if (SetProperty(ref _groupCMonths[1], value)) { _db.SaveSetting("report_group_c_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupCStage2Months { get => _groupCMonths[2]; set { if (SetProperty(ref _groupCMonths[2], value)) { _db.SaveSetting("report_group_c_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupCStage3Months { get => _groupCMonths[3]; set { if (SetProperty(ref _groupCMonths[3], value)) { _db.SaveSetting("report_group_c_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupCStage4Months { get => _groupCMonths[4]; set { if (SetProperty(ref _groupCMonths[4], value)) { _db.SaveSetting("report_group_c_stage_4_months", value.ToString()); ApplyReportFilters(); } } }
+
+        public int GroupDStage1Months { get => _groupDMonths[1]; set { if (SetProperty(ref _groupDMonths[1], value)) { _db.SaveSetting("report_group_d_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupDStage2Months { get => _groupDMonths[2]; set { if (SetProperty(ref _groupDMonths[2], value)) { _db.SaveSetting("report_group_d_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupDStage3Months { get => _groupDMonths[3]; set { if (SetProperty(ref _groupDMonths[3], value)) { _db.SaveSetting("report_group_d_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupDStage4Months { get => _groupDMonths[4]; set { if (SetProperty(ref _groupDMonths[4], value)) { _db.SaveSetting("report_group_d_stage_4_months", value.ToString()); ApplyReportFilters(); } } }
+
+        // لیست ماه‌ها برای ComboBox (پیش‌فرض‌ها تا ۳۰ ماه بر اساس سند)
+            public List<int> MonthOptions { get; } = Enumerable.Range(1, 30).ToList();
+
+        // زمان‌بندی UI Properties
+        public ObservableCollection<string> BuildingGroups { get; } = new() { "الف", "ب", "ج", "د" };
+        public ObservableCollection<string> EngineeringDisciplines { get; } = new() { "عمران", "معماری", "برق", "مکانیک", "نقشه‌برداری", "شهرسازی" };
+
+        private string _selectedBuildingGroup = "الف";
+        public string SelectedBuildingGroup
         {
-            if (SetProperty(ref _intervalGroupA, value))
+            get => _selectedBuildingGroup;
+            set
             {
-                _db.SaveSetting("report_interval_group_a", value.ToString());
-                ApplyReportFilters();
+                if (SetProperty(ref _selectedBuildingGroup, value))
+                {
+                    UpdateStageConfigurations();
+                }
             }
         }
-    }
 
-    public int IntervalGroupB
-    {
-        get => _intervalGroupB;
-        set
+        private string _selectedEngineeringDiscipline = "مکانیک";
+        public string SelectedEngineeringDiscipline
         {
-            if (SetProperty(ref _intervalGroupB, value))
+            get => _selectedEngineeringDiscipline;
+            set
             {
-                _db.SaveSetting("report_interval_group_b", value.ToString());
-                ApplyReportFilters();
+                if (SetProperty(ref _selectedEngineeringDiscipline, value))
+                {
+                    UpdateStageConfigurations();
+                }
             }
         }
-    }
 
-    // لیست ماه‌ها برای ComboBox
-    public List<int> MonthOptions { get; } = Enumerable.Range(1, 12).ToList();
+        public ObservableCollection<StageConfiguration> StageConfigurations { get; } = new();
+
+            private bool _isScanning;
+            public bool IsScanning
+            {
+                get => _isScanning;
+                private set => SetProperty(ref _isScanning, value);
+            }
+
+            public ICommand CancelScanCommand { get; }
+            public ICommand ResetToDefaultsCommand { get; }
+            public ICommand SaveStageConfigurationCommand { get; }
 
     public int FilterStage
     {
@@ -203,41 +244,108 @@ public sealed class GeneratorViewModel : ViewModelBase
     public bool HasActiveFilters => !string.IsNullOrEmpty(HistorySearchText) || HistoryFilterStage > 0 || HistoryFilterFormat > 0;
 
     public GeneratorViewModel(NezamDatabase db)
-    {
-        _db = db;
-        var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-        _templatePath = Path.Combine(exeDir, "templates");
-        _outputPath = Path.Combine(exeDir, "outputs");
-        _reportDate = PersianDateHelper.ToPersianDateDigits(DateTime.Now);
+        {
+            _db = db;
+            var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+            _templatePath = Path.Combine(exeDir, "templates");
+            _outputPath = Path.Combine(exeDir, "outputs");
+            _reportDate = PersianDateHelper.ToPersianDateDigits(DateTime.Now);
 
-        // بارگذاری تنظیمات زمان‌بندی
-        var savedIntervalA = _db.GetSetting("report_interval_group_a");
-        var savedIntervalB = _db.GetSetting("report_interval_group_b");
-        if (int.TryParse(savedIntervalA, out int a) && a >= 1 && a <= 12) _intervalGroupA = a;
-        if (int.TryParse(savedIntervalB, out int b) && b >= 1 && b <= 12) _intervalGroupB = b;
+            // بارگذاری تنظیمات زمان‌بندی جدید (بر اساس مرحله و گروه)
+            LoadSchedulingSettings();
 
-        BrowseTemplateCommand = new RelayCommand(BrowseTemplate);
-        BrowseOutputCommand = new RelayCommand(BrowseOutput);
-        ScanCommand = new RelayCommand(Scan);
-        SelectAllCommand = new RelayCommand(SelectAll);
-        DeselectAllCommand = new RelayCommand(DeselectAll);
-        GenerateCommand = new RelayCommand(Generate);
-        PreviewCommand = new RelayCommand(Preview);
-        ToggleHistoryCommand = new RelayCommand(() => IsHistoryExpanded = !IsHistoryExpanded);
-        RefreshHistoryCommand = new RelayCommand(LoadHistory);
-        OpenReportCommand = new RelayCommand<ReportHistoryItem>(OpenReport);
-        OpenFolderCommand = new RelayCommand<ReportHistoryItem>(OpenFolder);
-        RegenerateCommand = new RelayCommand<ReportHistoryItem>(RegenerateWithConfirmation);
-        DeleteReportCommand = new RelayCommand<ReportHistoryItem>(DeleteReportWithConfirmation);
-        SwitchToGenerateCommand = new RelayCommand(() => ActiveTab = 0);
-        SwitchToHistoryCommand = new RelayCommand(() => { ActiveTab = 1; LoadHistory(); });
-        DeleteLogCommand = new RelayCommand<ReportHistoryItem>(DeleteLog);
-        SyncOutputCommand = new RelayCommand(SyncOutputFolder);
+            BrowseTemplateCommand = new RelayCommand(BrowseTemplate);
+                        BrowseOutputCommand = new RelayCommand(BrowseOutput);
+                        ScanCommand = new AsyncRelayCommand(ScanAsync, () => !IsScanning);
+                                    CancelScanCommand = new RelayCommand(() => _scanCts?.Cancel(), () => IsScanning);
+                                    SelectAllCommand = new RelayCommand(SelectAll);
+                        DeselectAllCommand = new RelayCommand(DeselectAll);
+                        GenerateCommand = new RelayCommand(Generate);
+                        PreviewCommand = new RelayCommand(Preview);
+                        ToggleHistoryCommand = new RelayCommand(() => IsHistoryExpanded = !IsHistoryExpanded);
+                        RefreshHistoryCommand = new RelayCommand(LoadHistory);
+                        OpenReportCommand = new RelayCommand<ReportHistoryItem>(OpenReport);
+                        OpenFolderCommand = new RelayCommand<ReportHistoryItem>(OpenFolder);
+                        RegenerateCommand = new RelayCommand<ReportHistoryItem>(RegenerateWithConfirmation);
+                        DeleteReportCommand = new RelayCommand<ReportHistoryItem>(DeleteReportWithConfirmation);
+                        SwitchToGenerateCommand = new RelayCommand(() => ActiveTab = 0);
+                        SwitchToHistoryCommand = new RelayCommand(() => { ActiveTab = 1; LoadHistory(); });
+                        DeleteLogCommand = new RelayCommand<ReportHistoryItem>(DeleteLog);
+                        SyncOutputCommand = new RelayCommand(SyncOutputFolder);
+                        ResetToDefaultsCommand = new RelayCommand(ResetSchedulingDefaults);
+                        SaveStageConfigurationCommand = new RelayCommand<int>(SaveStageConfiguration);
 
-        LoadTemplates();
-        LoadHistory();
-        LoadPreviousScanResults();
-    }
+            LoadTemplates();
+            LoadHistory();
+            LoadPreviousScanResults();
+            UpdateStageConfigurations();
+        }
+
+        private void LoadSchedulingSettings()
+                {
+                    // Group A (3 stages)
+                    _groupAMonths[1] = int.TryParse(_db.GetSetting("report_group_a_stage_1_months"), out var a1) && a1 >= 1 && a1 <= 30 ? a1 : 2;
+                    _groupAMonths[2] = int.TryParse(_db.GetSetting("report_group_a_stage_2_months"), out var a2) && a2 >= 1 && a2 <= 30 ? a2 : 6;
+                    _groupAMonths[3] = int.TryParse(_db.GetSetting("report_group_a_stage_3_months"), out var a3) && a3 >= 1 && a3 <= 30 ? a3 : 10;
+
+                    // Group B (4 stages)
+                    _groupBMonths[1] = int.TryParse(_db.GetSetting("report_group_b_stage_1_months"), out var b1) && b1 >= 1 && b1 <= 30 ? b1 : 3;
+                    _groupBMonths[2] = int.TryParse(_db.GetSetting("report_group_b_stage_2_months"), out var b2) && b2 >= 1 && b2 <= 30 ? b2 : 6;
+                    _groupBMonths[3] = int.TryParse(_db.GetSetting("report_group_b_stage_3_months"), out var b3) && b3 >= 1 && b3 <= 30 ? b3 : 12;
+                    _groupBMonths[4] = int.TryParse(_db.GetSetting("report_group_b_stage_4_months"), out var b4) && b4 >= 1 && b4 <= 30 ? b4 : 20;
+
+                    // Group C (4 stages)
+                    _groupCMonths[1] = int.TryParse(_db.GetSetting("report_group_c_stage_1_months"), out var c1) && c1 >= 1 && c1 <= 30 ? c1 : 3;
+                    _groupCMonths[2] = int.TryParse(_db.GetSetting("report_group_c_stage_2_months"), out var c2) && c2 >= 1 && c2 <= 30 ? c2 : 8;
+                    _groupCMonths[3] = int.TryParse(_db.GetSetting("report_group_c_stage_3_months"), out var c3) && c3 >= 1 && c3 <= 30 ? c3 : 16;
+                    _groupCMonths[4] = int.TryParse(_db.GetSetting("report_group_c_stage_4_months"), out var c4) && c4 >= 1 && c4 <= 30 ? c4 : 24;
+
+                    // Group D (4 stages)
+                    _groupDMonths[1] = int.TryParse(_db.GetSetting("report_group_d_stage_1_months"), out var d1) && d1 >= 1 && d1 <= 30 ? d1 : 3;
+                    _groupDMonths[2] = int.TryParse(_db.GetSetting("report_group_d_stage_2_months"), out var d2) && d2 >= 1 && d2 <= 30 ? d2 : 8;
+                    _groupDMonths[3] = int.TryParse(_db.GetSetting("report_group_d_stage_3_months"), out var d3) && d3 >= 1 && d3 <= 30 ? d3 : 16;
+                    _groupDMonths[4] = int.TryParse(_db.GetSetting("report_group_d_stage_4_months"), out var d4) && d4 >= 1 && d4 <= 30 ? d4 : 30;
+
+                    // Per‑group migration: if a group’s stage‑1 setting is missing, copy the old group‑wide setting (if any)
+                    int oldA = 2;
+                    if (!string.IsNullOrEmpty(_db.GetSetting("report_interval_group_a")))
+                    {
+                        if (int.TryParse(_db.GetSetting("report_interval_group_a"), out var parsed) && parsed >= 1 && parsed <= 30)
+                            oldA = parsed;
+                    }
+                    int oldB = 3;
+                    if (!string.IsNullOrEmpty(_db.GetSetting("report_interval_group_b")))
+                    {
+                        if (int.TryParse(_db.GetSetting("report_interval_group_b"), out var parsed) && parsed >= 1 && parsed <= 30)
+                            oldB = parsed;
+                    }
+
+                    // Group A
+                    if (string.IsNullOrEmpty(_db.GetSetting("report_group_a_stage_1_months")))
+                    {
+                        _groupAMonths[1] = oldA;
+                        _groupAMonths[2] = oldA;
+                        _groupAMonths[3] = oldA;
+                        // persist so we don’t migrate again
+                        _db.SaveSetting("report_group_a_stage_1_months", oldA.ToString());
+                        _db.SaveSetting("report_group_a_stage_2_months", oldA.ToString());
+                        _db.SaveSetting("report_group_a_stage_3_months", oldA.ToString());
+                    }
+
+                    // Group B
+                    if (string.IsNullOrEmpty(_db.GetSetting("report_group_b_stage_1_months")))
+                    {
+                        _groupBMonths[1] = oldB;
+                        _groupBMonths[2] = oldB;
+                        _groupBMonths[3] = oldB;
+                        _groupBMonths[4] = oldB;
+                        _db.SaveSetting("report_group_b_stage_1_months", oldB.ToString());
+                        _db.SaveSetting("report_group_b_stage_2_months", oldB.ToString());
+                        _db.SaveSetting("report_group_b_stage_3_months", oldB.ToString());
+                        _db.SaveSetting("report_group_b_stage_4_months", oldB.ToString());
+                    }
+                    // Groups C and D have no legacy settings; keep defaults.
+                }
 
     private void LoadTemplates()
     {
@@ -342,17 +450,53 @@ public sealed class GeneratorViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// اسکن پرونده‌ها و نمایش وضعیت واقعی گزارش‌ها
-    /// </summary>
-    private void Scan()
-    {
-        try
+        /// اسکن پرونده‌ها و نمایش وضعیت واقعی گزارش‌ها (Async با پشتیبانی از لغو)
+        /// </summary>
+        private async Task ScanAsync()
         {
-            _allReportItems.Clear();
-            ReportStatus.Clear();
+            _scanCts = new CancellationTokenSource();
+            var ct = _scanCts.Token;
+        
+            IsScanning = true;
+            StatusMessage = "در حال اسکن...";
+            Progress = 0;
+            ProgressText = "";
+
+            try
+            {
+                await Task.Run(() => DoScan(ct), ct);
+            }
+            catch (OperationCanceledException)
+            {
+                StatusMessage = "اسکن لغو شد";
+                Progress = 0;
+                return;
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"خطا: {ex.Message}";
+                Progress = 0;
+                return;
+            }
+            finally
+            {
+                IsScanning = false;
+                _scanCts?.Dispose();
+                _scanCts = null;
+            }
+        }
+
+        private void DoScan(CancellationToken ct)
+        {
+            // Clear on UI thread
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                _allReportItems.Clear();
+                ReportStatus.Clear();
+            });
+
             Directory.CreateDirectory(_outputPath);
             var cases = _db.LoadCases(_db.GetActiveSnapshotId());
-            var stages = new[] { 1, 2, 3 };
 
             // ─── بارگذاری کش از DB (فقط یک بار) ───
             if (!_hasLoadedFromDb)
@@ -363,9 +507,6 @@ public sealed class GeneratorViewModel : ViewModelBase
 
             // دریافت تمام گزارش‌های تولید شده از دیتابیس
             var existingReports = _db.GetGeneratedReports();
-            var existingReportSet = new HashSet<string>(
-                existingReports.Select(r => $"{r.CaseNumber}|{r.Stage}"));
-            // دیکشنری تاریخ تولید
             var generatedDates = new Dictionary<string, string>();
             foreach (var r in existingReports)
             {
@@ -375,30 +516,27 @@ public sealed class GeneratorViewModel : ViewModelBase
             }
 
             // همچنین اسکن فایل‌های واقعی در پوشه outputs
-            // ساختار: outputs/01 - نام مالک - شماره-سال/گزارش مرحله X - تاریخ.docx
             var actualFiles = new HashSet<string>(); // "CaseNumber|Stage"
             if (Directory.Exists(_outputPath))
             {
                 foreach (var dir in Directory.GetDirectories(_outputPath))
                 {
+                    ct.ThrowIfCancellationRequested();
                     var dirName = new DirectoryInfo(dir).Name;
-                    // استخراج شماره پرونده از نام پوشه: "01 - نام مالک - 514-1404"
                     var dashParts = dirName.Split(" - ", 3);
                     var casePart = dashParts.Length >= 3 ? dashParts[2].Trim() : "";
                     if (string.IsNullOrEmpty(casePart)) continue;
 
-                    // تبدیل "514-1404" به "۱۴۰۴/۵۱۴" (فرمت دیتابیس)
                     var caseNumParts = casePart.Split("-");
                     if (caseNumParts.Length == 2)
                     {
                         var dbCaseNumber = $"{caseNumParts[1]}/{caseNumParts[0]}";
-                        // هم فرمت لاتین هم فارسی رو چک کن
                         var persianCase = DigitNormalizer.ToPersianDigits(dbCaseNumber);
 
                         foreach (var file in Directory.GetFiles(dir, "*.docx"))
                         {
                             var fileName = Path.GetFileNameWithoutExtension(file);
-                            foreach (var stage in stages)
+                            for (int stage = 1; stage <= 4; stage++)
                             {
                                 var stageWord = StageReportRules.StageName(stage);
                                 if (fileName.Contains($"مرحله {stageWord}"))
@@ -416,33 +554,45 @@ public sealed class GeneratorViewModel : ViewModelBase
             var currentScanState = new Dictionary<string, bool>();
             bool isFirstScan = _previousScanState.Count == 0;
 
+            // Build row-number map ONCE (O(N), not O(N²))
+            var rowMap = new Dictionary<string, int>(cases.Count);
+            for (int i = 0; i < cases.Count; i++)
+                rowMap[cases[i].CaseNumber] = i + 1;
+
             int current = 0;
             foreach (var c in cases)
             {
+                ct.ThrowIfCancellationRequested();
                 current++;
-                Progress = (int)((double)current / cases.Count * 100);
-                ProgressText = $"{current}/{cases.Count}";
+            
+                // Update progress on UI thread
+                var progress = (int)((double)current / cases.Count * 100);
+                var progressText = $"{current}/{cases.Count}";
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    Progress = progress;
+                    ProgressText = progressText;
+                });
 
                 // تعیین تعداد مراحل بر اساس حق‌الزحمه
                 var feeStages = c.Fees.Where(f => f.Stage != "0" && f.Stage != "۰")
                                        .Select(f => f.Stage)
                                        .Distinct()
                                        .Count();
-                var maxStage = feeStages > 0 ? feeStages : 3; // پیش‌فرض ۳ مرحله
-
+            
                 // گروه ساختمانی
                 var buildingGroup = c.Specification?.BuildingGroup ?? "";
-                var isGroupB = buildingGroup.Contains("ب");
+            
+                // تعیین ماکزیمم مرحله بر اساس گروه ساختمانی
+                var maxStage = feeStages > 0 ? feeStages : GetMaxStageForGroup(buildingGroup);
 
                 // تاریخ صدور پروانه
                 var permitDate = c.Specification?.PermitDate ?? "";
-                var interval = isGroupB ? IntervalGroupB : IntervalGroupA;
 
-                foreach (var stage in stages)
+                foreach (var stage in Enumerable.Range(1, maxStage))
                 {
-                    // فقط مراحلی که نیاز به گزارش دارن
-                    if (stage > maxStage) continue;
-
+                    ct.ThrowIfCancellationRequested();
+                
                     var reportKey = $"{c.CaseNumber}|{stage}";
                     var hasReport = actualFiles.Contains(reportKey);
 
@@ -452,19 +602,19 @@ public sealed class GeneratorViewModel : ViewModelBase
                     {
                         if (_previousScanState.TryGetValue(reportKey, out bool prevHasReport))
                         {
-                            isChanged = hasReport != prevHasReport; // تغییر وضعیت
+                            isChanged = hasReport != prevHasReport;
                         }
                         else
                         {
-                            isChanged = true; // آیتم جدید (در اسکن قبلی نبود)
+                            isChanged = true;
                         }
                     }
 
-                    // ذخیره وضعیت فعلی در کش جدید
                     currentScanState[reportKey] = hasReport;
 
-                    // محاسبه مهلت
-                    var deadline = CalculateDeadline(permitDate, stage, interval);
+                    // محاسبه مهلت - بر اساس ماه‌های تنظیم شده برای این مرحله و گروه
+                    var monthsForStage = GetMonthsForStage(buildingGroup, stage);
+                    var deadline = CalculateDeadlineFromMonths(permitDate, monthsForStage);
                     var daysRemaining = CalculateDaysRemaining(deadline);
                     var daysRemainingSort = CalculateDaysRemainingSort(deadline);
                     var deadlineStatus = GetDeadlineStatus(hasReport, daysRemaining);
@@ -478,7 +628,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                     {
                         CaseNumber = c.CaseNumber,
                         PermitNumber = c.Specification?.PermitNumber ?? "",
-                        RowNumber = GetRowNumber(c.CaseNumber),
+                        RowNumber = rowMap.TryGetValue(c.CaseNumber, out var rn) ? rn : 0,
                         Owner = c.Owner,
                         FullAddress = c.Specification?.Address ?? "",
                         Companion = c.OwnerMobile,
@@ -495,7 +645,9 @@ public sealed class GeneratorViewModel : ViewModelBase
                         BuildingGroup = buildingGroup,
                         IsChanged = isChanged,
                     };
-                    _allReportItems.Add(item);
+                
+                    // Add to list on UI thread for thread safety
+                    Application.Current.Dispatcher.Invoke(() => _allReportItems.Add(item));
                 }
             }
 
@@ -525,25 +677,24 @@ public sealed class GeneratorViewModel : ViewModelBase
             }).ToList();
             _db.SaveLastScanResults(scanResults);
 
-            Progress = 100;
-            ApplyReportFilters();
-
-            if (isFirstScan)
-                StatusMessage = $"اسکن انجام شد: {_allReportItems.Count} مورد یافت شد";
-            else
+            // Final UI updates
+            Application.Current.Dispatcher.Invoke(() =>
             {
-                int changedCount = _allReportItems.Count(i => i.IsChanged);
-                StatusMessage = changedCount > 0
-                    ? $"اسکن انجام شد: {changedCount} تغییر نسبت به اسکن قبلی"
-                    : "اسکن انجام شد: بدون تغییر";
-            }
+                Progress = 100;
+                ProgressText = "";
+                ApplyReportFilters();
+
+                if (isFirstScan)
+                    StatusMessage = $"اسکن انجام شد: {_allReportItems.Count} مورد یافت شد";
+                else
+                {
+                    int changedCount = _allReportItems.Count(i => i.IsChanged);
+                    StatusMessage = changedCount > 0
+                        ? $"اسکن انجام شد: {changedCount} تغییر نسبت به اسکن قبلی"
+                        : "اسکن انجام شد: بدون تغییر";
+                }
+            });
         }
-        catch (Exception ex)
-        {
-            StatusMessage = $"خطا: {ex.Message}";
-            Progress = 0;
-        }
-    }
 
     /// <summary>
     /// اعمال فیلترها روی لیست گزارش‌ها
@@ -600,17 +751,15 @@ public sealed class GeneratorViewModel : ViewModelBase
             int month = int.Parse(parts[1]);
             int day = int.Parse(parts[2]);
 
-            // تبدیل شمسی به میلادی با PersianCalendar
             var pc = new PersianCalendar();
-            var gregorianDate = pc.ToDateTime(year, month, day, 0, 0, 0, 0);
+            // Add months directly to Persian date using PersianCalendar
+            var deadlineDate = pc.ToDateTime(year, month, day, 0, 0, 0, 0);
+            deadlineDate = pc.AddMonths(deadlineDate, intervalMonths * stage);
 
-            // اضافه کردن ماه‌ها
-            var deadlineGregorian = gregorianDate.AddMonths(intervalMonths * stage);
-
-            // برگشت به شمسی
-            int rY = pc.GetYear(deadlineGregorian);
-            int rM = pc.GetMonth(deadlineGregorian);
-            int rD = pc.GetDayOfMonth(deadlineGregorian);
+            // Extract Persian date components
+            int rY = pc.GetYear(deadlineDate);
+            int rM = pc.GetMonth(deadlineDate);
+            int rD = pc.GetDayOfMonth(deadlineDate);
 
             return $"{rY}/{rM:D2}/{rD:D2}";
         }
@@ -1139,19 +1288,431 @@ public sealed class GeneratorViewModel : ViewModelBase
     }
 
     public void SyncOutputFolder()
-    {
-        try
         {
-            var result = _db.SyncOutputFolder(_outputPath);
-            StatusMessage = $"sync: added={result.added}, removed={result.removed}, existing={result.existing}";
-            LoadHistory();
+            try
+            {
+                var result = _db.SyncOutputFolder(_outputPath);
+                StatusMessage = $"sync: added={result.added}, removed={result.removed}, existing={result.existing}";
+                LoadHistory();
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = $"خطا در سینک: {ex.Message}";
+            }
         }
-        catch (Exception ex)
+
+        /// <summary>
+        /// کلاس تنظیمات هر مرحله گزارش
+        /// </summary>
+        public class StageConfiguration : INotifyPropertyChanged
         {
-            StatusMessage = $"خطا در سینک: {ex.Message}";
+            private int _configuredMonths;
+            public int StageNumber { get; set; }
+            public string StageTitle { get; set; } = "";
+            public int DefaultMonths { get; set; }
+            public string DeadlineType { get; set; } = "";
+            public string BuildingGroup { get; set; } = "";
+            public string Discipline { get; set; } = "";
+            public Action<int>? OnConfiguredMonthsChanged { get; set; }
+
+            public int ConfiguredMonths
+                        {
+                            get => _configuredMonths;
+                            set
+                            {
+                                if (_configuredMonths != value && value >= 1 && value <= 30)
+                                {
+                                    _configuredMonths = value;
+                                    OnPropertyChanged();
+                                    OnConfiguredMonthsChanged?.Invoke(value);
+                                }
+                            }
+                        }
+
+            public event PropertyChangedEventHandler? PropertyChanged;
+            protected void OnPropertyChanged([CallerMemberName] string? name = null)
+                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
-    }
-}
+
+        /// <summary>
+        /// بروزرسانی لیست مراحل بر اساس گروه و رشته انتخاب شده
+        /// </summary>
+        private void UpdateStageConfigurations()
+        {
+            StageConfigurations.Clear();
+
+            var configs = GetStageConfigurations(SelectedBuildingGroup, SelectedEngineeringDiscipline);
+            foreach (var config in configs)
+            {
+                StageConfigurations.Add(config);
+            }
+        }
+
+        /// <summary>
+        /// دریافت تنظیمات مراحل برای گروه و رشته مشخص
+        /// </summary>
+        private List<StageConfiguration> GetStageConfigurations(string buildingGroup, string discipline)
+        {
+            var configs = new List<StageConfiguration>();
+
+            switch (buildingGroup)
+            {
+                case "الف":
+                    // گروه الف: ۳ مرحله
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 1,
+                        StageTitle = "گزارش مربوط به سقف آخر طبق پروانه",
+                        DefaultMonths = _groupAMonths[1],
+                        ConfiguredMonths = _groupAMonths[1],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            _groupAMonths[1] = value;
+                            _db.SaveSetting("report_group_a_stage_1_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 2,
+                        StageTitle = GetFinalReportTitle(discipline, "گزارش نهایی"),
+                        DefaultMonths = _groupAMonths[2],
+                        ConfiguredMonths = _groupAMonths[2],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            _groupAMonths[2] = value;
+                            _db.SaveSetting("report_group_a_stage_2_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 3,
+                        StageTitle = "گزارش نهایی پروژه",
+                        DefaultMonths = _groupAMonths[3],
+                        ConfiguredMonths = _groupAMonths[3],
+                        DeadlineType = "شرط گزارش",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            _groupAMonths[3] = value;
+                            _db.SaveSetting("report_group_a_stage_3_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    break;
+
+                case "ب":
+                    // گروه ب: ۴ مرحله
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 1,
+                        StageTitle = "گزارش سقف دوم",
+                        DefaultMonths = _groupBMonths[1],
+                        ConfiguredMonths = _groupBMonths[1],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            _groupBMonths[1] = value;
+                            _db.SaveSetting("report_group_b_stage_1_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 2,
+                        StageTitle = "گزارش سقف آخر",
+                        DefaultMonths = _groupBMonths[2],
+                        ConfiguredMonths = _groupBMonths[2],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            _groupBMonths[2] = value;
+                            _db.SaveSetting("report_group_b_stage_2_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 3,
+                        StageTitle = GetFinalReportTitle(discipline, "گزارش نهایی"),
+                        DefaultMonths = _groupBMonths[3],
+                        ConfiguredMonths = _groupBMonths[3],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            _groupBMonths[3] = value;
+                            _db.SaveSetting("report_group_b_stage_3_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 4,
+                        StageTitle = GetFinalReportDetailTitle(discipline),
+                        DefaultMonths = _groupBMonths[4],
+                        ConfiguredMonths = _groupBMonths[4],
+                        DeadlineType = "شرط گزارش",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            _groupBMonths[4] = value;
+                            _db.SaveSetting("report_group_b_stage_4_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    break;
+
+                case "ج":
+                case "د":
+                    // گروه ج و د: ۴ مرحله
+                    var monthsArray = buildingGroup == "ج" ? _groupCMonths : _groupDMonths;
+                    var prefix = buildingGroup == "ج" ? "c" : "d";
+
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 1,
+                        StageTitle = "گزارش سقف سوم",
+                        DefaultMonths = monthsArray[1],
+                        ConfiguredMonths = monthsArray[1],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            monthsArray[1] = value;
+                            _db.SaveSetting($"report_group_{prefix}_stage_1_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 2,
+                        StageTitle = "گزارش سقف آخر",
+                        DefaultMonths = monthsArray[2],
+                        ConfiguredMonths = monthsArray[2],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            monthsArray[2] = value;
+                            _db.SaveSetting($"report_group_{prefix}_stage_2_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 3,
+                        StageTitle = GetFinalReportTitle(discipline, "گزارش نهایی"),
+                        DefaultMonths = monthsArray[3],
+                        ConfiguredMonths = monthsArray[3],
+                        DeadlineType = "نوبت پرداخت",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            monthsArray[3] = value;
+                            _db.SaveSetting($"report_group_{prefix}_stage_3_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    configs.Add(new StageConfiguration
+                    {
+                        StageNumber = 4,
+                        StageTitle = GetFinalReportDetailTitle(discipline),
+                        DefaultMonths = monthsArray[4],
+                        ConfiguredMonths = monthsArray[4],
+                        DeadlineType = "شرط گزارش",
+                        BuildingGroup = buildingGroup,
+                        Discipline = discipline,
+                        OnConfiguredMonthsChanged = (value) =>
+                        {
+                            monthsArray[4] = value;
+                            _db.SaveSetting($"report_group_{prefix}_stage_4_months", value.ToString());
+                            ApplyReportFilters();
+                        }
+                    });
+                    break;
+            }
+
+            return configs;
+        }
+
+        /// <summary>
+        /// دریافت عنوان گزارش نهایی بر اساس رشته مهندسی
+        /// </summary>
+        private string GetFinalReportTitle(string discipline, string baseTitle)
+        {
+            return discipline switch
+            {
+                "عمران" => "گزارش پایان نازک‌کاری (عمران)",
+                "معماری" => "گزارش پایان نازک‌کاری (معماری)",
+                "برق" => "گزارش پایان عملیات برقی",
+                "مکانیک" => "گزارش اتمام تأسیسات مکانیکی",
+                "نقشه‌برداری" => $"{baseTitle} (نقشه‌برداری)",
+                "شهرسازی" => $"{baseTitle} (شهرسازی)",
+                _ => baseTitle
+            };
+        }
+
+        /// <summary>
+        /// دریافت عنوان تفصیلی گزارش نهایی برای مرحله ۴
+        /// </summary>
+        private string GetFinalReportDetailTitle(string discipline)
+        {
+            return discipline switch
+            {
+                "عمران" => "آزادسازی حسن انجام کار (عمران)",
+                "معماری" => "آزادسازی حسن انجام کار (معماری)",
+                "برق" => "آزادسازی حسن انجام کار (برق)",
+                "مکانیک" => "آزادسازی حسن انجام کار (مکانیک)",
+                "نقشه‌برداری" => "گزارش نهایی نقشه‌برداری",
+                "شهرسازی" => "گزارش نهایی شهرسازی",
+                _ => "آزادسازی حسن انجام کار"
+            };
+        }
+
+        /// <summary>
+        /// محاسبه مهلت بر اساس ماه‌های تنظیم شده برای یک مرحله خاص
+        /// </summary>
+        private string CalculateDeadlineFromMonths(string permitDate, int monthsToAdd)
+        {
+            var norm = NormalizePermitDate(permitDate);
+            if (string.IsNullOrWhiteSpace(norm)) return "";
+
+            try
+            {
+                var parts = norm.Split('/');
+                if (parts.Length != 3) return "";
+
+                int year = int.Parse(parts[0]);
+                int month = int.Parse(parts[1]);
+                int day = int.Parse(parts[2]);
+
+                var pc = new PersianCalendar();
+                // Add months directly to Persian date using PersianCalendar
+                var deadlineDate = pc.ToDateTime(year, month, day, 0, 0, 0, 0);
+                deadlineDate = pc.AddMonths(deadlineDate, monthsToAdd);
+
+                // Extract Persian date components
+                int rY = pc.GetYear(deadlineDate);
+                int rM = pc.GetMonth(deadlineDate);
+                int rD = pc.GetDayOfMonth(deadlineDate);
+
+                return $"{rY}/{rM:D2}/{rD:D2}";
+            }
+            catch
+            {
+                return "";
+            }
+        }
+
+        /// <summary>
+        /// بازگردانی مقادیر پیش‌فرض
+        /// </summary>
+        private void ResetSchedulingDefaults()
+        {
+            // Reset Group A defaults
+            _groupAMonths[1] = 2; _groupAMonths[2] = 6; _groupAMonths[3] = 10;
+            _db.SaveSetting("report_group_a_stage_1_months", "2");
+            _db.SaveSetting("report_group_a_stage_2_months", "6");
+            _db.SaveSetting("report_group_a_stage_3_months", "10");
+
+            // Reset Group B defaults
+            _groupBMonths[1] = 3; _groupBMonths[2] = 6; _groupBMonths[3] = 12; _groupBMonths[4] = 20;
+            _db.SaveSetting("report_group_b_stage_1_months", "3");
+            _db.SaveSetting("report_group_b_stage_2_months", "6");
+            _db.SaveSetting("report_group_b_stage_3_months", "12");
+            _db.SaveSetting("report_group_b_stage_4_months", "20");
+
+            // Reset Group C defaults
+            _groupCMonths[1] = 3; _groupCMonths[2] = 8; _groupCMonths[3] = 16; _groupCMonths[4] = 24;
+            _db.SaveSetting("report_group_c_stage_1_months", "3");
+            _db.SaveSetting("report_group_c_stage_2_months", "8");
+            _db.SaveSetting("report_group_c_stage_3_months", "16");
+            _db.SaveSetting("report_group_c_stage_4_months", "24");
+
+            // Reset Group D defaults
+            _groupDMonths[1] = 3; _groupDMonths[2] = 8; _groupDMonths[3] = 16; _groupDMonths[4] = 30;
+            _db.SaveSetting("report_group_d_stage_1_months", "3");
+            _db.SaveSetting("report_group_d_stage_2_months", "8");
+            _db.SaveSetting("report_group_d_stage_3_months", "16");
+            _db.SaveSetting("report_group_d_stage_4_months", "30");
+
+            // Notify property changes for direct binding properties
+            OnPropertyChanged(nameof(GroupAStage1Months));
+            OnPropertyChanged(nameof(GroupAStage2Months));
+            OnPropertyChanged(nameof(GroupAStage3Months));
+            OnPropertyChanged(nameof(GroupBStage1Months));
+            OnPropertyChanged(nameof(GroupBStage2Months));
+            OnPropertyChanged(nameof(GroupBStage3Months));
+            OnPropertyChanged(nameof(GroupBStage4Months));
+            OnPropertyChanged(nameof(GroupCStage1Months));
+            OnPropertyChanged(nameof(GroupCStage2Months));
+            OnPropertyChanged(nameof(GroupCStage3Months));
+            OnPropertyChanged(nameof(GroupCStage4Months));
+            OnPropertyChanged(nameof(GroupDStage1Months));
+            OnPropertyChanged(nameof(GroupDStage2Months));
+            OnPropertyChanged(nameof(GroupDStage3Months));
+            OnPropertyChanged(nameof(GroupDStage4Months));
+
+            // Update UI
+            UpdateStageConfigurations();
+            ApplyReportFilters();
+            StatusMessage = "مقادیر پیش‌فرض بازیابی شد";
+        }
+
+        /// <summary>
+                /// ذخیره تنظیمات مرحله (برای فراخوانی از Command)
+                /// </summary>
+                private void SaveStageConfiguration(int stageNumber)
+                {
+                    // Settings are already saved via OnConfiguredMonthsChanged callbacks
+                    // This method is kept for potential future use or explicit save
+                    StatusMessage = $"تنظیمات مرحله {stageNumber} ذخیره شد";
+                }
+
+                /// <summary>
+                                /// دریافت ماکزیمم تعداد مراحل برای یک گروه ساختمانی
+                                /// </summary>
+                                private int GetMaxStageForGroup(string buildingGroup)
+                                {
+                                    if (string.IsNullOrEmpty(buildingGroup)) return 3;
+                                    if (buildingGroup.StartsWith("الف")) return 3;
+                                    if (buildingGroup.StartsWith("ب")) return 4;
+                                    if (buildingGroup.StartsWith("ج")) return 4;
+                                    if (buildingGroup.StartsWith("د")) return 4;
+                                    return 3;
+                                }
+
+                                /// <summary>
+                                /// دریافت ماه‌های تنظیم شده برای یک مرحله خاص بر اساس گروه ساختمانی
+                                /// </summary>
+                                private int GetMonthsForStage(string buildingGroup, int stage)
+                                {
+                                    if (string.IsNullOrEmpty(buildingGroup)) return 3;
+                                    if (buildingGroup.StartsWith("الف")) return _groupAMonths[stage];
+                                    if (buildingGroup.StartsWith("ب")) return _groupBMonths[stage];
+                                    if (buildingGroup.StartsWith("ج")) return _groupCMonths[stage];
+                                    if (buildingGroup.StartsWith("د")) return _groupDMonths[stage];
+                                    return 3;
+                                }
+            }
 
 /// <summary>
 /// آیتم وضعیت تولید گزارش (در جدول اسکن)

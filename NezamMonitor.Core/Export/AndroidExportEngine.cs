@@ -187,19 +187,34 @@ public sealed class AndroidExportEngine
                 ExecutionLevel = e.ExecutionLevel
             }).ToList();
 
-            // Fees
-            exportCase.Fees = c.Fees.Select(f => new ExportFee
+            // Fees — mapped by FeesViewModel.Load() rules (type of service derived from stage + amount ordering)
+            var svcMap = new Dictionary<Fee, string>();
             {
-                Discipline = f.Discipline,
-                ServiceType = f.ServiceType,
-                Stage = f.Stage,
-                StartDate = f.StartDate,
-                EndDate = f.EndDate,
-                Amount = f.Amount,
-                PayStatus = f.PayStatus,
-                ConfirmStatus = f.ConfirmStatus,
-                AmountType = f.AmountType,
-                Description = f.Description
+                var stage0 = c.Fees.Where(f => (f.Stage ?? "").Trim() == "0").ToList();
+                var ordered0 = stage0.OrderByDescending(f => ParseAmountForExport(f.Amount)).ToList();
+                string[] order0 = { "حسن انجام کار", "نظارت سهم سازمان", "مالیات نظارت سهم سازمان", "بیمه" };
+                for (int i = 0; i < ordered0.Count; i++)
+                    svcMap[ordered0[i]] = i < order0.Length ? order0[i] : order0[^1];
+            }
+            exportCase.Fees = c.Fees.Select(f =>
+            {
+                string svc;
+                var st = (f.Stage ?? "").Trim();
+                if (st != "0") svc = "نظارت";
+                else if (!svcMap.TryGetValue(f, out svc!)) svc = "بیمه";
+                return new ExportFee
+                {
+                    Discipline = f.Discipline,
+                    ServiceType = svc,
+                    Stage = f.Stage ?? "",
+                    StartDate = f.StartDate,
+                    EndDate = f.EndDate,
+                    Amount = f.Amount,
+                    PayStatus = f.PayStatus,
+                    ConfirmStatus = f.ConfirmStatus,
+                    AmountType = f.AmountType,
+                    Description = f.Description
+                };
             }).ToList();
 
             // Reports
@@ -254,6 +269,13 @@ public sealed class AndroidExportEngine
         return data;
     }
 
+    private static long ParseAmountForExport(string amount)
+    {
+        if (string.IsNullOrWhiteSpace(amount)) return 0;
+        var s = amount.Replace("ریال", "").Replace(",", "").Replace("٬", "").Replace("،", "").Replace(" ", "").Trim();
+        s = s.Replace("۰","0").Replace("۱","1").Replace("۲","2").Replace("۳","3").Replace("۴","4").Replace("۵","5").Replace("۶","6").Replace("۷","7").Replace("۸","8").Replace("۹","9").Replace("٠","0").Replace("١","1").Replace("٢","2").Replace("٣","3").Replace("٤","4").Replace("٥","5").Replace("٦","6").Replace("٧","7").Replace("٨","8").Replace("٩","9");
+        return long.TryParse(s, out var v) ? v : 0;
+    }
     private static void AddEntry(ZipArchive zip, string entryName, string content)
     {
         var entry = zip.CreateEntry(entryName, CompressionLevel.Optimal);
