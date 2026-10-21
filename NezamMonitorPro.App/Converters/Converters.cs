@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Data;
 
 namespace NezamMonitorPro.App.Converters;
@@ -226,4 +227,53 @@ public sealed class CountToBadgeVisibilityConverter : IValueConverter
         return Visibility.Collapsed;
     }
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+}
+
+/// <summary>
+/// Attached property supplying the hint text drawn inside an empty TextBox.
+/// Replaces the ToolTip-only placeholders so the hint is actually visible
+/// and readable inside the field.
+/// </summary>
+public static class Watermark
+{
+    public static readonly DependencyProperty TextProperty =
+        DependencyProperty.RegisterAttached(
+            "Text", typeof(string), typeof(Watermark),
+            new PropertyMetadata("", OnTextChanged));
+
+    public static void SetText(DependencyObject d, string value) => d.SetValue(TextProperty, value);
+    public static string GetText(DependencyObject d) => (string)d.GetValue(TextProperty);
+
+    private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is not TextBox tb) return;
+        if (e.NewValue is string s && !string.IsNullOrEmpty(s))
+        {
+            if (tb.Tag is not Grid) tb.Tag = BuildWatermark(tb, s);
+        }
+        else if (tb.Tag is Grid g)
+        {
+            g.Visibility = Visibility.Collapsed;
+        }
+    }
+
+    private static Grid BuildWatermark(TextBox tb, string text)
+    {
+        var g = new Grid { IsHitTestVisible = false };
+        tb.TextChanged += (_, _) =>
+            g.Visibility = string.IsNullOrEmpty(tb.Text) ? Visibility.Visible : Visibility.Collapsed;
+
+        g.Children.Add(new TextBlock
+        {
+            Text = text,
+            Foreground = System.Windows.Media.Brushes.Gray,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(12, 0, 0, 0),
+            FontSize = tb.FontSize,
+            FontFamily = tb.FontFamily,
+        });
+
+        g.Visibility = string.IsNullOrEmpty(tb.Text) ? Visibility.Visible : Visibility.Collapsed;
+        return g;
+    }
 }

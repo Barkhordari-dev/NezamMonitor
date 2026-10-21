@@ -105,11 +105,7 @@ public sealed class SettingsViewModel : ViewModelBase
     public ICommand ApplyColorsCommand { get; }
     public ICommand ApplyFontsCommand { get; }
     public ICommand ApplyDimensionsCommand { get; }
-    public ICommand ApplyLayoutCommand { get; }
-    public ICommand ApplyDirectionCommand { get; }
     public ICommand ResetCommand { get; }
-    public ICommand BackupCommand { get; }
-    public ICommand RestoreCommand { get; }
     public ICommand FactoryResetCommand { get; }
     public ICommand ImportAndroidCommand { get; }
 
@@ -124,11 +120,7 @@ public sealed class SettingsViewModel : ViewModelBase
         ApplyColorsCommand = new RelayCommand(ApplyColors);
         ApplyFontsCommand = new RelayCommand(ApplyFonts);
         ApplyDimensionsCommand = new RelayCommand(ApplyDimensions);
-        ApplyLayoutCommand = new RelayCommand(ApplyLayout);
-        ApplyDirectionCommand = new RelayCommand(ApplyDirection);
         ResetCommand = new RelayCommand(ResetToDefault);
-        BackupCommand = new RelayCommand(ExecuteBackup);
-        RestoreCommand = new RelayCommand(ExecuteRestore);
         FactoryResetCommand = new RelayCommand(ExecuteFactoryReset);
         ImportAndroidCommand = new RelayCommand(ExecuteImportAndroid);
 
@@ -243,24 +235,7 @@ public sealed class SettingsViewModel : ViewModelBase
         StatusMessage = "\u0627\u0646\u062f\u0627\u0632\u0647\u200c\u0647\u0627 \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
     }
 
-    private void ApplyLayout()
-    {
-        _theme.ButtonLayout.Alignment = ButtonAlignment;
-        _theme.ButtonLayout.Direction = ButtonDirection;
-        _themeManager.SaveTheme(_theme);
-        StatusMessage = "\u0686\u06cc\u062f\u0645\u0627\u0646 \u062f\u06a9\u0645\u0647\u200c\u0647\u0627 \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
-    }
 
-    private void ApplyDirection()
-    {
-        _theme.LayoutDirection.TextDirection = TextDirection;
-        _theme.LayoutDirection.TableDirection = TableDirection;
-        _theme.LayoutDirection.MenuDirection = MenuDirection;
-        _theme.LayoutDirection.MainWindowDirection = MainWindowDirection;
-        _themeManager.SaveTheme(_theme);
-        _themeManager.ApplyTheme(_theme);
-        StatusMessage = "\u062c\u0647\u062a\u200c\u062f\u0647\u06cc \u0646\u0645\u0627\u06cc\u0634 \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
-    }
 
     private void ResetToDefault()
     {
@@ -291,44 +266,7 @@ public sealed class SettingsViewModel : ViewModelBase
         return hex.ToUpperInvariant();
     }
 
-    private void ExecuteBackup()
-    {
-        var dialog = new SaveFileDialog
-        {
-            Filter = "Backup files (*.nzbkp)|*.nzbkp",
-            DefaultExt = ".nzbkp",
-            FileName = $"nezam_backup_{DateTime.Now:yyyyMMdd_HHmmss}.nzbkp"
-        };
-        if (dialog.ShowDialog() != true) return;
 
-        var result = BackupEngine.CreateBackup(_dbPath, dialog.FileName, "NezamBackup2024");
-        if (result.Success)
-            StatusMessage = $"✅ پشتیبان ایجاد شد: {result.FileSize / 1024}KB";
-        else
-            StatusMessage = $"❌ خطا: {string.Join(", ", result.Errors)}";
-    }
-
-    private void ExecuteRestore()
-    {
-        var result1 = System.Windows.MessageBox.Show(
-            "⚠️ اطلاعات فعلی برنامه جایگزین خواهد شد.\nآیا ادامه می‌دهید؟",
-            "تأیید بازیابی",
-            System.Windows.MessageBoxButton.YesNo,
-            System.Windows.MessageBoxImage.Warning);
-        if (result1 != System.Windows.MessageBoxResult.Yes) return;
-
-        var dialog = new OpenFileDialog
-        {
-            Filter = "Backup files (*.nzbkp)|*.nzbkp"
-        };
-        if (dialog.ShowDialog() != true) return;
-
-        var result = BackupEngine.RestoreBackup(dialog.FileName, _dbPath, "NezamBackup2024");
-        if (result.Success)
-            StatusMessage = "✅ بازیابی با موفقیت انجام شد. برنامه را مجدداً راه‌اندازی کنید.";
-        else
-            StatusMessage = $"❌ خطا: {string.Join(", ", result.Errors)}";
-    }
 
     private void ExecuteFactoryReset()
     {
@@ -361,12 +299,22 @@ public sealed class SettingsViewModel : ViewModelBase
             _themeManager.ResetToDefault();
             _themeManager.ApplyTheme();
 
-            StatusMessage = $"✅ تمام اطلاعات پاک شد ({cleared.Count} جدول). "
-                          + "قالبهای Word حفظ شدند. برنامه را مجدداً راهاندازی کنید.";
+            // Refresh the grid so the user immediately sees the empty state
+            // instead of the stale numbers that were loaded before the wipe.
+            try
+            {
+                var main = System.Windows.Application.Current?.MainWindow as MainWindow;
+                main?.NavigateTo("dashboard");
+            }
+            catch { /* navigation is cosmetic — never block the reset on it */ }
+
+            StatusMessage = $"✅ پاکسازی کامل انجام شد — {cleared.Count} جدول خالی شد. " +
+                          "قالبهای Word و فهرست مهندسین حفظ شدند. برنامه را مجدداً راهاندازی کنید.";
         }
         catch (Exception ex)
         {
             StatusMessage = $"❌ خطا در پاکسازی: {ex.Message}";
+            System.Diagnostics.Debug.WriteLine($"[Settings] FactoryReset failed: {ex}");
         }
     }
 

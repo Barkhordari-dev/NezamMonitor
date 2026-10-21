@@ -1,4 +1,5 @@
-<UserControl x:Class="NezamMonitorPro.App.Views.FollowUpView"
+<UserControl
+             xmlns:local="clr-namespace:NezamMonitorPro.App.Converters" x:Class="NezamMonitorPro.App.Views.FollowUpView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:converters="clr-namespace:NezamMonitorPro.App.Converters">
@@ -34,7 +35,7 @@
 
                 <TextBlock Grid.Column="0" Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
                 <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                         Height="34" FontSize="{DynamicResource InputFontSize}" VerticalContentAlignment="Center" Padding="5" Margin="0,0,10,0"/>
+                         Height="34" FontSize="{DynamicResource InputFontSize}" VerticalContentAlignment="Center" Padding="5" Margin="0,0,10,0" local:Watermark.Text="جستجو در پروندهها..." />
 
                 <TextBlock Grid.Column="2" Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
                 <ComboBox Grid.Column="3" ItemsSource="{Binding DistinctOwners}" SelectedItem="{Binding FilterOwner}"

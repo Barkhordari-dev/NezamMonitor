@@ -1,6 +1,7 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-                    xmlns:sys="clr-namespace:System;assembly=mscorlib">
+                    xmlns:sys="clr-namespace:System;assembly=mscorlib"
+                    xmlns:local="clr-namespace:NezamMonitorPro.App.Converters">
 
     <!-- ══════════════════════════════════════════════════════════════
          NEZAM MONITOR PRO — DESIGN SYSTEM
@@ -232,8 +233,8 @@
          NAVIGATION — sidebar items
          ══════════════════════════════════════════════════════════════ -->
     <Style x:Key="ProNavItem" TargetType="RadioButton">
-        <Setter Property="Height" Value="42"/>
-        <Setter Property="Margin" Value="10,2"/>
+        <Setter Property="Height" Value="44"/>
+        <Setter Property="Margin" Value="10,3"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="GroupName" Value="ProNav"/>
@@ -243,24 +244,33 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="RadioButton">
-                    <Border x:Name="bd" Background="Transparent" CornerRadius="{StaticResource RadiusMedium}"
+                    <Border x:Name="bd" Background="Transparent" CornerRadius="12"
                             SnapsToDevicePixels="True">
                         <Grid>
-                            <Border x:Name="accent" Width="4" Height="22" CornerRadius="2"
-                                    HorizontalAlignment="Right" Background="{DynamicResource SidebarActiveBrush}"
-                                    Opacity="0"/>
-                            <ContentPresenter Margin="16,0,12,0" VerticalAlignment="Center"
+                            <!-- Soft rounded pill for the active item, on the right edge -->
+                            <Border x:Name="accent" Width="4" Height="24" CornerRadius="2"
+                                    HorizontalAlignment="Right" Background="{DynamicResource SidebarTextBrush}"
+                                    Opacity="0.9"/>
+                            <ContentPresenter Margin="18,0,14,0" VerticalAlignment="Center"
                                               HorizontalAlignment="Stretch"/>
                         </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
-                        <Trigger Property="IsMouseOver" Value="True">
+                        <!-- Hover on inactive items: a faint overlay so the row is discoverable -->
+                        <MultiTrigger>
+                            <MultiTrigger.Conditions>
+                                <Condition Property="IsMouseOver" Value="True"/>
+                                <Condition Property="IsChecked" Value="False"/>
+                            </MultiTrigger.Conditions>
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
-                        </Trigger>
+                            <Setter Property="Foreground" Value="White"/>
+                        </MultiTrigger>
+                        <!-- Active item: soft, low-saturation tint + rounded corners -->
                         <Trigger Property="IsChecked" Value="True">
-                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource SidebarActiveBrush}"/>
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource SidebarActiveSoftBrush}"/>
                             <Setter TargetName="accent" Property="Opacity" Value="1"/>
                             <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -290,13 +300,27 @@
                             BorderBrush="{TemplateBinding BorderBrush}"
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{StaticResource RadiusSmall}" SnapsToDevicePixels="True">
-                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
-                                      VerticalAlignment="Center" Focusable="False"
-                                      HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Hidden"/>
+                        <Grid>
+                            <!-- Watermark layer: the grey hint sits behind the text
+                                 and is hidden as soon as the field has content. -->
+                            <ContentPresenter x:Name="PART_Watermark"
+                                              Content="{Binding (local:Watermark.Text), RelativeSource={RelativeSource TemplatedParent}}"
+                                              ContentTemplate="{TemplateBinding Tag}"
+                                              Visibility="Collapsed"
+                                              Margin="{TemplateBinding Padding}"/>
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
+                                          Focusable="False"
+                                          VerticalAlignment="Stretch"
+                                          HorizontalScrollBarVisibility="Hidden"
+                                          VerticalScrollBarVisibility="Hidden"/>
+                        </Grid>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="Text" Value="">
+                            <Setter TargetName="PART_Watermark" Property="Visibility" Value="Visible"/>
                         </Trigger>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
                             <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
@@ -426,7 +450,10 @@
                             BorderThickness="{TemplateBinding BorderThickness}"
                             CornerRadius="{StaticResource RadiusSmall}" SnapsToDevicePixels="True">
                         <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
-                                      VerticalAlignment="Center" Focusable="False"/>
+                                      Focusable="False"
+                                      VerticalAlignment="Stretch"
+                                      HorizontalScrollBarVisibility="Hidden"
+                                      VerticalScrollBarVisibility="Hidden"/>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsKeyboardFocusWithin" Value="True">
@@ -445,11 +472,14 @@
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="RowHeight" Value="34"/>
-        <Setter Property="ColumnHeaderHeight" Value="38"/>
+        <Setter Property="RowHeight" Value="38"/>
+        <Setter Property="ColumnHeaderHeight" Value="40"/>
         <Setter Property="GridLinesVisibility" Value="Horizontal"/>
         <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BorderBrush}"/>
-        <Setter Property="AlternatingRowBackground" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="VerticalGridLinesBrush" Value="Transparent"/>
+        <Setter Property="AlternatingRowBackground" Value="{DynamicResource ZebraRowBrush}"/>
+        <Setter Property="AlternationCount" Value="2"/>
+        <Setter Property="FontWeight" Value="Normal"/>
         <Setter Property="AutoGenerateColumns" Value="True"/>
         <Setter Property="CanUserAddRows" Value="False"/>
         <Setter Property="CanUserDeleteRows" Value="False"/>
@@ -501,11 +531,26 @@
                 </Style>
             </Setter.Value>
         </Setter>
+        <!-- Row-level hover: a DataGridCell only sees IsMouseOver over that
+             single cell, so the highlight is attached to the row instead. -->
+        <Setter Property="RowStyle">
+            <Setter.Value>
+                <Style TargetType="DataGridRow">
+                    <Setter Property="Background" Value="Transparent"/>
+                    <Setter Property="BorderThickness" Value="0"/>
+                    <Style.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter Property="Background" Value="{DynamicResource TableRowHoverBrush}"/>
+                        </Trigger>
+                    </Style.Triggers>
+                </Style>
+            </Setter.Value>
+        </Setter>
         <Setter Property="CellStyle">
             <Setter.Value>
                 <Style TargetType="DataGridCell">
                     <Setter Property="BorderThickness" Value="0"/>
-                    <Setter Property="Padding" Value="8,0"/>
+                    <Setter Property="Padding" Value="12,0"/>
                     <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                     <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Setter Property="Template">
@@ -518,9 +563,12 @@
                         </Setter.Value>
                     </Setter>
                     <Style.Triggers>
+                        <!-- Soft selection instead of a saturated blue block:
+                             easier on the eyes and still clearly readable. -->
                         <Trigger Property="IsSelected" Value="True">
-                            <Setter Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Background" Value="{DynamicResource TableRowSelectedBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                            <Setter Property="FontWeight" Value="SemiBold"/>
                         </Trigger>
                     </Style.Triggers>
                 </Style>
@@ -539,12 +587,22 @@
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ProgressBar">
-                    <Border Background="{TemplateBinding Background}" CornerRadius="4" ClipToBounds="True">
-                        <Grid>
-                            <Rectangle x:Name="PART_Track"/>
-                            <Rectangle x:Name="PART_Indicator" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Left"/>
-                        </Grid>
-                    </Border>
+                    <!-- The template root must be a Grid whose DIRECT children are
+                         PART_Track and PART_Indicator - WPF's ProgressBar looks
+                         them up as template children and arranges the indicator
+                         as a fraction of the track. Anything nested deeper
+                         yields a zero-width indicator (an empty-looking bar). -->
+                    <Grid>
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="4" ClipToBounds="True">
+                            <Grid>
+                                <Rectangle x:Name="PART_Track" Fill="Transparent"/>
+                                <Rectangle x:Name="PART_Indicator"
+                                           Fill="{TemplateBinding Foreground}"
+                                           HorizontalAlignment="Left"/>
+                            </Grid>
+                        </Border>
+                    </Grid>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>

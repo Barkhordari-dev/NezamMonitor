@@ -900,11 +900,15 @@ public sealed class NezamDatabase : IDisposable
     {
         var cleared = new List<string>();
 
-        // Order matters: children before parents (FK constraints)
+        // Order matters: children before parents (FK constraints).
+        // NOTE: the "Settings" table is deliberately NOT cleared — it stores the
+        // user's theme/fonts/dimensions, and wiping it would reset the whole
+        // UI to defaults on the next start (a silent side-effect of a "data"
+        // reset). The theme is reset explicitly by the caller instead.
         string[] tables = {
-            "FollowUpEdits", "Changes", "Reports", "Fees", "Engineers",
-            "Specifications", "Cases", "Snapshots", "ActiveSnapshot",
-            "FeeReceipts", "Settings"
+            "FollowUpEdits", "Changes", "Reports", "Fees", "FeeReceipts",
+            "Engineers", "Specifications", "Cases", "GeneratedReports",
+            "ScanCache", "LastScanResults", "Snapshots", "ActiveSnapshot"
         };
 
         using var tx = _conn.BeginTransaction();
@@ -924,6 +928,18 @@ public sealed class NezamDatabase : IDisposable
             }
         }
         tx.Commit();
+
+        // Reclaim the space and rebuild the indexes so the file does not
+        // stay bloated after a wipe. VACUUM cannot run inside a transaction,
+        // so it is done after the commit.
+        try
+        {
+            using var vac = _conn.CreateCommand();
+            vac.CommandText = "VACUUM";
+            vac.ExecuteNonQuery();
+        }
+        catch { /* VACUUM is best-effort; the data is already deleted. */ }
+
         return cleared;
     }
 

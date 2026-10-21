@@ -92,12 +92,13 @@
                 <!-- Nav items -->
                 <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,0,10">
                     <StackPanel x:Name="SidebarStackPanel">
+
                         <RadioButton x:Name="NavDashboard" Style="{StaticResource ProNavItem}" Tag="dashboard"
                                      IsChecked="True" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE80F;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="داشبورد" VerticalAlignment="Center"/>
+                                <TextBlock Text="داشبورد" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -105,7 +106,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE895;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="به‌روزرسانی" VerticalAlignment="Center"/>
+                                <TextBlock Text="به‌روزرسانی" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -113,7 +114,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE70C;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تولید گزارش" VerticalAlignment="Center"/>
+                                <TextBlock Text="تولید گزارش" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -121,7 +122,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE8C8;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="پرونده‌ها" VerticalAlignment="Center"/>
+                                <TextBlock Text="پرونده‌ها" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -129,7 +130,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE7C3;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="گزارش‌ها" VerticalAlignment="Center"/>
+                                <TextBlock Text="گزارش‌ها" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -137,7 +138,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE9D5;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="خروجی اکسل" VerticalAlignment="Center"/>
+                                <TextBlock Text="خروجی اکسل" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -145,7 +146,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE7F4;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="خروجی اندروید" VerticalAlignment="Center"/>
+                                <TextBlock Text="خروجی اندروید" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -153,7 +154,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE77B;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="مهندسین" VerticalAlignment="Center"/>
+                                <TextBlock Text="مهندسین" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -161,7 +162,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE825;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="حق‌الزحمه" VerticalAlignment="Center"/>
+                                <TextBlock Text="حق‌الزحمه" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -169,7 +170,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE7BA;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="پیگیری" VerticalAlignment="Center"/>
+                                <TextBlock Text="پیگیری" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -177,7 +178,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE9D9;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تغییرات" VerticalAlignment="Center"/>
+                                <TextBlock Text="تغییرات" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -185,7 +186,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE823;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تاریخچه" VerticalAlignment="Center"/>
+                                <TextBlock Text="تاریخچه" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
 
@@ -193,7 +194,7 @@
                             <StackPanel Orientation="Horizontal">
                                 <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
                                            VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تنظیمات" VerticalAlignment="Center"/>
+                                <TextBlock Text="تنظیمات" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
                             </StackPanel>
                         </RadioButton>
                     </StackPanel>
@@ -201,18 +202,18 @@
 
                 <!-- Footer -->
                 <Border Grid.Row="3" Background="#0A0F1A" Padding="16,12">
-                    <StackPanel>
+                    <StackPanel HorizontalAlignment="Center">
                         <Border Height="1" Background="#1F2937" Margin="0,0,0,10"/>
-                        <TextBlock Text="نسخه ۳ پرو" Foreground="{DynamicResource SidebarTextBrush}" FontSize="16"
+                        <TextBlock Text="نسخه ۳ پرو" Foreground="{DynamicResource SidebarTextBrush}" FontSize="19"
                                    FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
                         <TextBlock Text="ساخته شده توسط مهندس محمد مهدی برخورداری"
-                                   Foreground="#A8B8CC" FontSize="13"
+                                   Foreground="#B8C6D8" FontSize="15"
                                    HorizontalAlignment="Center" TextAlignment="Center"
-                                   TextWrapping="Wrap" Margin="0,7,0,0"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,8,0,0">
-                            <TextBlock Text="&#xE717;" FontFamily="{DynamicResource IconFontFamily}" FontSize="13"
-                                       Foreground="#A8B8CC" VerticalAlignment="Center" Margin="0,0,6,0"/>
-                            <TextBlock Text="09022233357" Foreground="#D3DEEB" FontSize="14" FontWeight="SemiBold"
+                                   TextWrapping="Wrap" Margin="0,8,0,0"/>
+                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
+                            <TextBlock Text="&#xE717;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="#B8C6D8" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="09022233357" Foreground="#E4EBF4" FontSize="16" FontWeight="SemiBold"
                                        FontFamily="Segoe UI" VerticalAlignment="Center"/>
                         </StackPanel>
                     </StackPanel>

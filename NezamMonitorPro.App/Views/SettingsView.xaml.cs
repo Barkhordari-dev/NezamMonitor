@@ -85,40 +85,6 @@ public partial class SettingsView : UserControl
         }
     }
 
-    // Direction Presets
-    private void PresetRTL_Click(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is SettingsViewModel vm)
-        {
-            vm.TextDirection = "RightToLeft";
-            vm.TableDirection = "RightToLeft";
-            vm.MenuDirection = "RightToLeft";
-            vm.MainWindowDirection = "RightToLeft";
-            vm.ApplyDirectionCommand.Execute(null);
-        }
-    }
 
-    private void PresetLTR_Click(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is SettingsViewModel vm)
-        {
-            vm.TextDirection = "LeftToRight";
-            vm.TableDirection = "LeftToRight";
-            vm.MenuDirection = "LeftToRight";
-            vm.MainWindowDirection = "LeftToRight";
-            vm.ApplyDirectionCommand.Execute(null);
-        }
-    }
 
-    private void PresetMixed_Click(object sender, RoutedEventArgs e)
-    {
-        if (DataContext is SettingsViewModel vm)
-        {
-            vm.TextDirection = "RightToLeft";
-            vm.TableDirection = "LeftToRight";
-            vm.MenuDirection = "RightToLeft";
-            vm.MainWindowDirection = "RightToLeft";
-            vm.ApplyDirectionCommand.Execute(null);
-        }
-    }
 }

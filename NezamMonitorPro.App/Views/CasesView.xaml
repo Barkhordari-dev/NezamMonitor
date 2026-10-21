@@ -1,4 +1,5 @@
-<UserControl x:Class="NezamMonitorPro.App.Views.CasesView"
+<UserControl
+             xmlns:local="clr-namespace:NezamMonitorPro.App.Converters" x:Class="NezamMonitorPro.App.Views.CasesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid Margin="15">
@@ -23,7 +24,7 @@
             <TextBlock Grid.Column="0" Text="📋 پرونده‌ها" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,15,0"
                        VerticalAlignment="Center"/>
             <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     Height="34" VerticalContentAlignment="Center" Margin="0,0,10,0"/>
+                     Height="34" VerticalContentAlignment="Center" Margin="0,0,10,0" local:Watermark.Text="جستجو در پروندهها..." />
             <Button Grid.Column="2" Content="📋 کپی انتخاب‌شده" Click="CopySelected_Click"
                     Height="30" Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SidebarBrush}" Foreground="White" FontFamily="Vazir" FontSize="12"
                     ToolTip="ردیف‌های تیک‌خورده را TSV کپی می‌کند (برای Excel)"/>

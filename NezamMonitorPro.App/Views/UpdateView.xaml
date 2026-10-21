@@ -41,11 +41,15 @@
                 <Setter Property="Margin" Value="0,0,0,6"/>
             </Style>
 
-            <!-- ═══ Text field (soft, rounded, clear focus ring) ═══ -->
+            <!-- ═══ Text field (soft, rounded, clear focus ring) ═══
+                 NOTE on the template: the ScrollViewer must NOT be pinned to
+                 VerticalAlignment="Center" and must not reserve space for a
+                 vertical scrollbar. Either one makes the Persian text look
+                 vertically trimmed inside the box. -->
             <Style x:Key="SoftTextBox" TargetType="TextBox">
                 <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
                 <Setter Property="FontSize" Value="13"/>
-                <Setter Property="Height" Value="38"/>
+                <Setter Property="Height" Value="40"/>
                 <Setter Property="Padding" Value="12,0"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -62,7 +66,10 @@
                                     CornerRadius="9" SnapsToDevicePixels="True">
                                 <ScrollViewer x:Name="PART_ContentHost"
                                               Margin="{TemplateBinding Padding}"
-                                              VerticalAlignment="Center" Focusable="False"/>
+                                              Focusable="False"
+                                              VerticalAlignment="Stretch"
+                                              HorizontalScrollBarVisibility="Hidden"
+                                              VerticalScrollBarVisibility="Hidden"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
@@ -79,11 +86,13 @@
             </Style>
 
             <!-- NOTE: a PasswordBox style cannot be BasedOn a TextBox style in WPF,
-                 so this one is defined standalone. -->
+                 so this one is defined standalone. Same ScrollViewer rules as
+                 SoftTextBox above (no vertical scrollbar gutter, no Center pin)
+                 otherwise the text gets clipped inside the box. -->
             <Style x:Key="SoftPasswordBox" TargetType="PasswordBox">
                 <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
                 <Setter Property="FontSize" Value="13"/>
-                <Setter Property="Height" Value="38"/>
+                <Setter Property="Height" Value="40"/>
                 <Setter Property="Padding" Value="12,0"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
@@ -100,7 +109,10 @@
                                     CornerRadius="9" SnapsToDevicePixels="True">
                                 <ScrollViewer x:Name="PART_ContentHost"
                                               Margin="{TemplateBinding Padding}"
-                                              VerticalAlignment="Center" Focusable="False"/>
+                                              Focusable="False"
+                                              VerticalAlignment="Stretch"
+                                              HorizontalScrollBarVisibility="Hidden"
+                                              VerticalScrollBarVisibility="Hidden"/>
                             </Border>
                             <ControlTemplate.Triggers>
                                 <Trigger Property="IsMouseOver" Value="True">
@@ -418,7 +430,7 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="18"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="240"/>
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
@@ -528,30 +540,31 @@
 
             <!-- ════════════ 4. Action buttons ════════════ -->
             <Border Style="{StaticResource SoftCard}">
-                <WrapPanel HorizontalAlignment="Right">
+                <WrapPanel HorizontalAlignment="Right" Orientation="Horizontal">
                     <Button x:Name="BtnStart" Style="{StaticResource PrimaryAction}" Click="BtnStart_Click"
                             Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="شروع همگامسازی" VerticalAlignment="Center"/>
+                            <!-- icon on the right of the label (RTL convention) -->
                             <TextBlock Text="&#xE896;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
-                                       Foreground="White" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                       Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="شروع همگامسازی" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
                     <Button x:Name="BtnStop" Style="{StaticResource OutlineAction}" Click="BtnStop_Click"
                             Margin="0,0,10,0" MinWidth="120">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="توقف" VerticalAlignment="Center"/>
                             <TextBlock Text="&#xE769;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
-                                       Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                                       Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="توقف" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
                     <Button x:Name="BtnLoad" Style="{StaticResource SecondaryAction}" Click="BtnLoad_Click" MinWidth="150">
                         <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="&#xE8E5;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
+                                       Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="بارگذاری آخرین" VerticalAlignment="Center" Foreground="White"/>
-                            <TextBlock Text="&#xE896;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
-                                       Foreground="White" VerticalAlignment="Center" Margin="8,0,0,0"/>
                         </StackPanel>
                     </Button>
                 </WrapPanel>

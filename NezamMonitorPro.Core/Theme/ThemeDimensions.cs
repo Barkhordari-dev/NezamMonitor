@@ -14,7 +14,7 @@ public sealed class ThemeFonts
     public double InputFontSize { get; set; } = 13;
     public double LabelFontSize { get; set; } = 13;
     public double LogFontSize { get; set; } = 11;
-    public double SidebarFontSize { get; set; } = 14;
+    public double SidebarFontSize { get; set; } = 16;
 
     public ThemeFonts Clone() => (ThemeFonts)MemberwiseClone();
 

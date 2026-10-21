@@ -353,13 +353,13 @@
                         <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,12,0,12"/>
 
                         <TextBlock Text="میانبرهای صفحه‌کلید" Style="{StaticResource StatLabel}" Margin="0,0,0,8"/>
-                        <Grid Margin="0,0,0,4">
+                        <Grid Margin="0,0,0,6">
                             <TextBlock Text="Ctrl + D" HorizontalAlignment="Left" FontSize="11.5"
                                        FontFamily="Segoe UI" Foreground="{DynamicResource TextBrush}"/>
                             <TextBlock Text="داشبورد" HorizontalAlignment="Right" FontSize="11.5"
                                        Foreground="{DynamicResource TextSecondaryBrush}"/>
                         </Grid>
-                        <Grid Margin="0,0,0,4">
+                        <Grid Margin="0,0,0,6">
                             <TextBlock Text="Ctrl + O" HorizontalAlignment="Left" FontSize="11.5"
                                        FontFamily="Segoe UI" Foreground="{DynamicResource TextBrush}"/>
                             <TextBlock Text="به‌روزرسانی" HorizontalAlignment="Right" FontSize="11.5"

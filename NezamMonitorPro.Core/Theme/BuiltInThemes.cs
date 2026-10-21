@@ -64,6 +64,7 @@ public static class BuiltInThemes
             Sidebar = "#FF0B1220",
             SidebarText = "#FFE2E8F0",
             SidebarActive = "#FF1D4ED8",
+            SidebarActiveSoft = "#1A0D1832",
             LogBackground = "#FF0B1220",
             SidebarHover = "#1AFFFFFF",
             HoverOverlay = "#14000000",
@@ -83,7 +84,7 @@ public static class BuiltInThemes
             InputFontSize = 13,
             LabelFontSize = 12,
             LogFontSize = 11,
-            SidebarFontSize = 15,
+            SidebarFontSize = 17,
             HeadingFontSize = 22,
         },
     };
@@ -118,6 +119,7 @@ public static class BuiltInThemes
             Sidebar = "#FF020617",
             SidebarText = "#FFD7E0EE",
             SidebarActive = "#FF2563EB",
+            SidebarActiveSoft = "#1A060F2C",
             LogBackground = "#FF020617",
             SidebarHover = "#1AFFFFFF",
             HoverOverlay = "#1A94A3B8",
@@ -161,6 +163,7 @@ public static class BuiltInThemes
             Sidebar = "#FF2C3E50",
             SidebarText = "#FFF1F5F9",
             SidebarActive = "#FF1D4ED8",
+            SidebarActiveSoft = "#1A2A405E",
             LogBackground = "#FF2C3E50",
         },
     };
@@ -194,6 +197,7 @@ public static class BuiltInThemes
             Sidebar = "#FF191919",
             SidebarText = "#FFD7E0EE",
             SidebarActive = "#FF2563EB",
+            SidebarActiveSoft = "#1A1A202E",
             LogBackground = "#FF141414",
         },
     };
@@ -227,6 +231,7 @@ public static class BuiltInThemes
             Sidebar = "#FF003366",
             SidebarText = "#FFDCE7F2",
             SidebarActive = "#FF00695C",
+            SidebarActiveSoft = "#1A003865",
             LogBackground = "#FF002850",
         },
     };
@@ -260,6 +265,7 @@ public static class BuiltInThemes
             Sidebar = "#FF111827",
             SidebarText = "#FFE5E7EB",
             SidebarActive = "#FF4F46E5",
+            SidebarActiveSoft = "#1A171D3A",
             LogBackground = "#FF1F2937",
         },
         Dimensions = new ThemeDimensions
@@ -299,6 +305,7 @@ public static class BuiltInThemes
             Sidebar = "#FF0A0A0A",
             SidebarText = "#FFFFFFFF",
             SidebarActive = "#FF0000FF",
+            SidebarActiveSoft = "#1A090922",
             LogBackground = "#FF000000",
         },
     };
@@ -328,7 +335,7 @@ public static class BuiltInThemes
             InputFontSize = 15,
             LabelFontSize = 15,
             LogFontSize = 13,
-            SidebarFontSize = 16,
+            SidebarFontSize = 18,
             HeadingFontSize = 24,
         },
     };

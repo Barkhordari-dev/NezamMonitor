@@ -64,8 +64,8 @@ public sealed class DashboardViewModel : ViewModelBase
             var snapshotId = _db.GetActiveSnapshotId();
             if (snapshotId == 0)
             {
-                ConnectionStatus = "\u063a\u064a\u0631 \u0645\u062a\u0635\u0644";
-                LastUpdate = "\u0647\u0646\u0648\u0632 \u0627\u0646\u062c\u0627\u0645 \u0646\u0634\u062f\u0647";
+                ConnectionStatus = "غیر متصل";
+                LastUpdate = "هنوز انجام نشده";
                 return;
             }
 
@@ -76,7 +76,7 @@ public sealed class DashboardViewModel : ViewModelBase
             TotalFees = cases.Sum(c => c.Fees.Count);
             TotalReports = cases.Sum(c => c.Reports.Count);
             ConnectionStatus = "متصل";
-            LastUpdate = cases.Count + " \u067e\u0631\u0648\u0646\u062f\u0647 \u0641\u0639\u0627\u0644";
+            LastUpdate = cases.Count + " پرونده فعال";
 
             CasesWithSpecs = cases.Count(c => c.Specification != null);
             CasesWithoutSpecs = TotalCases - CasesWithSpecs;
@@ -87,9 +87,29 @@ public sealed class DashboardViewModel : ViewModelBase
             CasesWithReports = cases.Count(c => c.Reports.Count > 0);
             CasesWithoutReports = TotalCases - CasesWithReports;
         }
-        catch
+        catch (Exception ex)
         {
+            // The old code swallowed this silently, which is why the dashboard
+            // appeared "empty" with no clue why. Surface it instead.
             ConnectionStatus = "خطا در بارگذاری";
+            LastUpdate = ex.Message;
+            System.Diagnostics.Debug.WriteLine($"[Dashboard] LoadDashboard failed: {ex}");
+            LogToFile($"LoadDashboard failed: {ex}");
         }
+    }
+
+    /// <summary>Appends a diagnostic line next to the executable (same place as startup.log).</summary>
+    private static void LogToFile(string message)
+    {
+        try
+        {
+            var dir = System.IO.Path.GetDirectoryName(
+                System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
+                ?? AppDomain.CurrentDomain.BaseDirectory;
+            System.IO.File.AppendAllText(
+                System.IO.Path.Combine(dir, "startup.log"),
+                $"[{DateTime.Now}] {message}\n");
+        }
+        catch { }
     }
 }

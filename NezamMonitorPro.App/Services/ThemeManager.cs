@@ -81,6 +81,13 @@ public sealed class ThemeManager
     public void ApplyTheme(AppTheme? theme = null)
     {
         theme ??= _currentTheme;
+
+        // Derive the soft active-sidebar tint from the current colours so it
+        // always matches the theme, including themes restored from the
+        // Settings table that were saved before this colour existed.
+        try { theme.Colors.DeriveSidebarActiveSoft(); } catch { }
+        try { theme.Colors.DeriveTableTints(); } catch { }
+
         _currentTheme = theme;
 
         var app = Application.Current;
@@ -110,8 +117,12 @@ public sealed class ThemeManager
         app.Resources["SidebarBrush"] = new SolidColorBrush(HexToColor(theme.Colors.Sidebar));
         app.Resources["SidebarTextBrush"] = new SolidColorBrush(HexToColor(theme.Colors.SidebarText));
         app.Resources["SidebarActiveBrush"] = new SolidColorBrush(HexToColor(theme.Colors.SidebarActive));
+        app.Resources["SidebarActiveSoftBrush"] = new SolidColorBrush(HexToColor(theme.Colors.SidebarActiveSoft));
         app.Resources["SidebarHoverBrush"] = new SolidColorBrush(HexToColor(theme.Colors.SidebarHover));
         app.Resources["HoverOverlayBrush"] = new SolidColorBrush(HexToColor(theme.Colors.HoverOverlay));
+        app.Resources["ZebraRowBrush"] = new SolidColorBrush(HexToColor(theme.Colors.ZebraRow));
+        app.Resources["TableRowHoverBrush"] = new SolidColorBrush(HexToColor(theme.Colors.TableRowHover));
+        app.Resources["TableRowSelectedBrush"] = new SolidColorBrush(HexToColor(theme.Colors.TableRowSelected));
         app.Resources["LogBackgroundBrush"] = new SolidColorBrush(HexToColor(theme.Colors.LogBackground));
 
         // Fonts
