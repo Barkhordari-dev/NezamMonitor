@@ -1,0 +1,71 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ══════════════════════════════════════════════════════════════
+         Lightweight animations for the sync status card.
+         Pure WPF — no external assets, no size cost.
+
+         NOTE: every Storyboard below targets a property that lives on the
+         element it is started from, so they can be launched with
+         element.BeginStoryboard(sb) without any SetTarget() juggling.
+         ══════════════════════════════════════════════════════════════ -->
+
+    <!-- Soft pulse: the cloud icon while working -->
+    <Storyboard x:Key="PulseStory" x:Shared="False" RepeatBehavior="Forever" AutoReverse="True">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="1.0" To="0.35" Duration="0:0:0.9" />
+    </Storyboard>
+
+    <!-- Gentle float: the download arrow inside the cloud -->
+    <Storyboard x:Key="FloatStory" x:Shared="False" RepeatBehavior="Forever" AutoReverse="True">
+        <DoubleAnimation Storyboard.TargetProperty="(TranslateTransform.Y)"
+                         From="0" To="4" Duration="0:0:0.7" />
+    </Storyboard>
+
+    <!-- Rotating dashed ring while connecting -->
+    <Storyboard x:Key="SpinStory" x:Shared="False" RepeatBehavior="Forever">
+        <DoubleAnimation Storyboard.TargetProperty="(RotateTransform.Angle)"
+                         From="0" To="360" Duration="0:0:2.4">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseInOut" />
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+
+    <!-- Success check: pop in (X) -->
+    <Storyboard x:Key="PopScaleXStory" x:Shared="False">
+        <DoubleAnimation Storyboard.TargetProperty="(ScaleTransform.ScaleX)"
+                         From="0.4" To="1.0" Duration="0:0:0.35">
+            <DoubleAnimation.EasingFunction>
+                <BackEase EasingMode="EaseOut" Amplitude="1.4" />
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+
+    <!-- Success check: pop in (Y) -->
+    <Storyboard x:Key="PopScaleYStory" x:Shared="False">
+        <DoubleAnimation Storyboard.TargetProperty="(ScaleTransform.ScaleY)"
+                         From="0.4" To="1.0" Duration="0:0:0.35">
+            <DoubleAnimation.EasingFunction>
+                <BackEase EasingMode="EaseOut" Amplitude="1.4" />
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+
+    <!-- Generic fade in -->
+    <Storyboard x:Key="FadeInStory" x:Shared="False">
+        <DoubleAnimation Storyboard.TargetProperty="Opacity"
+                         From="0" To="1" Duration="0:0:0.28" />
+    </Storyboard>
+
+    <!-- Status card: slide up -->
+    <Storyboard x:Key="SlideMoveStory" x:Shared="False">
+        <DoubleAnimation Storyboard.TargetProperty="(TranslateTransform.Y)"
+                         From="10" To="0" Duration="0:0:0.3">
+            <DoubleAnimation.EasingFunction>
+                <CubicEase EasingMode="EaseOut" />
+            </DoubleAnimation.EasingFunction>
+        </DoubleAnimation>
+    </Storyboard>
+
+</ResourceDictionary>

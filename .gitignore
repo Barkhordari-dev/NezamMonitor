@@ -70,6 +70,15 @@ Desktop.ini
 *.nupkg
 packages/
 
+# Local-only NuGet config (machine-specific absolute paths)
+nuget_local.config
+
+# Local build artefacts
+*.dll
+*.pdb
+*.exe
+check_fonts.py
+
 # Outputs (خروجی‌های کاربر)
 outputs/
 nezam_output/

@@ -1,0 +1,194 @@
+using System;
+using System.Globalization;
+using System.IO;
+using System.Windows;
+using System.Windows.Threading;
+
+namespace NezamMonitorPro.App;
+public partial class App : Application
+{
+    private static Services.NavigationService? _nav;
+    public static Services.NavigationService Navigation => _nav ?? throw new InvalidOperationException("Navigation not initialized.");
+
+    public App()
+    {
+        // Force a culture that has satellite resources (fa) to avoid missing culture errors
+        var faCulture = new CultureInfo("fa-IR");
+        CultureInfo.DefaultThreadCurrentCulture = faCulture;
+        CultureInfo.DefaultThreadCurrentUICulture = faCulture;
+
+        // Register the bundled Persian font so the UI is identical on any Windows box
+        RegisterEmbeddedFonts();
+
+        InitializeComponent();
+
+        // مقدار پیشفرض RTL برای تمام Resource های جهتدهی
+        Resources["MainWindowFlowDirection"] = FlowDirection.RightToLeft;
+        Resources["TextFlowDirection"] = FlowDirection.RightToLeft;
+        Resources["TableFlowDirection"] = FlowDirection.RightToLeft;
+        Resources["MenuFlowDirection"] = FlowDirection.RightToLeft;
+    }
+
+    /// <summary>
+    /// Makes sure the bundled Persian font is available to WPF.
+    /// The font is referenced through a pack:// URI in the theme dictionary,
+    /// so this is only a safety net that also adds it to the system list.
+    /// </summary>
+    private static void RegisterEmbeddedFonts()
+    {
+        try
+        {
+            var uri = new Uri("pack://application:,,,/Fonts/Vazirmatn-Regular.ttf", UriKind.Absolute);
+            var typeface = new System.Windows.Media.GlyphTypeface(uri);
+            var familyName = typeface.FamilyNames.Values.FirstOrDefault() ?? "Vazir";
+            System.Windows.Media.Fonts.SystemFontFamilies.Add(
+                new System.Windows.Media.FontFamily(familyName));
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Font registration skipped: {ex.Message}");
+        }
+    }
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        _nav = new Services.NavigationService();
+
+        // Log file path next to executable
+        string logPath = Path.Combine(GetAppDirectory(), "startup.log");
+        try { File.WriteAllText(logPath, $"[{DateTime.Now}] OnStartup begin\n"); } catch { }
+
+        // Global exception handlers
+        DispatcherUnhandledException += (s, args) =>
+        {
+            try { File.AppendAllText(logPath, $"[{DateTime.Now}] Dispatcher exception: {args.Exception}\n"); } catch { }
+            args.Handled = true;
+        };
+        AppDomain.CurrentDomain.UnhandledException += (s, args) =>
+        {
+            try { File.AppendAllText(logPath, $"[{DateTime.Now}] AppDomain exception: {args.ExceptionObject}\n"); } catch { }
+        };
+        TaskScheduler.UnobservedTaskException += (s, args) =>
+        {
+            try { File.AppendAllText(logPath, $"[{DateTime.Now}] TaskScheduler exception: {args.Exception}\n"); } catch { }
+            args.SetObserved();
+        };
+
+        try { File.AppendAllText(logPath, $"[{DateTime.Now}] OnStartup end\n"); } catch { }
+
+        // ── Headless verification mode: render each view to PNG and exit ──
+        // Usage: NezamMonitorPro.exe --render <outDir>
+        //        NezamMonitorPro.exe --render <outDir> --full   (whole window incl. sidebar)
+        if (e.Args.Contains("--render"))
+        {
+            int outIdx = Array.IndexOf(e.Args, "--render");
+            string outDir = (outIdx >= 0 && outIdx + 1 < e.Args.Length) ? e.Args[outIdx + 1] : GetAppDirectory();
+            bool full = e.Args.Contains("--full");
+            Dispatcher.BeginInvoke(new Action(() => RunRenderMode(outDir, logPath, full)));
+        }
+    }
+
+    /// <summary>
+    /// Renders every registered view into a PNG file so the UI can be verified
+    /// without a human sitting in front of the screen.
+    /// </summary>
+    private void RunRenderMode(string outDir, string logPath, bool full = false)
+    {
+        try
+        {
+            Directory.CreateDirectory(outDir);
+            var main = MainWindow as MainWindow;
+            if (main is null) { Log(logPath, "render: no MainWindow"); return; }
+
+            var views = new (string Key, string File)[]
+            {
+                ("dashboard", "01-dashboard"),
+                ("update", "02-update"),
+                ("generator", "03-generator"),
+                ("cases", "04-cases"),
+                ("reports", "05-reports"),
+                ("excel", "06-excel"),
+                ("engineers", "07-engineers"),
+                ("fees", "08-fees"),
+                ("followup", "09-followup"),
+                ("changes", "10-changes"),
+                ("history", "11-history"),
+                ("settings", "12-settings"),
+                ("androidexport", "13-android"),
+            };
+
+            foreach (var (key, file) in views)
+            {
+                try
+                {
+                    main.NavigateTo(key);
+                    Dispatcher.Invoke(() => { }, DispatcherPriority.Background);
+                    System.Threading.Thread.Sleep(450);
+
+                    if (full)
+                    {
+                        // Render the WHOLE window (sidebar + content) so layout
+                        // changes (e.g. sidebar side) are visible in the PNG.
+                        main.UpdateLayout();
+                        int fw = (int)Math.Max(1, main.ActualWidth);
+                        int fh = (int)Math.Max(1, main.ActualHeight);
+                        var frtb = new System.Windows.Media.Imaging.RenderTargetBitmap(
+                            fw, fh, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                        frtb.Render(main);
+                        var fenc = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                        fenc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(frtb));
+                        using (var fs = File.Create(Path.Combine(outDir, file + ".png")))
+                            fenc.Save(fs);
+                        Log(logPath, $"render OK: {key} -> {file}.png (full {fw}x{fh})");
+                        continue;
+                    }
+
+                    // Render the actual view that is inside the Frame
+                    var element = main.CurrentViewElement;
+                    if (element is null) { Log(logPath, $"render: {key} no content"); continue; }
+
+                    element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+                    element.Arrange(new Rect(0, 0, element.DesiredSize.Width, element.DesiredSize.Height));
+                    element.UpdateLayout();
+
+                    int w = (int)Math.Max(1, element.ActualWidth);
+                    int h = (int)Math.Max(1, element.ActualHeight);
+
+                    var rtb = new System.Windows.Media.Imaging.RenderTargetBitmap(w, h, 96, 96, System.Windows.Media.PixelFormats.Pbgra32);
+                    rtb.Render(element);
+
+                    var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                    encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(rtb));
+                    using (var fs = File.Create(Path.Combine(outDir, file + ".png")))
+                        encoder.Save(fs);
+
+                    Log(logPath, $"render OK: {key} -> {file}.png ({w}x{h})");
+                }
+                catch (Exception ex)
+                {
+                    Log(logPath, $"render FAIL {key}: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            Log(logPath, "render: done");
+            Shutdown();
+        }
+        catch (Exception ex)
+        {
+            Log(logPath, $"render fatal: {ex}");
+            Shutdown();
+        }
+    }
+
+    private static void Log(string logPath, string message)
+    {
+        try { File.AppendAllText(logPath, $"[{DateTime.Now}] {message}\n"); } catch { }
+    }
+
+    // Helper to get real exe directory even in single-file bundle
+    private static string GetAppDirectory()
+    {
+        return Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName) ?? AppDomain.CurrentDomain.BaseDirectory;
+    }
+}

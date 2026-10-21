@@ -1,7 +1,7 @@
 using System.Diagnostics;
-using NezamMonitor.Core.Api;
-using NezamMonitor.Core.Data;
-using NezamMonitor.Core.Models;
+using NezamMonitorPro.Core.Api;
+using NezamMonitorPro.Core.Data;
+using NezamMonitorPro.Core.Models;
 
 if (args.Length < 2) { Console.WriteLine("Usage: dotnet run -- <user> <pass>"); return; }
 

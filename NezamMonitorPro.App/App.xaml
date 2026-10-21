@@ -1,0 +1,123 @@
+<Application x:Class="NezamMonitorPro.App.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:NezamMonitorPro.App.Converters"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- Material Design base theme (provides control styles + MDL2 icon font) -->
+                <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Blue" SecondaryColor="Amber" />
+
+                <!-- Nezam Monitor PRO design system -->
+                <ResourceDictionary Source="Themes/ProTheme.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ══ Converters ══ -->
+            <local:BoolToVisibilityConverter x:Key="BoolToVisConverter"/>
+            <local:InverseBoolConverter x:Key="InverseBoolConverter"/>
+            <local:StringToVisibilityConverter x:Key="StringToVisConverter"/>
+            <local:BoolToArrowConverter x:Key="BoolToArrowConverter"/>
+            <local:StageConverter x:Key="StageConverter"/>
+            <local:TabToVisibilityConverter x:Key="TabToVisConverter"/>
+            <local:TabBgConverter x:Key="TabBgConverter"/>
+            <local:TabFgConverter x:Key="TabFgConverter"/>
+            <local:ReportCountConverter x:Key="ReportCountConverter"/>
+            <local:LevelToBrushConverter x:Key="LevelToBrushConverter"/>
+            <local:LevelToBgBrushConverter x:Key="LevelToBgBrushConverter"/>
+            <local:ZeroToGrayConverter x:Key="ZeroToGrayConverter"/>
+            <local:ZeroToVisibleConverter x:Key="ZeroToVisibleConverter"/>
+            <local:CountToBadgeVisibilityConverter x:Key="OverdueBadgeVis"/>
+            <local:CountToBadgeVisibilityConverter x:Key="UpcomingBadgeVis"/>
+
+            <!-- ══ Fallback brush defaults (overridden at runtime by ThemeManager) ══ -->
+            <SolidColorBrush x:Key="PrimaryBrush" Color="#FF2563EB"/>
+            <SolidColorBrush x:Key="SecondaryBrush" Color="#FF0EA5E9"/>
+            <SolidColorBrush x:Key="AccentBrush" Color="#FF7C3AED"/>
+            <SolidColorBrush x:Key="BackgroundBrush" Color="#FFF1F5F9"/>
+            <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="PanelBrush" Color="#FFF8FAFC"/>
+            <SolidColorBrush x:Key="CardBrush" Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="ButtonPrimaryBrush" Color="#FF2563EB"/>
+            <SolidColorBrush x:Key="ButtonHoverBrush" Color="#FF1D4ED8"/>
+            <SolidColorBrush x:Key="ButtonPressedBrush" Color="#FF1E40AF"/>
+            <SolidColorBrush x:Key="ButtonDisabledBrush" Color="#FFCBD5E1"/>
+            <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFFFF"/>
+            <SolidColorBrush x:Key="InputBorderBrush" Color="#FFCBD5E1"/>
+            <SolidColorBrush x:Key="TextBrush" Color="#FF0F172A"/>
+            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF64748B"/>
+            <SolidColorBrush x:Key="BorderBrush" Color="#FFE2E8F0"/>
+            <SolidColorBrush x:Key="HoverOverlayBrush" Color="#0F94A3B8"/>
+            <SolidColorBrush x:Key="SuccessBrush" Color="#FF10B981"/>
+            <SolidColorBrush x:Key="WarningBrush" Color="#FFF59E0B"/>
+            <SolidColorBrush x:Key="ErrorBrush" Color="#FFEF4444"/>
+            <SolidColorBrush x:Key="InfoBrush" Color="#FF0EA5E9"/>
+            <SolidColorBrush x:Key="SidebarBrush" Color="#FF0B1220"/>
+            <SolidColorBrush x:Key="SidebarTextBrush" Color="#FFCBD5E1"/>
+            <SolidColorBrush x:Key="SidebarActiveBrush" Color="#FF2563EB"/>
+            <SolidColorBrush x:Key="SidebarHoverBrush" Color="#1AFFFFFF"/>
+            <SolidColorBrush x:Key="LogBackgroundBrush" Color="#FF0B1220"/>
+
+            <!-- ══ Flow direction defaults (RTL) — overridden by ThemeManager ══ -->
+            <FlowDirection x:Key="MainWindowFlowDirection">RightToLeft</FlowDirection>
+            <FlowDirection x:Key="TextFlowDirection">RightToLeft</FlowDirection>
+            <FlowDirection x:Key="TableFlowDirection">RightToLeft</FlowDirection>
+            <FlowDirection x:Key="MenuFlowDirection">RightToLeft</FlowDirection>
+
+            <!-- ══ Global window / control defaults ══ -->
+            <Style TargetType="Window">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                <Setter Property="TextOptions.TextFormattingMode" Value="Display"/>
+                <Setter Property="TextOptions.TextRenderingMode" Value="ClearType"/>
+                <Setter Property="UseLayoutRounding" Value="True"/>
+                <Setter Property="SnapsToDevicePixels" Value="True"/>
+                <Setter Property="Background" Value="{DynamicResource BackgroundBrush}"/>
+            </Style>
+
+            <Style TargetType="TextBlock">
+                <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+            </Style>
+
+            <Style TargetType="UserControl">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+            </Style>
+
+            <Style TargetType="Page">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+                <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+            </Style>
+
+            <Style TargetType="Frame">
+                <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+            </Style>
+
+            <Style TargetType="DataGrid" BasedOn="{StaticResource ProDataGrid}"/>
+
+            <Style TargetType="Menu">
+                <Setter Property="FlowDirection" Value="{DynamicResource MenuFlowDirection}"/>
+            </Style>
+            <Style TargetType="ContextMenu">
+                <Setter Property="FlowDirection" Value="{DynamicResource MenuFlowDirection}"/>
+            </Style>
+            <Style TargetType="MenuItem" BasedOn="{StaticResource ProMenuItem}"/>
+
+            <Style TargetType="TextBox" BasedOn="{StaticResource ProTextBox}"/>
+            <Style TargetType="PasswordBox" BasedOn="{StaticResource ProPasswordBox}"/>
+            <Style TargetType="ComboBox" BasedOn="{StaticResource ProComboBox}"/>
+            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource ProComboBoxItem}"/>
+            <Style TargetType="CheckBox" BasedOn="{StaticResource ProCheckBox}"/>
+            <Style TargetType="Button" BasedOn="{StaticResource ProButton}"/>
+            <Style TargetType="ProgressBar" BasedOn="{StaticResource ProProgressBar}"/>
+            <Style TargetType="ScrollBar" BasedOn="{StaticResource ProScrollBar}"/>
+
+            <!-- Legacy resource aliases so older views keep working -->
+            <Style x:Key="NavButton" TargetType="RadioButton" BasedOn="{StaticResource ProNavItem}"/>
+            <Style x:Key="CardBorder" TargetType="Border" BasedOn="{StaticResource ProCard}"/>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

@@ -5,6 +5,6 @@
     <ImplicitUsings>enable</ImplicitUsings>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\NezamMonitor.Core\NezamMonitor.Core.csproj" />
+    <ProjectReference Include="..\NezamMonitorPro.Core\NezamMonitorPro.Core.csproj" />
   </ItemGroup>
 </Project>
