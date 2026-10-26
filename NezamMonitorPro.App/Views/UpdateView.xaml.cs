@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -8,7 +9,7 @@ using NezamMonitorPro.App.ViewModels;
 
 namespace NezamMonitorPro.App.Views;
 
-public partial class UpdateView : UserControl
+public partial class UpdateView : UserControl, INavigationAware
 {
     private readonly UpdateViewModel _vm;
     private readonly DispatcherTimer _uiTimer;
@@ -22,29 +23,122 @@ public partial class UpdateView : UserControl
 
     public UpdateView()
     {
+        Trace("UpdateView ctor: start");
         InitializeComponent();
+        Trace("UpdateView ctor: InitializeComponent done");
+
         _vm = new UpdateViewModel(DatabaseService.Instance);
         DataContext = _vm;
+        Trace("UpdateView ctor: ViewModel ready");
 
         _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
         _uiTimer.Tick += (s, e) => UpdateButtonStates();
 
         Loaded += (_, _) =>
         {
+            SubscribeController();
             UpdateButtonStates();
             if (!_initialized)
             {
                 _initialized = true;
-                ApplyStageVisual(ExtractionController.Instance.Stage, animate: false);
+                try { ApplyStageVisual(ExtractionController.Instance.Stage, animate: false); }
+                catch (Exception ex) { Log("UpdateView.ApplyStageVisual(initial)", ex); }
             }
         };
 
-        Unloaded += (_, _) => _uiTimer.Stop();
+        // مهم: اشتراک در رویداد باید هنگام خروج لغو شود، وگرنه نسخه‌های قدیمی زنده می‌مانند
+        // و روی کنترل‌های آزادشده کار می‌کنند (منبع کرش).
+        Unloaded += (_, _) =>
+        {
+            _uiTimer.Stop();
+            UnsubscribeController();
+        };
 
-        ExtractionController.Instance.PropertyChanged += UpdateView_PropertyChanged;
+        Trace("UpdateView ctor: done");
+    }
+
+    /// <summary>هنگام بازگشت به این صفحه (ویو کش شده) وضعیت دکمه‌ها و تصویر مرحله تازه می‌شود.</summary>
+    public void OnNavigatedTo()
+    {
+        try
+        {
+            SubscribeController();
+            UpdateButtonStates();
+            ApplyStageVisual(ExtractionController.Instance.Stage, animate: false);
+        }
+        catch (Exception ex) { Log("UpdateView.OnNavigatedTo", ex); }
+    }
+
+    private static void Trace(string message)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
+                      ?? AppDomain.CurrentDomain.BaseDirectory;
+            File.AppendAllText(Path.Combine(dir, "startup.log"), $"[{DateTime.Now}] {message}\n");
+        }
+        catch { }
+    }
+
+    private bool _subscribed;
+
+    private void SubscribeController()
+    {
+        if (_subscribed) return;
+        try
+        {
+            ExtractionController.Instance.PropertyChanged += UpdateView_PropertyChanged;
+            _subscribed = true;
+        }
+        catch (Exception ex) { Log("UpdateView.SubscribeController", ex); }
+    }
+
+    private void UnsubscribeController()
+    {
+        if (!_subscribed) return;
+        try
+        {
+            ExtractionController.Instance.PropertyChanged -= UpdateView_PropertyChanged;
+        }
+        catch { }
+        _subscribed = false;
+    }
+
+    private static void Log(string where, Exception ex)
+    {
+        try
+        {
+            var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
+                      ?? AppDomain.CurrentDomain.BaseDirectory;
+            File.AppendAllText(Path.Combine(dir, "startup.log"),
+                $"[{DateTime.Now}] {where}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n");
+        }
+        catch { }
     }
 
     private void UpdateView_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        // کنترلر ممکن است رویداد را از یک ترد پس‌زمینه بالا ببرد؛
+        // دست‌زدن به کنترل‌های UI از ترد دیگر = کرش قطعی برنامه.
+        if (!Dispatcher.CheckAccess())
+        {
+            try { Dispatcher.BeginInvoke(new Action(() => UpdateView_PropertyChanged(sender, e))); }
+            catch { }
+            return;
+        }
+
+        try
+        {
+            UpdateView_PropertyChangedCore(e);
+        }
+        catch (Exception ex)
+        {
+            // هرگز نگذار خطای یک ویو به کنترلر/برنامه سرایت کند
+            Log($"UpdateView.PropertyChanged({e.PropertyName})", ex);
+        }
+    }
+
+    private void UpdateView_PropertyChangedCore(System.ComponentModel.PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(ExtractionController.IsBusy))
         {

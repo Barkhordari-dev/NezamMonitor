@@ -3,7 +3,7 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:local="clr-namespace:NezamMonitorPro.App.Converters"
              xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-             StartupUri="MainWindow.xaml">
+             ShutdownMode="OnExplicitShutdown">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -11,7 +11,7 @@
                 <materialDesign:BundledTheme BaseTheme="Light" PrimaryColor="Blue" SecondaryColor="Amber" />
 
                 <!-- Nezam Monitor PRO design system -->
-                <ResourceDictionary Source="Themes/ProTheme.xaml" />
+                                <ResourceDictionary Source="pack://application:,,,/Themes/ProTheme.xaml" />
             </ResourceDictionary.MergedDictionaries>
 
             <!-- ══ Converters ══ -->
@@ -32,32 +32,36 @@
             <local:CountToBadgeVisibilityConverter x:Key="UpcomingBadgeVis"/>
 
             <!-- ══ Fallback brush defaults (overridden at runtime by ThemeManager) ══ -->
-            <SolidColorBrush x:Key="PrimaryBrush" Color="#FF2563EB"/>
-            <SolidColorBrush x:Key="SecondaryBrush" Color="#FF0EA5E9"/>
-            <SolidColorBrush x:Key="AccentBrush" Color="#FF7C3AED"/>
-            <SolidColorBrush x:Key="BackgroundBrush" Color="#FFF1F5F9"/>
-            <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFFFF"/>
-            <SolidColorBrush x:Key="PanelBrush" Color="#FFF8FAFC"/>
-            <SolidColorBrush x:Key="CardBrush" Color="#FFFFFFFF"/>
-            <SolidColorBrush x:Key="ButtonPrimaryBrush" Color="#FF2563EB"/>
-            <SolidColorBrush x:Key="ButtonHoverBrush" Color="#FF1D4ED8"/>
-            <SolidColorBrush x:Key="ButtonPressedBrush" Color="#FF1E40AF"/>
-            <SolidColorBrush x:Key="ButtonDisabledBrush" Color="#FFCBD5E1"/>
-            <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFFFF"/>
-            <SolidColorBrush x:Key="InputBorderBrush" Color="#FFCBD5E1"/>
-            <SolidColorBrush x:Key="TextBrush" Color="#FF0F172A"/>
-            <SolidColorBrush x:Key="TextSecondaryBrush" Color="#FF64748B"/>
-            <SolidColorBrush x:Key="BorderBrush" Color="#FFE2E8F0"/>
-            <SolidColorBrush x:Key="HoverOverlayBrush" Color="#0F94A3B8"/>
-            <SolidColorBrush x:Key="SuccessBrush" Color="#FF10B981"/>
-            <SolidColorBrush x:Key="WarningBrush" Color="#FFF59E0B"/>
-            <SolidColorBrush x:Key="ErrorBrush" Color="#FFEF4444"/>
-            <SolidColorBrush x:Key="InfoBrush" Color="#FF0EA5E9"/>
-            <SolidColorBrush x:Key="SidebarBrush" Color="#FF0B1220"/>
-            <SolidColorBrush x:Key="SidebarTextBrush" Color="#FFCBD5E1"/>
-            <SolidColorBrush x:Key="SidebarActiveBrush" Color="#FF2563EB"/>
-            <SolidColorBrush x:Key="SidebarHoverBrush" Color="#1AFFFFFF"/>
-            <SolidColorBrush x:Key="LogBackgroundBrush" Color="#FF0B1220"/>
+                        <SolidColorBrush x:Key="PrimaryBrush" Color="#2563EB"/>
+                        <SolidColorBrush x:Key="PrimaryHoverBrush" Color="#1D4ED8"/>
+                        <SolidColorBrush x:Key="PrimaryPressedBrush" Color="#1E40AF"/>
+                        <SolidColorBrush x:Key="PrimaryDisabledBrush" Color="#93C5FD"/>
+                        <SolidColorBrush x:Key="SecondaryBrush" Color="#0EA5E9"/>
+                        <SolidColorBrush x:Key="AccentBrush" Color="#7C3AED"/>
+                        <SolidColorBrush x:Key="BackgroundBrush" Color="#F8FAFC"/>
+                        <SolidColorBrush x:Key="SurfaceBrush" Color="#FFFFFFFF"/>
+                        <SolidColorBrush x:Key="PanelBrush" Color="#F1F5F9"/>
+                        <SolidColorBrush x:Key="CardBrush" Color="#FFFFFFFF"/>
+                        <SolidColorBrush x:Key="ButtonPrimaryBrush" Color="#2563EB"/>
+                        <SolidColorBrush x:Key="ButtonHoverBrush" Color="#1D4ED8"/>
+                        <SolidColorBrush x:Key="ButtonPressedBrush" Color="#1E40AF"/>
+                        <SolidColorBrush x:Key="ButtonDisabledBrush" Color="#93C5FD"/>
+                        <SolidColorBrush x:Key="InputBackgroundBrush" Color="#FFFFFFFF"/>
+                        <SolidColorBrush x:Key="InputBorderBrush" Color="#CBD5E1"/>
+                        <SolidColorBrush x:Key="TextBrush" Color="#0F172A"/>
+                        <SolidColorBrush x:Key="TextSecondaryBrush" Color="#475569"/>
+                        <SolidColorBrush x:Key="BorderBrush" Color="#E2E8F0"/>
+                        <SolidColorBrush x:Key="HoverOverlayBrush" Color="#1E293B33"/>
+                        <SolidColorBrush x:Key="SuccessBrush" Color="#16A34A"/>
+                        <SolidColorBrush x:Key="WarningBrush" Color="#D97706"/>
+                        <SolidColorBrush x:Key="ErrorBrush" Color="#DC2626"/>
+                        <SolidColorBrush x:Key="InfoBrush" Color="#2563EB"/>
+                        <SolidColorBrush x:Key="SidebarBrush" Color="#1E293B"/>
+                        <SolidColorBrush x:Key="SidebarTextBrush" Color="#F8FAFC"/>
+                        <SolidColorBrush x:Key="SidebarActiveBrush" Color="#2563EB"/>
+                        <SolidColorBrush x:Key="SidebarActiveSoftBrush" Color="#26FFFFFF"/>
+                        <SolidColorBrush x:Key="SidebarHoverBrush" Color="#14FFFFFF"/>
+                        <SolidColorBrush x:Key="LogBackgroundBrush" Color="#0B1220"/>
 
             <!-- ══ Flow direction defaults (RTL) — overridden by ThemeManager ══ -->
             <FlowDirection x:Key="MainWindowFlowDirection">RightToLeft</FlowDirection>
@@ -94,6 +98,12 @@
 
             <Style TargetType="Frame">
                 <Setter Property="FlowDirection" Value="{DynamicResource MainWindowFlowDirection}"/>
+                <!-- RTL + default Left content alignment = content glued to the right edge
+                     with empty white space on the left. Always stretch the page. -->
+                <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                <Setter Property="VerticalContentAlignment" Value="Stretch"/>
+                <Setter Property="HorizontalAlignment" Value="Stretch"/>
+                <Setter Property="VerticalAlignment" Value="Stretch"/>
             </Style>
 
             <Style TargetType="DataGrid" BasedOn="{StaticResource ProDataGrid}"/>

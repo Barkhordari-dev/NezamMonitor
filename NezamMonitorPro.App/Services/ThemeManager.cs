@@ -166,13 +166,24 @@ public sealed class ThemeManager
                 mw.Language = xmlLang;
                 try
                 {
-                    var mainGrid = mw.Content as System.Windows.Controls.Grid;
-                    if (mainGrid != null && mainGrid.ColumnDefinitions.Count > 0)
+                    // مهم: در MainWindow.xaml ستون ۰ = سایدبار (سمت راست در RTL) و
+                    // ستون ۱ = محتوای اصلی که باید همیشه * بماند. قبلاً کد «آخرین ستون»
+                    // را تنظیم می‌کرد و عرض محتوای اصلی را به ۲۶۴ پیکسل قفل می‌کرد
+                    // (همان نوار سفید بزرگ سمت چپ).
+                    if (mw.Content is System.Windows.Controls.Grid mainGrid &&
+                        mainGrid.ColumnDefinitions.Count >= 2)
                     {
-                        // Sidebar lives in the LAST column (right side)
-                        var sidebarCol = mainGrid.ColumnDefinitions[mainGrid.ColumnDefinitions.Count - 1];
-                        if (sidebarCol.Width.Value > 0)
-                            sidebarCol.Width = new System.Windows.GridLength(theme.Dimensions.SidebarWidth);
+                        var sidebarCol = mainGrid.ColumnDefinitions[0];
+                        if (!sidebarCol.Width.IsStar)
+                        {
+                            var width = theme.Dimensions.SidebarWidth;
+                            if (width < 180) width = 180;   // جلوگیری از عرض غیرقابل‌استفاده
+                            sidebarCol.Width = new System.Windows.GridLength(width);
+                        }
+
+                        var contentCol = mainGrid.ColumnDefinitions[1];
+                        if (!contentCol.Width.IsStar)
+                            contentCol.Width = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star);
                     }
                 }
                 catch { }

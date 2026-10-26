@@ -1,8 +1,9 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\NezamMonitorPro.Core\NezamMonitorPro.Core.csproj" />
-  </ItemGroup>
+      <ProjectReference Include="..\NezamMonitorPro.Core\NezamMonitorPro.Core.csproj" />
+      <ProjectReference Include="..\..\..\NezamMonitorPro.Security\NezamMonitorPro.Security.csproj" />
+    </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
@@ -49,4 +50,7 @@
     <PublishTrimmed>false</PublishTrimmed>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
+  </ItemGroup>
 </Project>

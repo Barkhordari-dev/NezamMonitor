@@ -59,6 +59,86 @@ public partial class MainWindow : Window
         _nav.Navigated += OnNavigated;
         _nav.NavigateTo("dashboard");
         UpdatePageHeader("dashboard");
+
+        // عکس‌برداری از ابعاد واقعی چیدمان در startup.log (برای عیب‌یابی نوار سفید)
+        EnsureContentColumnStar();
+        Loaded += (_, _) =>
+        {
+            EnsureContentColumnStar();
+            Dispatcher.BeginInvoke(new Action(() => LogLayout("loaded")),
+                System.Windows.Threading.DispatcherPriority.ContextIdle);
+        };
+    }
+
+    /// <summary>
+    /// ستون ۱ (محتوای اصلی) باید همیشه * باشد. بعضی مسیرها (مثلاً اعمال تم از صفحهٔ تنظیمات)
+    /// عرض ستون‌ها را بازنویسی می‌کردند و محتوا به ۲۶۴ پیکسل مچاله می‌شد.
+    /// </summary>
+    private void EnsureContentColumnStar()
+    {
+        try
+        {
+            if (Content is not Grid grid || grid.ColumnDefinitions.Count < 2) return;
+
+            var sidebar = grid.ColumnDefinitions[0];
+            if (!sidebar.Width.IsStar && sidebar.Width.Value < 180)
+                sidebar.Width = new GridLength(264);
+
+            var content = grid.ColumnDefinitions[1];
+            if (!content.Width.IsStar)
+                content.Width = new GridLength(1, GridUnitType.Star);
+        }
+        catch { }
+    }
+
+    /// <summary>
+    /// ابعاد واقعی کنترل‌های اصلی را در startup.log می‌نویسد تا اگر چیدمان درست نبود،
+    /// دقیقاً مشخص شود کدام سطح فضای موجود را پر نکرده است.
+    /// </summary>
+    private void LogLayout(string stage)
+    {
+        try
+        {
+            var content = MainFrame?.Content as FrameworkElement;
+            var sb = new System.Text.StringBuilder();
+            double dpiX = 1, dpiY = 1;
+            try
+            {
+                var src = PresentationSource.FromVisual(this);
+                if (src?.CompositionTarget is not null)
+                {
+                    dpiX = src.CompositionTarget.TransformToDevice.M11;
+                    dpiY = src.CompositionTarget.TransformToDevice.M22;
+                }
+            }
+            catch { }
+
+            sb.AppendLine($"[{DateTime.Now}] LAYOUT {stage}: " +
+                          $"dpi={dpiX:0.##} " +
+                          $"bounds={Left:0},{Top:0} {Width:0}x{Height:0} " +
+                          $"window={ActualWidth:0}x{ActualHeight:0} " +
+                          $"sidebar={SidebarBorder.ActualWidth:0} " +
+                          $"main={MainContentGrid.ActualWidth:0}x{MainContentGrid.ActualHeight:0} " +
+                          $"host={(MainFrame?.ActualWidth ?? 0):0}x{(MainFrame?.ActualHeight ?? 0):0} " +
+                          $"content={(content?.ActualWidth ?? -1):0}x{(content?.ActualHeight ?? -1):0}");
+
+            if (content is not null)
+            {
+                sb.AppendLine($"    content type: {content.GetType().Name}, HA={content.HorizontalAlignment}");
+                int n = VisualTreeHelper.GetChildrenCount(content);
+                for (int i = 0; i < n; i++)
+                {
+                    if (VisualTreeHelper.GetChild(content, i) is FrameworkElement fe)
+                        sb.AppendLine($"    child[{i}] {fe.GetType().Name} w={fe.ActualWidth:0} h={fe.ActualHeight:0} HA={fe.HorizontalAlignment}");
+                }
+            }
+
+            var path = System.IO.Path.Combine(
+                System.IO.Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
+                ?? AppDomain.CurrentDomain.BaseDirectory, "startup.log");
+            System.IO.File.AppendAllText(path, sb.ToString());
+        }
+        catch { }
     }
 
     private void OnNavigated(string key) => UpdatePageHeader(key);

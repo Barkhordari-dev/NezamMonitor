@@ -6,13 +6,24 @@ using NezamMonitorPro.App.ViewModels;
 
 namespace NezamMonitorPro.App.Views;
 
-public partial class DashboardView : UserControl
+public partial class DashboardView : UserControl, INavigationAware
 {
     public DashboardView()
     {
         InitializeComponent();
         DataContext = new DashboardViewModel(DatabaseService.Instance);
         SyncGradientToTheme();
+    }
+
+    /// <summary>هنگام بازگشت به داشبورد، آمار دوباره از پایگاه‌داده خوانده می‌شود.</summary>
+    public void OnNavigatedTo()
+    {
+        try
+        {
+            if (DataContext is DashboardViewModel vm)
+                vm.RefreshCommand.Execute(null);
+        }
+        catch { }
     }
 
     /// <summary>

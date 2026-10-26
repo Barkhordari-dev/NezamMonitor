@@ -26,8 +26,8 @@
 
          Vazir is bundled with the app (Fonts/Vazirmatn-Regular.ttf) and referenced
          through a pack:// URI, so Persian text renders identically on every Windows box. -->
-    <FontFamily x:Key="FontFamily">pack://application:,,,/Fonts/Vazirmatn-Regular.ttf#Vazir</FontFamily>
-    <FontFamily x:Key="HeadingFontFamily">pack://application:,,,/Fonts/Vazirmatn-Regular.ttf#Vazir</FontFamily>
+    <FontFamily x:Key="FontFamily">B Nazanin</FontFamily>
+    <FontFamily x:Key="HeadingFontFamily">B Nazanin</FontFamily>
     <FontFamily x:Key="IconFontFamily">Segoe MDL2 Assets</FontFamily>
     <FontFamily x:Key="NumericFontFamily">Segoe UI</FontFamily>
 
@@ -620,7 +620,7 @@
                                 <Thumb>
                                     <Thumb.Template>
                                         <ControlTemplate TargetType="Thumb">
-                                            <Border Background="{DynamicResource BorderBrush}" CornerRadius="4"
+                                            <Border Background="{DynamicResource TextSecondaryBrush}" Opacity="0.5" CornerRadius="4"
                                                     Width="6" HorizontalAlignment="Center"/>
                                         </ControlTemplate>
                                     </Thumb.Template>
@@ -651,5 +651,29 @@
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Padding" Value="10,6"/>
     </Style>
+
+<!-- ═══════════════════════════════════════════════════════════════
+         EFFECTS & ANIMATIONS
+         ═══════════════════════════════════════════════════════════════ -->
+    <DropShadowEffect x:Key="CardShadowEffect"
+                      BlurRadius="32"
+                      ShadowDepth="6"
+                      Direction="270"
+                      Opacity="0.18"
+                      Color="#0B1B33"/>
+
+    <DropShadowEffect x:Key="InputShadowEffect"
+                      BlurRadius="16"
+                      ShadowDepth="0"
+                      Direction="270"
+                      Opacity="0.12"
+                      Color="#0B1B33"/>
+
+    <!-- Color resources for gradient backgrounds (ARGB format) -->
+    <Color x:Key="PrimaryColor">#FF2563EB</Color>
+    <Color x:Key="AccentColor">#FF7C3AED</Color>
+
+    <!-- Easing functions -->
+    <QuarticEase x:Key="EaseOutQuart" EasingMode="EaseOut"/>
 
 </ResourceDictionary>

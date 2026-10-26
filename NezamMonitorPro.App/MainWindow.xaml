@@ -2,15 +2,85 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        Title="سیستم مانیتورینگ نظام مهندسی نسخه پرو"
+        Title="سیستم مانیتورینگ نظام مهندسی — نسخه پرو"
         Width="1440" Height="900"
-        MinWidth="1024" MinHeight="640"
+        MinWidth="1100" MinHeight="680"
         WindowStartupLocation="CenterScreen"
         Background="{DynamicResource BackgroundBrush}"
         FontFamily="{DynamicResource FontFamily}"
         Icon="pack://application:,,,/app.ico"
         UseLayoutRounding="True"
-        SnapsToDevicePixels="True">
+        SnapsToDevicePixels="True"
+        TextOptions.TextFormattingMode="Display"
+        FlowDirection="RightToLeft">
+
+    <Window.Resources>
+        <!-- ─── آیتم ناوبری مدرن ─── -->
+        <Style x:Key="SideNavItem" TargetType="RadioButton">
+            <Setter Property="Height" Value="42"/>
+            <Setter Property="Margin" Value="12,2"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="GroupName" Value="ProNav"/>
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="Foreground" Value="#C7D2E1"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Border x:Name="bd" Background="Transparent" CornerRadius="11"
+                                Padding="12,0" SnapsToDevicePixels="True">
+                            <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Stretch"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#14FFFFFF"/>
+                                <Setter Property="Foreground" Value="White"/>
+                            </Trigger>
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="#26FFFFFF"/>
+                                <Setter Property="Foreground" Value="White"/>
+                                <Setter Property="FontWeight" Value="SemiBold"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="NavIcon" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource IconFontFamily}"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Width" Value="22"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="Foreground"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type RadioButton}}}"/>
+        </Style>
+
+        <Style x:Key="NavLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="TextAlignment" Value="Right"/>
+            <Setter Property="Margin" Value="10,0,0,0"/>
+            <Setter Property="Foreground"
+                    Value="{Binding Foreground, RelativeSource={RelativeSource AncestorType={x:Type RadioButton}}}"/>
+        </Style>
+
+        <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontSize" Value="10.5"/>
+            <Setter Property="FontWeight" Value="Bold"/>
+            <Setter Property="Foreground" Value="#7C8CA3"/>
+            <Setter Property="Margin" Value="22,16,22,6"/>
+            <Setter Property="TextAlignment" Value="Center"/>
+            <Setter Property="HorizontalAlignment" Value="Stretch"/>
+        </Style>
+
+        <Style x:Key="HeaderIconButton" TargetType="Button" BasedOn="{StaticResource ProIconButton}">
+            <Setter Property="Width" Value="38"/>
+            <Setter Property="Height" Value="38"/>
+        </Style>
+    </Window.Resources>
 
     <Window.InputBindings>
         <KeyBinding Key="F5" Command="{Binding RefreshCommand}"/>
@@ -19,20 +89,22 @@
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding GoToDashboardCommand}"/>
     </Window.InputBindings>
 
+    <!-- ═══════════════ ساختار اصلی: دو ستون (سایدبار | محتوا) ═══════════════ -->
     <Grid>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*"/>
             <ColumnDefinition x:Name="SidebarColumn" Width="264"/>
+            <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
-        <!-- ════════════════ SIDEBAR (right side) ════════════════ -->
-        <Border x:Name="SidebarBorder" Grid.Row="0" Grid.RowSpan="3" Grid.Column="1"
-                Background="{DynamicResource SidebarBrush}" FlowDirection="RightToLeft">
+        <!-- ════════════════ SIDEBAR ════════════════ -->
+        <Border x:Name="SidebarBorder" Grid.Column="0">
+            <Border.Background>
+                <LinearGradientBrush StartPoint="0,0" EndPoint="0.4,1">
+                    <GradientStop Color="#1E293B" Offset="0"/>
+                    <GradientStop Color="#0F172A" Offset="1"/>
+                </LinearGradientBrush>
+            </Border.Background>
+
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -41,197 +113,213 @@
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
 
-                <!-- Brand -->
-                <StackPanel Grid.Row="0" Margin="18,20,18,16">
-                    <Border Width="52" Height="52" CornerRadius="14" Background="{DynamicResource PrimaryBrush}"
-                            HorizontalAlignment="Right" Margin="0,0,0,12">
-                        <TextBlock Text="&#xE1D3;" FontFamily="{DynamicResource IconFontFamily}" FontSize="26"
-                                   Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                    <TextBlock Text="سیستم مانیتورینگ" FontSize="19" FontWeight="Bold" Foreground="White"
-                               HorizontalAlignment="Right" TextWrapping="Wrap"/>
-                    <TextBlock Text="نظام مهندسی — نسخه پرو" FontSize="13" FontWeight="SemiBold"
-                               Foreground="{DynamicResource SidebarTextBrush}"
-                               HorizontalAlignment="Right" Margin="0,2,0,0"/>
-                    <TextBlock Text="Engineering Monitoring System Pro" FontSize="10.5" Foreground="#8FA3BC"
-                               FontFamily="Segoe UI" HorizontalAlignment="Right" Margin="0,2,0,0"/>
-                    <Border Height="3" Width="46" CornerRadius="2" Background="{DynamicResource AccentBrush}"
-                            HorizontalAlignment="Right" Margin="0,10,0,0"/>
-                </StackPanel>
+                <!-- ─── برند ─── -->
+                <Grid Grid.Row="0" Margin="18,22,18,14">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
 
-                <!-- Search -->
-                <Grid Grid.Row="1" Margin="16,0,16,14">
-                    <TextBox x:Name="NavSearchBox" Height="38" Padding="12,0,34,0"
-                             FontSize="12.5" Foreground="{DynamicResource TextBrush}"
-                             Background="#1AFFFFFF" BorderBrush="#33FFFFFF" BorderThickness="1"
-                             TextChanged="NavSearchBox_TextChanged">
-                        <TextBox.Template>
-                            <ControlTemplate TargetType="TextBox">
-                                <Border x:Name="bd" Background="{TemplateBinding Background}"
-                                        BorderBrush="{TemplateBinding BorderBrush}"
-                                        BorderThickness="{TemplateBinding BorderThickness}"
-                                        CornerRadius="10">
-                                    <Grid>
-                                        <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
-                                                      VerticalAlignment="Center" Focusable="False"/>
-                                        <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="14" Foreground="#9FB3CC" HorizontalAlignment="Right"
-                                                   Margin="0,0,10,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
-                                    </Grid>
-                                </Border>
-                                <ControlTemplate.Triggers>
-                                    <Trigger Property="IsKeyboardFocusWithin" Value="True">
-                                        <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
-                                    </Trigger>
-                                </ControlTemplate.Triggers>
-                            </ControlTemplate>
-                        </TextBox.Template>
-                    </TextBox>
+                    <Border Grid.Column="0" Width="46" Height="46" CornerRadius="13">
+                        <Border.Background>
+                            <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                                <GradientStop Color="{DynamicResource PrimaryColor}" Offset="0"/>
+                                <GradientStop Color="{DynamicResource AccentColor}" Offset="1"/>
+                            </LinearGradientBrush>
+                        </Border.Background>
+                        <TextBlock Text="&#xE1D3;" FontFamily="{DynamicResource IconFontFamily}"
+                                   FontSize="22" Foreground="White"
+                                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <StackPanel Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+                        <TextBlock Text="سیستم مانیتورینگ" FontSize="16.5" FontWeight="Bold" Foreground="White"
+                                   HorizontalAlignment="Center" TextAlignment="Center"/>
+                        <TextBlock Text="نظام مهندسی — نسخه پرو" FontSize="11" Foreground="#8FA3BC"
+                                   HorizontalAlignment="Center" TextAlignment="Center" Margin="0,2,0,0"/>
+                        <Border Background="#2A3B8FF3" CornerRadius="6" Padding="6,2" Margin="0,6,0,0"
+                                HorizontalAlignment="Center">
+                            <TextBlock Text="PRO" FontSize="9" FontWeight="Bold" Foreground="#93C5FD"
+                                       FontFamily="Segoe UI" HorizontalAlignment="Center"/>
+                        </Border>
+                    </StackPanel>
                 </Grid>
 
-                <!-- Nav items -->
-                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,0,10">
+                <!-- ─── جستجو ─── -->
+                <Border Grid.Row="1" Margin="16,0,16,10" Height="40" CornerRadius="11"
+                        Background="#14FFFFFF" BorderBrush="#1FFFFFFF" BorderThickness="1">
+                    <Grid>
+                        <TextBox x:Name="NavSearchBox" Background="Transparent" BorderThickness="0"
+                                 Foreground="White" CaretBrush="White" FontSize="12.5"
+                                 Padding="12,0,38,0" VerticalContentAlignment="Center"
+                                 TextChanged="NavSearchBox_TextChanged"
+                                 ToolTip="جستجوی منو (مثلاً: پرونده)"/>
+                        <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFontFamily}"
+                                   FontSize="14" Foreground="#7C8CA3" HorizontalAlignment="Right"
+                                   Margin="0,0,12,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
+                    </Grid>
+                </Border>
+
+                <!-- ─── منو ─── -->
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="0,0,0,8">
                     <StackPanel x:Name="SidebarStackPanel">
 
-                        <RadioButton x:Name="NavDashboard" Style="{StaticResource ProNavItem}" Tag="dashboard"
+                        <TextBlock Text="فضای کاری" Style="{StaticResource SectionLabel}"/>
+
+                        <RadioButton x:Name="NavDashboard" Style="{StaticResource SideNavItem}" Tag="dashboard"
                                      IsChecked="True" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE80F;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="داشبورد" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE80F;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="داشبورد"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavUpdate" Style="{StaticResource ProNavItem}" Tag="update" Click="Nav_Click">
+                        <RadioButton x:Name="NavUpdate" Style="{StaticResource SideNavItem}" Tag="update" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE895;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="به‌روزرسانی" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE895;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="به‌روزرسانی"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavGenerator" Style="{StaticResource ProNavItem}" Tag="generator" Click="Nav_Click">
+                        <RadioButton x:Name="NavCases" Style="{StaticResource SideNavItem}" Tag="cases" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE70C;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تولید گزارش" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE8C8;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="پرونده‌ها"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavCases" Style="{StaticResource ProNavItem}" Tag="cases" Click="Nav_Click">
+                        <RadioButton x:Name="NavGenerator" Style="{StaticResource SideNavItem}" Tag="generator" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE8C8;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="پرونده‌ها" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE70C;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="تولید گزارش"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavReports" Style="{StaticResource ProNavItem}" Tag="reports" Click="Nav_Click">
+                        <RadioButton x:Name="NavReports" Style="{StaticResource SideNavItem}" Tag="reports" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE7C3;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="گزارش‌ها" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE7C3;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="گزارش‌ها"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavExcel" Style="{StaticResource ProNavItem}" Tag="excel" Click="Nav_Click">
+                        <TextBlock Text="داده و خروجی" Style="{StaticResource SectionLabel}"/>
+
+                        <RadioButton x:Name="NavExcel" Style="{StaticResource SideNavItem}" Tag="excel" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE9D5;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="خروجی اکسل" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE9D5;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="خروجی اکسل"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavAndroid" Style="{StaticResource ProNavItem}" Tag="androidexport" Click="Nav_Click">
+                        <RadioButton x:Name="NavAndroid" Style="{StaticResource SideNavItem}" Tag="androidexport" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE7F4;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="خروجی اندروید" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE7F4;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="خروجی اندروید"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavEngineers" Style="{StaticResource ProNavItem}" Tag="engineers" Click="Nav_Click">
+                        <RadioButton x:Name="NavHistory" Style="{StaticResource SideNavItem}" Tag="history" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE77B;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="مهندسین" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE81C;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="تاریخچه و بایگانی"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavFees" Style="{StaticResource ProNavItem}" Tag="fees" Click="Nav_Click">
+                        <RadioButton x:Name="NavChanges" Style="{StaticResource SideNavItem}" Tag="changes" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE825;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="حق‌الزحمه" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE9D9;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="تغییرات"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavFollowUp" Style="{StaticResource ProNavItem}" Tag="followup" Click="Nav_Click">
+                        <TextBlock Text="مدیریت" Style="{StaticResource SectionLabel}"/>
+
+                        <RadioButton x:Name="NavEngineers" Style="{StaticResource SideNavItem}" Tag="engineers" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE7BA;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="پیگیری" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE77B;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="مهندسین"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavChanges" Style="{StaticResource ProNavItem}" Tag="changes" Click="Nav_Click">
+                        <RadioButton x:Name="NavFees" Style="{StaticResource SideNavItem}" Tag="fees" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE9D9;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تغییرات" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE8C7;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="حق‌الزحمه"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavHistory" Style="{StaticResource ProNavItem}" Tag="history" Click="Nav_Click">
+                        <RadioButton x:Name="NavFollowUp" Style="{StaticResource SideNavItem}" Tag="followup" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE823;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تاریخچه" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE7BA;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="پیگیری"/>
                             </StackPanel>
                         </RadioButton>
 
-                        <RadioButton x:Name="NavSettings" Style="{StaticResource ProNavItem}" Tag="settings" Click="Nav_Click">
+                        <RadioButton x:Name="NavSettings" Style="{StaticResource SideNavItem}" Tag="settings" Click="Nav_Click">
                             <StackPanel Orientation="Horizontal">
-                                <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                           VerticalAlignment="Center" Margin="0,0,11,0"/>
-                                <TextBlock Text="تنظیمات" VerticalAlignment="Center" HorizontalAlignment="Right" TextAlignment="Right"/>
+                                <TextBlock Style="{StaticResource NavIcon}" Text="&#xE713;"/>
+                                <TextBlock Style="{StaticResource NavLabel}" Text="تنظیمات"/>
                             </StackPanel>
                         </RadioButton>
+
                     </StackPanel>
                 </ScrollViewer>
 
-                <!-- Footer -->
-                <Border Grid.Row="3" Background="#0A0F1A" Padding="16,12">
-                    <StackPanel HorizontalAlignment="Center">
-                        <Border Height="1" Background="#1F2937" Margin="0,0,0,10"/>
-                        <TextBlock Text="نسخه ۳ پرو" Foreground="{DynamicResource SidebarTextBrush}" FontSize="19"
-                                   FontWeight="Bold" HorizontalAlignment="Center" TextAlignment="Center"/>
-                        <TextBlock Text="ساخته شده توسط مهندس محمد مهدی برخورداری"
-                                   Foreground="#B8C6D8" FontSize="15"
-                                   HorizontalAlignment="Center" TextAlignment="Center"
-                                   TextWrapping="Wrap" Margin="0,8,0,0"/>
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,10,0,0">
-                            <TextBlock Text="&#xE717;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="#B8C6D8" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBlock Text="09022233357" Foreground="#E4EBF4" FontSize="16" FontWeight="SemiBold"
-                                       FontFamily="Segoe UI" VerticalAlignment="Center"/>
-                        </StackPanel>
+                <!-- ─── فوتر ─── -->
+                <Border Grid.Row="3" Background="#40000000" Padding="16,14">
+                    <StackPanel>
+                        <Grid Margin="0,0,0,10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="9" Background="#1AFFFFFF">
+                                <TextBlock Text="&#xE77B;" FontFamily="{DynamicResource IconFontFamily}"
+                                           FontSize="14" Foreground="#B8C6D8"
+                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center"
+                                        FlowDirection="RightToLeft">
+                                <TextBlock Text="تولید و توسعه توسط مهندس محمد مهدی برخورداری" FontSize="11"
+                                           Foreground="#E4EBF4" FontWeight="SemiBold"
+                                           TextWrapping="Wrap" HorizontalAlignment="Stretch"
+                                           TextAlignment="Center" LineHeight="17"/>
+                                <TextBlock Text="راه ارتباطی:" FontSize="10.5" Foreground="#9FB3CC"
+                                           HorizontalAlignment="Stretch" TextAlignment="Center" Margin="0,4,0,0"/>
+                                <TextBlock Text="mmahdib2020@gmail.com" FontSize="10.5" Foreground="#E4EBF4"
+                                           FontFamily="Segoe UI"
+                                           FlowDirection="LeftToRight"
+                                           HorizontalAlignment="Stretch" TextAlignment="Center"
+                                           Margin="0,2,0,0"/>
+                            </StackPanel>
+                        </Grid>
+                        <Border Background="#14FFFFFF" CornerRadius="8" Padding="10,6">
+                            <Grid>
+                                <TextBlock Text="دیتابیس محلی · رمزنگاری‌شده" FontSize="10"
+                                           Foreground="#9FB3CC" VerticalAlignment="Center"
+                                           TextAlignment="Center" HorizontalAlignment="Stretch"/>
+                                <Ellipse Width="6" Height="6" Fill="{DynamicResource SuccessBrush}"
+                                         HorizontalAlignment="Left" VerticalAlignment="Center"/>
+                            </Grid>
+                        </Border>
                     </StackPanel>
                 </Border>
             </Grid>
         </Border>
 
         <!-- ════════════════ MAIN AREA ════════════════ -->
-        <Grid Grid.Row="0" Grid.RowSpan="3" Grid.Column="0">
+        <Grid x:Name="MainContentGrid" Grid.Column="1"
+              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
 
-            <!-- Top bar -->
+            <!-- ─── نوار بالا ─── -->
             <Border Grid.Row="0" Background="{DynamicResource SurfaceBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="24,14">
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1"
+                    Padding="26,16">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
@@ -239,60 +327,89 @@
                     </Grid.ColumnDefinitions>
 
                     <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                        <TextBlock x:Name="PageTitleText" Text="داشبورد" Style="{StaticResource ProPageTitle}"/>
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock x:Name="PageTitleText" Text="داشبورد" Style="{StaticResource ProPageTitle}"
+                                       FontSize="21"/>
+                            <Border Background="#142563EB" CornerRadius="7" Padding="8,2" Margin="10,0,0,0"
+                                    VerticalAlignment="Center">
+                                <TextBlock Text="نسخه پرو" FontSize="9.5" FontWeight="Bold"
+                                           Foreground="{DynamicResource PrimaryBrush}"/>
+                            </Border>
+                        </StackPanel>
                         <TextBlock x:Name="PageSubtitleText" Text="نمای کلی وضعیت پرونده‌ها"
-                                   Style="{StaticResource ProCaption}" Margin="0,3,0,0"/>
+                                   Style="{StaticResource ProCaption}" Margin="0,4,0,0" FontSize="12"/>
                     </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- Connection chip -->
-                        <Border Background="{DynamicResource PanelBrush}" CornerRadius="16"
-                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="12,5" Margin="0,0,10,0">
+                        <Border Background="{DynamicResource PanelBrush}" CornerRadius="18"
+                                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                                Padding="12,6" Margin="0,0,10,0">
                             <StackPanel Orientation="Horizontal">
-                                <Ellipse Width="7" Height="7" Fill="{DynamicResource SuccessBrush}" VerticalAlignment="Center"/>
-                                <TextBlock Text="دیتابیس محلی" FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                                <Ellipse Width="7" Height="7" Fill="{DynamicResource SuccessBrush}"
+                                         VerticalAlignment="Center"/>
+                                <TextBlock Text="اتصال محلی برقرار است" FontSize="11"
+                                           Foreground="{DynamicResource TextSecondaryBrush}"
                                            VerticalAlignment="Center" Margin="7,0,0,0"/>
                             </StackPanel>
                         </Border>
 
-                        <Button Style="{StaticResource ProIconButton}" ToolTip="به‌روزرسانی (Ctrl+O)"
-                                Click="GoToUpdate_Click" Background="{DynamicResource PrimaryBrush}" Margin="0,0,8,0">
-                            <TextBlock Text="&#xE895;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="White" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Button Style="{StaticResource HeaderIconButton}" ToolTip="به‌روزرسانی (Ctrl+O)"
+                                Click="GoToUpdate_Click" Background="{DynamicResource PrimaryBrush}"
+                                Margin="0,0,8,0">
+                            <TextBlock Text="&#xE895;" FontFamily="{DynamicResource IconFontFamily}"
+                                       FontSize="15" Foreground="White"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Button>
 
-                        <Button Style="{StaticResource ProIconButton}" ToolTip="تنظیمات"
+                        <Button Style="{StaticResource HeaderIconButton}" ToolTip="تنظیمات"
                                 Click="GoToSettings_Click" Background="{DynamicResource PanelBrush}">
-                            <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFontFamily}"
+                                       FontSize="15" Foreground="{DynamicResource TextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Button>
                     </StackPanel>
                 </Grid>
             </Border>
 
-            <!-- Content -->
-            <Border Grid.Row="1" Background="{DynamicResource BackgroundBrush}">
-                <Frame x:Name="MainFrame" NavigationUIVisibility="Hidden" Background="Transparent"
-                       FlowDirection="{DynamicResource MainWindowFlowDirection}"/>
+            <!-- ─── ناحیه محتوا ───
+                 ContentControl (نه Frame): یک ControlPresenter ساده که محتوای صفحه را
+                 دقیقاً به اندازهٔ فضای موجود می‌کشد؛ در RTL هم هیچ ترازِ پنهانی ندارد. -->
+            <Border Grid.Row="1" Background="{DynamicResource BackgroundBrush}"
+                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+                <ContentControl x:Name="MainFrame" Background="Transparent"
+                                HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch"
+                                Width="Auto" Height="Auto"
+                                FlowDirection="RightToLeft"/>
             </Border>
 
-            <!-- Status bar -->
+            <!-- ─── نوار وضعیت ─── -->
             <Border Grid.Row="2" Background="{DynamicResource SurfaceBrush}"
-                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="24,8">
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0"
+                    Padding="26,7">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
+
                     <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Ellipse x:Name="StatusDot" Width="7" Height="7" Fill="{DynamicResource SuccessBrush}"
+                        <Ellipse x:Name="StatusDot" Width="7" Height="7"
+                                 Fill="{DynamicResource SuccessBrush}"
                                  VerticalAlignment="Center" Margin="0,0,8,0"/>
-                        <TextBlock Text="{Binding StatusMessage}" FontSize="11.5"
-                                   Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding StatusMessage}" FontSize="11"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center"/>
                     </StackPanel>
-                    <ProgressBar x:Name="StatusProgress" Grid.Column="1" Width="180" Height="6"
-                                 Value="{Binding Progress}" Maximum="100" VerticalAlignment="Center"
-                                 Visibility="Collapsed"/>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="F5 به‌روزرسانی · Ctrl+D داشبورد · Ctrl+O تنظیمات سریع"
+                                   FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   Margin="0,0,14,0" VerticalAlignment="Center"/>
+                        <ProgressBar x:Name="StatusProgress" Width="160" Height="5"
+                                     Value="{Binding Progress}" Maximum="100"
+                                     VerticalAlignment="Center" Visibility="Collapsed"/>
+                    </StackPanel>
                 </Grid>
             </Border>
         </Grid>

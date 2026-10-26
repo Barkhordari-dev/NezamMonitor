@@ -351,10 +351,61 @@ public sealed class GeneratorViewModel : ViewModelBase
     private void LoadTemplates()
     {
         AvailableTemplates.Clear();
-        var generator = new StageReportGenerator(_templatePath);
+        var generator = CreateGenerator();
         foreach (var t in generator.ListTemplates())
             AvailableTemplates.Add(t);
         AutoSelectTemplate();
+    }
+
+    /// <summary>
+    /// ساخت مولد گزارش با تمام مسیرهای قالب: پوشهٔ خود برنامه + مسیرهای نسخه‌های قبلی
+    /// (مثل Downloads\NezamMonitor-Windows\templates) + مسیرهای قابل‌تنظیم در پایگاه‌داده.
+    /// </summary>
+    private StageReportGenerator CreateGenerator(string? primaryDir = null)
+    {
+        var generator = new StageReportGenerator(primaryDir ?? _templatePath);
+
+        foreach (var dir in GetExtraTemplateDirectories())
+            generator.AddTemplateDirectory(dir);
+
+        return generator;
+    }
+
+    private IEnumerable<string> GetExtraTemplateDirectories()
+    {
+        var dirs = new List<string>();
+
+        try
+        {
+            var profile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+            if (!string.IsNullOrWhiteSpace(profile))
+            {
+                dirs.Add(Path.Combine(profile, "Downloads", "NezamMonitor-Windows", "templates"));
+                dirs.Add(Path.Combine(profile, "Downloads", "NezamMonitor-Windows", "Templates"));
+                dirs.Add(Path.Combine(profile, "Downloads", "NezamMonitor-Windows"));
+                dirs.Add(Path.Combine(profile, "Downloads", "templates"));
+            }
+
+            // مسیر نسخهٔ قبلی/سورس روی درایو E
+            dirs.Add(@"E:\Nezam Monitor-Mahdi2\Source_and_Development\templates");
+            dirs.Add(@"E:\NezamMonitor-Mahdi2\Source_and_Development\templates");
+            dirs.Add(@"E:\Nezam Monitor-Mahdi2\templates");
+        }
+        catch { }
+
+        // مسیر دلخواه کاربر: template_paths=D:\a\templates;D:\b\templates
+        try
+        {
+            var extra = _db.GetSetting("template_paths");
+            if (!string.IsNullOrWhiteSpace(extra))
+            {
+                foreach (var part in extra.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                    dirs.Add(part);
+            }
+        }
+        catch { }
+
+        return dirs;
     }
 
     private void AutoSelectTemplate()
@@ -888,7 +939,7 @@ public sealed class GeneratorViewModel : ViewModelBase
         {
             Directory.CreateDirectory(_outputPath);
             var cases = _db.LoadCases(_db.GetActiveSnapshotId());
-            var generator = new StageReportGenerator(_templatePath);
+            var generator = CreateGenerator();
 
             int generated = 0, failed = 0, skipped = 0;
             var selected = ReportStatus.Where(r => r.IsSelected).ToList();
@@ -1270,7 +1321,7 @@ public sealed class GeneratorViewModel : ViewModelBase
 
         var idx = cases.IndexOf(c);
         var isLtr = item.NumberFormat == "LTR";
-        var generator = new StageReportGenerator(Path.GetDirectoryName(SelectedTemplatePath) ?? _templatePath);
+        var generator = CreateGenerator(Path.GetDirectoryName(SelectedTemplatePath) ?? _templatePath);
         var genResult = generator.GenerateReport(c, item.Stage, idx + 1, _outputPath, DateTime.Now, null, isLtr);
 
         if (genResult.Success && genResult.OutputPath != null && File.Exists(genResult.OutputPath))

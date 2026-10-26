@@ -1,3 +1,4 @@
+using Microsoft.Data.Sqlite;
 using System.IO;
 using System.Diagnostics;
 using NezamMonitorPro.Core.Data;
@@ -33,6 +34,15 @@ public static class DatabaseService
     }
 
     public static string DatabasePath => Path.Combine(DatabaseDirectory, "nezam_monitor.db");
+
+    
+    public static void Initialize(SqliteConnection connection)
+    {
+        lock (_lock)
+        {
+            _instance = new NezamDatabase(connection);
+        }
+    }
 
     public static NezamDatabase Instance
     {

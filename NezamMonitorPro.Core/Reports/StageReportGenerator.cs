@@ -158,12 +158,48 @@ public static class StageReportRules
 /// </summary>
 public class StageReportGenerator
 {
-    private readonly string _templateDir;
+    private readonly List<string> _templateDirs = new();
 
     public StageReportGenerator(string templateDir)
     {
-        _templateDir = templateDir;
-        Directory.CreateDirectory(_templateDir);
+        try { Directory.CreateDirectory(templateDir); } catch { }
+        AddTemplateDirectory(templateDir);
+    }
+
+    /// <summary>
+    /// افزودن مسیر دیگر برای جستجوی قالب‌ها؛ مثلاً پوشهٔ «templates» نسخهٔ قبلی برنامه
+    /// یا پوشهٔ قالب‌های دانلودی. مسیرهای ناموجود بی‌صدا نادیده گرفته می‌شوند.
+    /// </summary>
+    public void AddTemplateDirectory(string? dir)
+    {
+        if (string.IsNullOrWhiteSpace(dir)) return;
+        try
+        {
+            var full = Path.GetFullPath(dir);
+            if (!Directory.Exists(full)) return;
+            if (_templateDirs.Any(d => string.Equals(d, full, StringComparison.OrdinalIgnoreCase))) return;
+            _templateDirs.Add(full);
+        }
+        catch { }
+    }
+
+    public IReadOnlyList<string> TemplateDirectories => _templateDirs;
+
+    /// <summary>همهٔ فایل‌های docx در همهٔ مسیرهای قالب (بدون فایل‌های موقت Word).</summary>
+    private IEnumerable<string> EnumerateTemplateFiles()
+    {
+        foreach (var dir in _templateDirs.ToList())
+        {
+            string[] files;
+            try { files = Directory.GetFiles(dir, "*.docx", SearchOption.AllDirectories); }
+            catch { continue; }
+
+            foreach (var file in files)
+            {
+                if (Path.GetFileName(file).StartsWith("~$", StringComparison.Ordinal)) continue;
+                yield return file;
+            }
+        }
     }
 
     /// <summary>
@@ -189,7 +225,12 @@ public class StageReportGenerator
         try
         {
             // Find template - use override if provided, otherwise auto-detect
-            var templatePath = templatePathOverride ?? FindTemplate(stage);
+            // (رشتهٔ پرونده از ناظرین/حق‌الزحمهٔ همان پرونده گرفته می‌شود و به‌عنوان اولویت تطبیق قالب استفاده می‌شود)
+            var disciplineHint = caseData.Engineers?
+                                     .FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.Discipline))?.Discipline
+                                 ?? caseData.Fees?.FirstOrDefault()?.Discipline;
+
+            var templatePath = templatePathOverride ?? FindTemplate(stage, disciplineHint);
             if (templatePath == null)
             {
                 result.Success = false;
@@ -270,44 +311,16 @@ public class StageReportGenerator
     public List<TemplateInfo> ListTemplates()
     {
         var templates = new List<TemplateInfo>();
-        if (!Directory.Exists(_templateDir))
-            return templates;
 
-        var files = Directory.GetFiles(_templateDir, "*.docx", SearchOption.AllDirectories);
-        foreach (var file in files)
+        foreach (var file in EnumerateTemplateFiles())
         {
-            var fileName = Path.GetFileNameWithoutExtension(file);
-            var stage = 0;
-
-            // Check for numbered templates (1.docx, 2.docx, 3.docx, 4.docx)
-            if (int.TryParse(fileName, out int stageNum) && stageNum >= 1 && stageNum <= 4)
-            {
-                stage = stageNum;
-            }
-            else
-            {
-                // Fallback: check for old naming patterns
-                if (fileName.Contains("اول")) stage = 1;
-                else if (fileName.Contains("دوم")) stage = 2;
-                else if (fileName.Contains("سوم")) stage = 3;
-                else if (fileName.Contains("چهارم")) stage = 4;
-            }
-            if (fileName.Contains("اول")) stage = 1;
-            else if (fileName.Contains("دوم")) stage = 2;
-            else if (fileName.Contains("سوم")) stage = 3;
-
-            var discipline = "";
-            if (fileName.Contains("مکانیک") || fileName.Contains("مكانيك")) discipline = "مکانیک";
-            else if (fileName.Contains("معماری") || fileName.Contains("معماري")) discipline = "معماری";
-            else if (fileName.Contains("عمران")) discipline = "عمران";
-            else if (fileName.Contains("برق")) discipline = "برق";
-
+            var parsed = TemplateNameParser.Parse(file);
             templates.Add(new TemplateInfo
             {
-                Path = file,
-                FileName = fileName,
-                Discipline = discipline,
-                Stage = stage
+                Path = parsed.Path,
+                FileName = parsed.FileName,
+                Discipline = parsed.Discipline,
+                Stage = parsed.Stage
             });
         }
 
@@ -315,56 +328,72 @@ public class StageReportGenerator
     }
 
     /// <summary>
-    /// Find template file by stage.
+    /// Find template file by stage (and optionally prefer a specific discipline).
     /// </summary>
     public string? FindTemplateForStage(int stage)
     {
         return FindTemplate(stage);
     }
 
-    private string? FindTemplate(int stage)
+    public string? FindTemplateForStage(int stage, string? discipline)
+    {
+        return FindTemplate(stage, discipline);
+    }
+
+    /// <summary>
+    /// یافتن قالب مرحله با تطبیق هوشمند نام فایل/پوشه:
+    /// «مکانیک مرحله اول.docx» ≡ «1.docx» (در پوشهٔ مکانیک) ≡ «مرحله ۱ - مکانیک.docx».
+    /// هیچ‌گاه قالب مرحلهٔ دیگری به‌جای این مرحله برگردانده نمی‌شود.
+    /// </summary>
+    private string? FindTemplate(int stage, string? discipline = null)
+    {
+        if (stage <= 0) return null;
+        if (_templateDirs.Count == 0) return null;
+
+        var candidates = EnumerateTemplateFiles()
+            .Select(TemplateNameParser.Parse)
+            .Where(c => c.Stage == stage)
+            .ToList();
+
+        if (candidates.Count == 0) return null;
+
+        var wanted = TemplateNameParser.DetectDiscipline(discipline);
+
+        // ۱) دقیقاً همان رشته
+        if (wanted.Length > 0)
         {
-            var stageWord = StageReportRules.StageName(stage);
-            var stageNum = StageReportRules.ToPersianNum(stage);
-
-            if (!Directory.Exists(_templateDir))
-                return null;
-
-            var allTemplates = Directory.GetFiles(_templateDir, "*.docx", SearchOption.AllDirectories);
-
-            // First priority: numbered templates (1.docx, 2.docx, 3.docx, 4.docx)
-            var numberedTemplate = allTemplates.FirstOrDefault(t =>
-                Path.GetFileNameWithoutExtension(t) == stage.ToString());
-            if (numberedTemplate != null)
-                return numberedTemplate;
-
-            // Second priority: old naming patterns
-            var patterns = new[]
-            {
-                $"مکانیک مرحله {stageWord}.docx",
-                $"مکانیک مرحله {stageNum}.docx",
-                $"مرحله {stageWord}.docx",
-                $"مرحله {stageNum}.docx",
-            };
-
-            foreach (var pattern in patterns)
-            {
-                var match = allTemplates.FirstOrDefault(t =>
-                    Path.GetFileNameWithoutExtension(t) == Path.GetFileNameWithoutExtension(pattern));
-                if (match != null) return match;
-            }
-
-            // Fuzzy search — only match templates that contain the stage word/number
-            foreach (var t in allTemplates)
-            {
-                var fileName = Path.GetFileNameWithoutExtension(t);
-                if (fileName.Contains(stageWord) || fileName.Contains(stageNum))
-                    return t;
-            }
-
-            // NO FALLBACK — do not silently use another stage's template
-            return null;
+            var exact = candidates.Where(c => c.Discipline == wanted).ToList();
+            if (exact.Count > 0) return PickBest(exact, wanted);
         }
+
+        // ۲) قالب‌های عمومی (بدون رشته)
+        var generic = candidates.Where(c => c.Discipline.Length == 0).ToList();
+        if (generic.Count > 0) return PickBest(generic, wanted);
+
+        // ۳) هر قالبی که مرحلهٔ درست دارد
+        return PickBest(candidates, wanted);
+    }
+
+    /// <summary>
+    /// انتخاب بهترین گزینه بین چند قالب هم‌مرحله: نام عددی خالص («1.docx») دقیق‌ترین است،
+    /// بعد نامی که شمارهٔ مرحله در آن صریح آمده، بعد کوتاه‌ترین مسیر.
+    /// </summary>
+    private static string PickBest(List<TemplateNameParser.ParsedTemplate> list, string wantedDiscipline)
+    {
+        if (wantedDiscipline.Length > 0)
+        {
+            var withDiscipline = list.Where(c => c.Discipline == wantedDiscipline).ToList();
+            if (withDiscipline.Count > 0) list = withDiscipline;
+        }
+
+        var numbered = list.FirstOrDefault(c => c.FileName.Trim().Length > 0 && c.FileName.Trim().All(char.IsDigit));
+        if (numbered is not null) return numbered.Path;
+
+        var explicitStage = list.Where(c => TemplateNameParser.Normalize(c.FileName).Contains("مرحله")).ToList();
+        if (explicitStage.Count > 0) list = explicitStage;
+
+        return list.OrderBy(c => c.Path.Length).First().Path;
+    }
 
     /// <summary>
     /// Replace all placeholders in the DOCX file.

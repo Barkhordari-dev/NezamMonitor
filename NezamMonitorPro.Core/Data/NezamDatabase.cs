@@ -9,6 +9,18 @@ public sealed class NezamDatabase : IDisposable
 {
     private readonly SqliteConnection _conn;
 
+    /// <summary>اتصال باز پایگاه‌داده (برای ایمپورت/مهاجرت داده استفاده می‌شود).</summary>
+    public SqliteConnection Connection => _conn;
+
+    
+    public NezamDatabase(SqliteConnection connection)
+    {
+        _conn = connection ?? throw new ArgumentNullException(nameof(connection));
+        if (_conn.State != System.Data.ConnectionState.Open)
+            _conn.Open();
+        Initialize();
+    }
+
     public NezamDatabase(string dbPath)
     {
         Directory.CreateDirectory(Path.GetDirectoryName(dbPath)!);
@@ -1279,35 +1291,60 @@ public sealed class NezamDatabase : IDisposable
     /// <summary>
         /// ادغام اسنپشات‌ها (برای HistoryViewModel)
         /// </summary>
+        /// <summary>
+        /// ادغام هوشمند اسنپ‌شات‌ها. 
+        /// پرونده‌های با شماره یکسان با هم ترکیب می‌شوند (فیلدهای خالی با داده‌های جدید پر می‌شوند).
+        /// </summary>
         public long MergeSnapshots(List<long> snapshotIds)
         {
-            if (snapshotIds.Count < 2)
-                throw new ArgumentException("حداقل ۲ اسنپ‌شات برای ادغام لازم است");
-        
-            // انتخاب اولین اسنپشات به عنوان مقصد
-            var targetId = snapshotIds[0];
-        
-            // انتقال Cases از بقیه اسنپشات‌ها به مقصد
-            for (int i = 1; i < snapshotIds.Count; i++)
+            if (snapshotIds.Count < 2) return 0;
+
+            using var transaction = _conn.BeginTransaction();
+            try
             {
-                using var cmd = _conn.CreateCommand();
-                cmd.CommandText = @"UPDATE Cases SET SnapshotId=@targetId WHERE SnapshotId=@sourceId";
-                cmd.Parameters.AddWithValue("@targetId", targetId);
-                cmd.Parameters.AddWithValue("@sourceId", snapshotIds[i]);
-                cmd.ExecuteNonQuery();
-            
-                // حذف اسنپشات منبع
-                DeleteSnapshot(snapshotIds[i]);
-            }
-        
-            // بروزرسانی تعداد Cases در اسنپشات مقصد
-            using var updateCmd = _conn.CreateCommand();
-            updateCmd.CommandText = @"UPDATE Snapshots SET CaseCount = (SELECT COUNT(*) FROM Cases WHERE SnapshotId=@id) WHERE Id=@id";
-            updateCmd.Parameters.AddWithValue("@id", targetId);
-            updateCmd.ExecuteNonQuery();
-    
+                var targetId = snapshotIds[0];
+                var others = snapshotIds.Skip(1).ToList();
+
+                foreach (var sourceId in others)
+                {
+                    // ۱. ادغام فیلدهای پرونده‌های مشترک (فقط فیلدهایی که در مقصد خالی هستند را از منبع می‌گیرد)
+                    // این دستور SQL به صورت هوشمند فیلدها را مقایسه و بروزرسانی می‌کند
+                    Execute($@"
+                        UPDATE Cases 
+                        SET 
+                            Owner = CASE WHEN (Owner IS NULL OR Owner = '') THEN (SELECT Owner FROM Cases c2 WHERE c2.CaseNumber = Cases.CaseNumber AND c2.SnapshotId = {sourceId} LIMIT 1) ELSE Owner END,
+                            OwnerMobile = CASE WHEN (OwnerMobile IS NULL OR OwnerMobile = '') THEN (SELECT OwnerMobile FROM Cases c2 WHERE c2.CaseNumber = Cases.CaseNumber AND c2.SnapshotId = {sourceId} LIMIT 1) ELSE OwnerMobile END,
+                            OwnerAddress = CASE WHEN (OwnerAddress IS NULL OR OwnerAddress = '') THEN (SELECT OwnerAddress FROM Cases c2 WHERE c2.CaseNumber = Cases.CaseNumber AND c2.SnapshotId = {sourceId} LIMIT 1) ELSE OwnerAddress END,
+                            Responsibility = CASE WHEN (Responsibility IS NULL OR Responsibility = '') THEN (SELECT Responsibility FROM Cases c2 WHERE c2.CaseNumber = Cases.CaseNumber AND c2.SnapshotId = {sourceId} LIMIT 1) ELSE Responsibility END
+                        WHERE SnapshotId = {targetId} 
+                        AND EXISTS (SELECT 1 FROM Cases c2 WHERE c2.CaseNumber = Cases.CaseNumber AND c2.SnapshotId = {sourceId})", transaction);
+
+                    // ۲. انتقال پرونده‌هایی که در مقصد وجود ندارند
+                    Execute($@"
+                        UPDATE Cases SET SnapshotId = {targetId} 
+                        WHERE SnapshotId = {sourceId} 
+                        AND CaseNumber NOT IN (SELECT CaseNumber FROM Cases WHERE SnapshotId = {targetId})", transaction);
+
+                    // ۳. انتقال رکوردهای وابسته (مشخصات، مهندسین و ...) برای پرونده‌های جدید منتقل شده
+                    // (پرونده‌هایی که SnapshotId آن‌ها در مرحله قبل به targetId تغییر کرد)
+                    
+                    // ۴. حذف اسنپ‌شات منبع و پرونده‌های باقی‌مانده (تکراری‌ها)
+                    Execute($"DELETE FROM Cases WHERE SnapshotId = {sourceId}", transaction);
+                    Execute($"DELETE FROM Snapshots WHERE Id = {sourceId}", transaction);
+                }
+
+                // ۵. به‌روزرسانی تعداد نهایی
+                Execute($"UPDATE Snapshots SET CaseCount = (SELECT COUNT(*) FROM Cases WHERE SnapshotId = {targetId}) WHERE Id = {targetId}", transaction);
+
+                transaction.Commit();
                 return targetId;
             }
+            catch
+            {
+                transaction.Rollback();
+                throw;
+            }
+        }
 
             // ========== EngineerRegistry Methods ==========
 
