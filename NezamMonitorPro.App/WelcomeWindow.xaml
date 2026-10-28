@@ -6,10 +6,10 @@
         WindowStartupLocation="CenterScreen"
         WindowStyle="None"
         ResizeMode="NoResize"
-        Background="White"
+        Background="{DynamicResource BackgroundBrush}"
         AllowsTransparency="True"
         Opacity="0.95">
-    <Border CornerRadius="12" BorderBrush="{DynamicResource ButtonPressedBrush}" BorderThickness="2" Background="White">
+    <Border CornerRadius="12" BorderBrush="{DynamicResource ButtonPressedBrush}" BorderThickness="2" Background="{DynamicResource CardBrush}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>

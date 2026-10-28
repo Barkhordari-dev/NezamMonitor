@@ -1,3 +1,5 @@
+using System.IO;
+using System.Text.Json;
 using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
@@ -9,6 +11,7 @@ namespace NezamMonitorPro.App;
 
 public partial class MainWindow : Window
 {
+    private string GetLayoutPath() => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "column_layout.json");
     private readonly MainViewModel _vm = new();
     private readonly NavigationService _nav;
     private readonly ThemeManager _themeManager;
@@ -31,9 +34,30 @@ public partial class MainWindow : Window
         ["settings"]      = ("تنظیمات", "تم، فونت، مسیرها و پشتیبان‌گیری"),
     };
 
+    private double _uiScale = 1.0;
+    private readonly ScaleTransform _uiScaleTransform = new ScaleTransform(1.0, 1.0);
+
+    private void Window_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+    {
+        if (System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control)
+        {
+            if (e.Delta > 0) _uiScale += 0.1;
+            else _uiScale -= 0.1;
+
+            _uiScale = Math.Max(0.7, Math.Min(1.5, _uiScale));
+
+            _uiScaleTransform.ScaleX = _uiScale;
+            _uiScaleTransform.ScaleY = _uiScale;
+            
+            e.Handled = true;
+        }
+    }
+
     public MainWindow()
     {
         InitializeComponent();
+        this.PreviewMouseWheel += Window_PreviewMouseWheel;
+        MainContentGrid.LayoutTransform = _uiScaleTransform;
         DataContext = _vm;
         _nav = App.Navigation;
         _nav.SetFrame(MainFrame);
@@ -78,13 +102,13 @@ public partial class MainWindow : Window
     {
         try
         {
-            if (Content is not Grid grid || grid.ColumnDefinitions.Count < 2) return;
+            if (Content is not Grid grid || grid.ColumnDefinitions.Count < 3) return;
 
             var sidebar = grid.ColumnDefinitions[0];
             if (!sidebar.Width.IsStar && sidebar.Width.Value < 180)
                 sidebar.Width = new GridLength(264);
 
-            var content = grid.ColumnDefinitions[1];
+            var content = grid.ColumnDefinitions[2];
             if (!content.Width.IsStar)
                 content.Width = new GridLength(1, GridUnitType.Star);
         }

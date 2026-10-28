@@ -104,7 +104,8 @@ public sealed class CasesViewModel : ViewModelBase
                 else if (!serviceForFee.TryGetValue(f, out svc!))
                     svc = "بیمه";
                 var pay = string.IsNullOrEmpty(f.PayStatus) || f.PayStatus == "_" ? "" : $" [{f.PayStatus}]";
-                return $"  {svc} مرحله {f.Stage}: {f.Amount}{pay}";
+                long amount = ParseFeeAmount(f.Amount);
+                return $"  {svc} مرحله {f.Stage}: {amount:N0} ریال{pay}";
             });
             DetailFees = string.Join("\n", lines);
         }

@@ -318,11 +318,34 @@ public partial class UpdateView : UserControl, INavigationAware
         UpdateButtonStates();
     }
 
+    /// <summary>نمایش/پنهان‌سازی رمز عبور واردشده (آیکون چشم).</summary>
+    private void TogglePassword_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            if (ShowPasswordToggle.IsChecked == true)
+            {
+                VisiblePasswordBox.Text = PasswordBox.Password;
+                PasswordBox.Visibility = Visibility.Collapsed;
+                VisiblePasswordBox.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                PasswordBox.Password = VisiblePasswordBox.Text;
+                PasswordBox.Visibility = Visibility.Visible;
+                VisiblePasswordBox.Visibility = Visibility.Collapsed;
+            }
+        }
+        catch (Exception ex) { Log("UpdateView.TogglePassword", ex); }
+    }
+
     private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
     {
         if (PasswordBox.IsLoaded)
         {
             _vm.Password = PasswordBox.Password;
+            if (VisiblePasswordBox != null && VisiblePasswordBox.Visibility == Visibility.Visible)
+                VisiblePasswordBox.Text = PasswordBox.Password;
 
             if (PasswordBox.Password.Length > 0)
             {

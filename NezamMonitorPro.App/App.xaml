@@ -62,6 +62,8 @@
                         <SolidColorBrush x:Key="SidebarActiveSoftBrush" Color="#26FFFFFF"/>
                         <SolidColorBrush x:Key="SidebarHoverBrush" Color="#14FFFFFF"/>
                         <SolidColorBrush x:Key="LogBackgroundBrush" Color="#0B1220"/>
+                        <SolidColorBrush x:Key="ShadowColorBrush" Color="#0B1B33"/>
+                        <Color x:Key="ShadowColor">#0B1B33</Color>
 
             <!-- ══ Flow direction defaults (RTL) — overridden by ThemeManager ══ -->
             <FlowDirection x:Key="MainWindowFlowDirection">RightToLeft</FlowDirection>

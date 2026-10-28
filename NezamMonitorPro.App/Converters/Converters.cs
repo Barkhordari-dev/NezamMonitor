@@ -277,3 +277,19 @@ public static class Watermark
         return g;
     }
 }
+
+/// <summary>
+/// Converts numeric string or long to "N0" formatted string (e.g., 1,234,567).
+/// </summary>
+public sealed class CurrencyStringConverter : IValueConverter
+{
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        string s = value?.ToString() ?? string.Empty;
+        if (long.TryParse(s.Replace(",", ""), out long val))
+            return val.ToString("N0", culture);
+        return string.IsNullOrEmpty(s) ? "0" : s;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+}

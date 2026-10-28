@@ -31,9 +31,10 @@ public sealed class NezamDatabase : IDisposable
 
     public void Dispose() { _conn.Dispose(); }
 
-    private void Execute(string sql)
+    private void Execute(string sql, SqliteTransaction? transaction = null)
     {
         using var cmd = _conn.CreateCommand();
+        if (transaction != null) cmd.Transaction = transaction;
         cmd.CommandText = sql;
         cmd.ExecuteNonQuery();
     }

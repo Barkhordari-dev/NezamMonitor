@@ -76,24 +76,32 @@ public partial class App : Application
             {
                 var logInfo = new FileInfo(logPath);
                 if (logInfo.Exists && logInfo.Length > 2 * 1024 * 1024) File.Delete(logPath);
+#if DEBUG
                 File.AppendAllText(logPath,
                     $"\n===== SESSION {DateTime.Now:yyyy-MM-dd HH:mm:ss} =====\n[{DateTime.Now}] OnStartup begin\n");
+#endif
             }
             catch { }
 
             // Global exception handlers
             DispatcherUnhandledException += (s, args) =>
             {
+#if DEBUG
                 try { File.AppendAllText(logPath, $"[{DateTime.Now}] Dispatcher exception: {args.Exception}\n"); } catch { }
+#endif
                 args.Handled = true;
             };
             AppDomain.CurrentDomain.UnhandledException += (s, args) =>
             {
+#if DEBUG
                 try { File.AppendAllText(logPath, $"[{DateTime.Now}] AppDomain exception: {args.ExceptionObject}\n"); } catch { }
+#endif
             };
             TaskScheduler.UnobservedTaskException += (s, args) =>
             {
+#if DEBUG
                 try { File.AppendAllText(logPath, $"[{DateTime.Now}] TaskScheduler exception: {args.Exception}\n"); } catch { }
+#endif
                 args.SetObserved();
             };
 
@@ -103,13 +111,17 @@ public partial class App : Application
             }
             catch (Exception ex)
             {
+#if DEBUG
                 try { File.AppendAllText(logPath, $"[{DateTime.Now}] InitializeDatabaseConnection exception: {ex}\n"); } catch { }
+#endif
                 MessageBox.Show($"خطا در پایگاه داده: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
                 return;
             }
 
+#if DEBUG
             try { File.AppendAllText(logPath, $"[{DateTime.Now}] OnStartup end\n"); } catch { }
+#endif
 
             // ── Headless verification mode: render each view to PNG and exit ──
             // Usage: NezamMonitorPro.exe --render <outDir>
@@ -309,7 +321,9 @@ public partial class App : Application
 
     private static void Log(string logPath, string message)
     {
+#if DEBUG
         try { File.AppendAllText(logPath, $"[{DateTime.Now}] {message}\n"); } catch { }
+#endif
     }
 
     // Helper to get real exe directory even in single-file bundle

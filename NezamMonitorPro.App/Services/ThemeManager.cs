@@ -123,6 +123,8 @@ public sealed class ThemeManager
         app.Resources["ZebraRowBrush"] = new SolidColorBrush(HexToColor(theme.Colors.ZebraRow));
         app.Resources["TableRowHoverBrush"] = new SolidColorBrush(HexToColor(theme.Colors.TableRowHover));
         app.Resources["TableRowSelectedBrush"] = new SolidColorBrush(HexToColor(theme.Colors.TableRowSelected));
+        app.Resources["ShadowColorBrush"] = new SolidColorBrush(HexToColor(theme.Colors.ShadowColor));
+        app.Resources["ShadowColor"] = HexToColor(theme.Colors.ShadowColor);
         app.Resources["LogBackgroundBrush"] = new SolidColorBrush(HexToColor(theme.Colors.LogBackground));
 
         // Fonts
@@ -133,6 +135,7 @@ public sealed class ThemeManager
         app.Resources["ButtonFontSize"] = theme.Fonts.ButtonFontSize;
         app.Resources["InputFontSize"] = theme.Fonts.InputFontSize;
         app.Resources["LabelFontSize"] = theme.Fonts.LabelFontSize;
+        app.Resources["CaptionFontSize"] = theme.Fonts.LabelFontSize - 1.5;
         app.Resources["LogFontSize"] = theme.Fonts.LogFontSize;
         app.Resources["SidebarFontSize"] = theme.Fonts.SidebarFontSize;
 
@@ -174,16 +177,12 @@ public sealed class ThemeManager
                         mainGrid.ColumnDefinitions.Count >= 2)
                     {
                         var sidebarCol = mainGrid.ColumnDefinitions[0];
-                        if (!sidebarCol.Width.IsStar)
-                        {
-                            var width = theme.Dimensions.SidebarWidth;
-                            if (width < 180) width = 180;   // جلوگیری از عرض غیرقابل‌استفاده
-                            sidebarCol.Width = new System.Windows.GridLength(width);
-                        }
+                        // حذف تغییر عرض دستی برای جلوگیری از شکنندگی
+                        // sidebarCol.Width = new System.Windows.GridLength(width);
+
 
                         var contentCol = mainGrid.ColumnDefinitions[1];
-                        if (!contentCol.Width.IsStar)
-                            contentCol.Width = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star);
+                        // contentCol.Width = new System.Windows.GridLength(1, System.Windows.GridUnitType.Star);
                     }
                 }
                 catch { }
@@ -207,20 +206,25 @@ public sealed class ThemeManager
         try
         {
             if (string.IsNullOrWhiteSpace(name)) name = "Vazir";
+            
+            // ساخت زنجیره فونت برای Fallback استاندارد (فونت انتخابی کاربر -> تاهوما -> آریال)
+            string fallbackChain = $"{name}, Tahoma, Arial";
+
             if (name.StartsWith("pack://", StringComparison.OrdinalIgnoreCase))
                 return new FontFamily(name);
 
             if (string.Equals(name, "Vazir", StringComparison.OrdinalIgnoreCase))
             {
                 var uri = new Uri("pack://application:,,,/Fonts/Vazirmatn-Regular.ttf", UriKind.Absolute);
-                return new FontFamily(uri, "#Vazir");
+                // WPF از کاما برای لیست Fallback در FontFamily پشتیبانی می‌کند
+                return new FontFamily($"{uri}#Vazir, Tahoma, Arial");
             }
 
-            return new FontFamily(name);
+            return new FontFamily(fallbackChain);
         }
         catch
         {
-            try { return new FontFamily("Tahoma"); }
+            try { return new FontFamily("Tahoma, Arial"); }
             catch { return new FontFamily(); }
         }
     }

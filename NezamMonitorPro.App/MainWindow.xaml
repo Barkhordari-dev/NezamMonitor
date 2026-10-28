@@ -89,21 +89,19 @@
         <KeyBinding Key="D" Modifiers="Ctrl" Command="{Binding GoToDashboardCommand}"/>
     </Window.InputBindings>
 
-    <!-- ═══════════════ ساختار اصلی: دو ستون (سایدبار | محتوا) ═══════════════ -->
+    <!-- ═══════════════ ساختار اصلی: سه ستون (سایدبار | جداکننده | محتوا) ═══════════════ -->
     <Grid>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition x:Name="SidebarColumn" Width="264"/>
+            <!-- ستون سایدبار (سمت راست در RTL) -->
+            <ColumnDefinition x:Name="SidebarColumn" Width="264" MinWidth="240" MaxWidth="400"/>
+            <!-- ستون جداکننده -->
+            <ColumnDefinition Width="8"/>
+            <!-- ستون محتوای اصلی (سمت چپ در RTL) -->
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
 
         <!-- ════════════════ SIDEBAR ════════════════ -->
-        <Border x:Name="SidebarBorder" Grid.Column="0">
-            <Border.Background>
-                <LinearGradientBrush StartPoint="0,0" EndPoint="0.4,1">
-                    <GradientStop Color="#1E293B" Offset="0"/>
-                    <GradientStop Color="#0F172A" Offset="1"/>
-                </LinearGradientBrush>
-            </Border.Background>
+        <Border x:Name="SidebarBorder" Grid.Column="0" ClipToBounds="True" Background="{DynamicResource SidebarBrush}">
 
             <Grid>
                 <Grid.RowDefinitions>
@@ -112,6 +110,7 @@
                     <RowDefinition Height="*"/>
                     <RowDefinition Height="Auto"/>
                 </Grid.RowDefinitions>
+
 
                 <!-- ─── برند ─── -->
                 <Grid Grid.Row="0" Margin="18,22,18,14">
@@ -268,31 +267,16 @@
                 <!-- ─── فوتر ─── -->
                 <Border Grid.Row="3" Background="#40000000" Padding="16,14">
                     <StackPanel>
-                        <Grid Margin="0,0,0,10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="Auto"/>
-                                <ColumnDefinition Width="*"/>
-                            </Grid.ColumnDefinitions>
-                            <Border Grid.Column="0" Width="32" Height="32" CornerRadius="9" Background="#1AFFFFFF">
-                                <TextBlock Text="&#xE77B;" FontFamily="{DynamicResource IconFontFamily}"
-                                           FontSize="14" Foreground="#B8C6D8"
-                                           HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                            </Border>
-                            <StackPanel Grid.Column="1" Margin="10,0,0,0" VerticalAlignment="Center"
-                                        FlowDirection="RightToLeft">
-                                <TextBlock Text="تولید و توسعه توسط مهندس محمد مهدی برخورداری" FontSize="11"
-                                           Foreground="#E4EBF4" FontWeight="SemiBold"
-                                           TextWrapping="Wrap" HorizontalAlignment="Stretch"
-                                           TextAlignment="Center" LineHeight="17"/>
-                                <TextBlock Text="راه ارتباطی:" FontSize="10.5" Foreground="#9FB3CC"
-                                           HorizontalAlignment="Stretch" TextAlignment="Center" Margin="0,4,0,0"/>
-                                <TextBlock Text="mmahdib2020@gmail.com" FontSize="10.5" Foreground="#E4EBF4"
-                                           FontFamily="Segoe UI"
-                                           FlowDirection="LeftToRight"
-                                           HorizontalAlignment="Stretch" TextAlignment="Center"
-                                           Margin="0,2,0,0"/>
-                            </StackPanel>
-                        </Grid>
+                        <StackPanel Margin="10,15">
+                            <TextBlock Text="تولید و توسعه" FontSize="11" Foreground="#8FA3BC" TextAlignment="Center" HorizontalAlignment="Center"/>
+                            <TextBlock Text="مهندس محمد مهدی برخورداری" FontSize="13" FontWeight="Bold" Foreground="#E4EBF4" TextAlignment="Center" HorizontalAlignment="Center" Padding="4,4" Margin="0,4,0,12"/>
+
+                            <TextBlock Text="راه ارتباطی:" FontSize="10" Foreground="#8FA3BC" TextAlignment="Center" HorizontalAlignment="Center"/>
+                            <TextBlock Text="mmahdib2020@gmail.com" FontSize="11" Foreground="#E4EBF4" FontFamily="Segoe UI" 
+                                       TextAlignment="Center" HorizontalAlignment="Center" 
+                                       Margin="0,2,0,0" FlowDirection="LeftToRight" 
+                                       TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"/>
+                        </StackPanel>
                         <Border Background="#14FFFFFF" CornerRadius="8" Padding="10,6">
                             <Grid>
                                 <TextBlock Text="دیتابیس محلی · رمزنگاری‌شده" FontSize="10"
@@ -307,9 +291,19 @@
             </Grid>
         </Border>
 
+        <!-- جداکننده -->
+        <GridSplitter Grid.Column="1" 
+                      Width="8" 
+                      HorizontalAlignment="Stretch" 
+                      VerticalAlignment="Stretch"
+                      Background="Transparent" 
+                      ShowsPreview="False" 
+                      ResizeDirection="Columns"
+                      ResizeBehavior="PreviousAndNext"
+                      Cursor="SizeWE"/>
+
         <!-- ════════════════ MAIN AREA ════════════════ -->
-        <Grid x:Name="MainContentGrid" Grid.Column="1"
-              HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid x:Name="MainContentGrid" Grid.Column="2" ClipToBounds="True">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
@@ -413,5 +407,8 @@
                 </Grid>
             </Border>
         </Grid>
+
+
+
     </Grid>
 </Window>

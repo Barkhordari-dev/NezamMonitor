@@ -63,6 +63,9 @@ write_*.py
 Thumbs.db
 Desktop.ini
 *.log
+startup.log
+column_layout.json
+credentials.json
 *.tmp
 .DS_Store
 

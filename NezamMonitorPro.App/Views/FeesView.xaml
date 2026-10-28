@@ -15,10 +15,10 @@
             <TextBlock Grid.Column="0" Text="💰 حق‌الزحمه" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold"
                        VerticalAlignment="Center" Margin="0,0,16,0" FontFamily="Vazir"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button Content="💰 حق‌الزحمه" Width="120" Height="32" Margin="0,0,6,0"
+                <Button Content="💰 حق‌الزحمه" Height="32" Margin="0,0,6,0"
                         FontFamily="Vazir" FontSize="14" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
                         Click="TabFee_Click" x:Name="BtnTabFee" Background="{DynamicResource PrimaryBrush}" Foreground="White"/>
-                <Button Content="📥 دریافتی" Width="120" Height="32"
+                <Button Content="📥 دریافتی" Height="32"
                         FontFamily="Vazir" FontSize="14" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
                         Click="TabReceipt_Click" x:Name="BtnTabReceipt" Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}"/>
             </StackPanel>
@@ -158,7 +158,7 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Border Grid.Row="0" Background="White" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <Border Grid.Row="0" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>

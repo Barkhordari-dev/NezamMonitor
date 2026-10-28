@@ -26,7 +26,7 @@
             </Border>
 
             <!-- Output Path Section -->
-            <Border Grid.Row="2" Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15"
+            <Border Grid.Row="2" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="15" Margin="0,0,0,15"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>

@@ -18,12 +18,12 @@
                        VerticalAlignment="Center" Margin="0,0,20,0"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
                 <Button Content="📝 تولید گزارش" Command="{Binding SwitchToGenerateCommand}"
-                        Width="140" Height="32" Margin="0,0,5,0"
+                        Height="32" Margin="0,0,5,0"
                         Background="{Binding ActiveTab, Converter={StaticResource TabBgConverter}, ConverterParameter=0}"
                         Foreground="{Binding ActiveTab, Converter={StaticResource TabFgConverter}, ConverterParameter=0}"
                         FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"/>
                 <Button Content="📚 گزارش‌های تولیدشده" Command="{Binding SwitchToHistoryCommand}"
-                        Width="170" Height="32"
+                        Height="32"
                         Background="{Binding ActiveTab, Converter={StaticResource TabBgConverter}, ConverterParameter=1}"
                         Foreground="{Binding ActiveTab, Converter={StaticResource TabFgConverter}, ConverterParameter=1}"
                         FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"/>
@@ -35,7 +35,7 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
                     <!-- Settings Card -->
-                    <Border Background="White" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                    <Border Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                         <StackPanel>
                             <TextBlock Text="تنظیم تولید" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
                             <Grid>
@@ -166,14 +166,14 @@
                                             </StackPanel>
                                         </Border>
                     <!-- Action Buttons -->
-                                        <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                                            <Button Content="🔄 اسکن پرونده‌ها" Command="{Binding ScanCommand}" Width="120" Height="32" Background="{DynamicResource PrimaryBrush}" Foreground="White" Margin="0,0,5,0"/>
-                                            <Button Content="⏹ لغو اسکن" Command="{Binding CancelScanCommand}" Width="100" Height="32" Background="{DynamicResource ErrorBrush}" Foreground="White" Margin="0,0,5,0" IsEnabled="{Binding IsScanning}"/>
-                                            <Button Content="👁 پیش‌نمایش" Command="{Binding PreviewCommand}" Width="100" Height="32" Background="{DynamicResource AccentBrush}" Foreground="White" Margin="0,0,5,0"/>
-                                            <Button Content="☑️ انتخاب همه" Command="{Binding SelectAllCommand}" Width="100" Height="32" Background="{DynamicResource SuccessBrush}" Foreground="White" Margin="0,0,5,0"/>
-                                            <Button Content="☐ حذف انتخاب" Command="{Binding DeselectAllCommand}" Width="100" Height="32" Background="{DynamicResource ErrorBrush}" Foreground="White" Margin="0,0,10,0"/>
-                                            <Button Content="📝 تولید گزارش‌های انتخاب‌شده" Command="{Binding GenerateCommand}" Width="210" Height="32" Background="{DynamicResource WarningBrush}" Foreground="White" FontWeight="Bold"/>
-                                        </StackPanel>
+                                        <WrapPanel Orientation="Horizontal" Margin="0,0,0,15">
+                                            <Button Content="🔄 اسکن پرونده‌ها" Command="{Binding ScanCommand}" Height="32" Background="{DynamicResource PrimaryBrush}" Foreground="White" Margin="0,0,5,5"/>
+                                            <Button Content="⏹ لغو اسکن" Command="{Binding CancelScanCommand}" Height="32" Background="{DynamicResource ErrorBrush}" Foreground="White" Margin="0,0,5,5" IsEnabled="{Binding IsScanning}"/>
+                                            <Button Content="👁 پیش‌نمایش" Command="{Binding PreviewCommand}" Height="32" Background="{DynamicResource AccentBrush}" Foreground="White" Margin="0,0,5,5"/>
+                                            <Button Content="☑️ انتخاب همه" Command="{Binding SelectAllCommand}" Height="32" Background="{DynamicResource SuccessBrush}" Foreground="White" Margin="0,0,5,5"/>
+                                            <Button Content="☐ حذف انتخاب" Command="{Binding DeselectAllCommand}" Height="32" Background="{DynamicResource ErrorBrush}" Foreground="White" Margin="0,0,10,5"/>
+                                            <Button Content="📝 تولید گزارش‌های انتخاب‌شده" Command="{Binding GenerateCommand}" Height="32" Background="{DynamicResource WarningBrush}" Foreground="White" FontWeight="Bold" Margin="0,0,0,5"/>
+                                        </WrapPanel>
                     <!-- Progress -->
                     <Grid Margin="0,0,0,15">
                         <ProgressBar Height="18" Value="{Binding Progress}" Maximum="100" Foreground="{DynamicResource SuccessBrush}" Background="{DynamicResource PanelBrush}" BorderThickness="0"/>
@@ -215,7 +215,7 @@
                               HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
                               CanUserSortColumns="True"
                               MouseRightButtonUp="CaseGrid_MouseRightButtonUp" FlowDirection="{DynamicResource TableFlowDirection}"
-                              RowBackground="White">
+                              RowBackground="{DynamicResource CardBrush}">
                         <DataGrid.RowStyle>
                             <Style TargetType="DataGridRow">
                                 <Style.Triggers>
@@ -250,14 +250,14 @@
         <Border Grid.Row="1" Visibility="{Binding ActiveTab, Converter={StaticResource TabToVisConverter}, ConverterParameter=1}">
             <ScrollViewer VerticalScrollBarVisibility="Auto">
                 <StackPanel>
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,15">
-                        <TextBlock Text="📚 گزارش‌های تولیدشده" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                        <Button Content="🔄" Command="{Binding RefreshHistoryCommand}" Width="26" Height="26" Background="{DynamicResource PrimaryBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <Button Content="🔄 بروزرسانی" Command="{Binding SyncOutputCommand}" Width="90" Height="26" Background="{DynamicResource SuccessBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0"/>
-                        <Button Content="☑️ انتخاب همه" Click="History_SelectAll" Width="100" Height="26" Background="{DynamicResource AccentBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0" ToolTip="انتخاب همه ردیف‌های جدول"/>
-                        <Button Content="🗑 حذف انتخاب‌شده" Click="History_DeleteSelected" Width="120" Height="26" Background="{DynamicResource ErrorBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,0" ToolTip="حذف لاگ ردیف‌های انتخاب‌شده"/>
-                        <Button Content="🗑 حذف فایل و لاگ" Click="History_DeleteSelectedWithFile" Width="120" Height="26" Background="{DynamicResource ErrorBrush}" Foreground="White" VerticalAlignment="Center" ToolTip="حذف فایل و لاگ ردیف‌های انتخاب‌شده"/>
-                    </StackPanel>
+                    <WrapPanel Orientation="Horizontal" Margin="0,0,0,15">
+                        <TextBlock Text="📚 گزارش‌های تولیدشده" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,15,5"/>
+                        <Button Content="🔄" Command="{Binding RefreshHistoryCommand}" Height="26" Background="{DynamicResource PrimaryBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,5"/>
+                        <Button Content="🔄 بروزرسانی" Command="{Binding SyncOutputCommand}" Height="26" Background="{DynamicResource SuccessBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,5"/>
+                        <Button Content="☑️ انتخاب همه" Click="History_SelectAll" Height="26" Background="{DynamicResource AccentBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,5" ToolTip="انتخاب همه ردیف‌های جدول"/>
+                        <Button Content="🗑 حذف انتخاب‌شده" Click="History_DeleteSelected" Height="26" Background="{DynamicResource ErrorBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,5,5" ToolTip="حذف لاگ ردیف‌های انتخاب‌شده"/>
+                        <Button Content="🗑 حذف فایل و لاگ" Click="History_DeleteSelectedWithFile" Height="26" Background="{DynamicResource ErrorBrush}" Foreground="White" VerticalAlignment="Center" Margin="0,0,0,5" ToolTip="حذف فایل و لاگ ردیف‌های انتخاب‌شده"/>
+                    </WrapPanel>
                     <TextBlock Text="{Binding SyncMessage}" Foreground="{DynamicResource SuccessBrush}" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" Margin="0,0,0,10" Visibility="{Binding SyncMessage, Converter={StaticResource StringToVisConverter}}"/>
                     <!-- Filters -->
                     <Grid Margin="0,0,0,15">

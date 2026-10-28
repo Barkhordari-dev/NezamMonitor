@@ -434,15 +434,24 @@
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
-                            <TextBlock Text="نام کاربری" Style="{StaticResource FieldLabel}"/>
+                            <TextBlock Text="نام کاربری" Style="{StaticResource FieldLabel}" HorizontalAlignment="Center"/>
                             <TextBox x:Name="UsernameBox" Style="{StaticResource SoftTextBox}"
+                                     FlowDirection="LeftToRight" FontFamily="Segoe UI"
                                      Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
-                            <TextBlock Text="رمز عبور" Style="{StaticResource FieldLabel}"/>
-                            <PasswordBox x:Name="PasswordBox" Style="{StaticResource SoftPasswordBox}"
-                                         PasswordChanged="PasswordBox_PasswordChanged"/>
+                            <TextBlock Text="رمز عبور" Style="{StaticResource FieldLabel}" HorizontalAlignment="Center"/>
+                            <Grid Width="240">
+                                <PasswordBox x:Name="PasswordBox" Style="{StaticResource SoftPasswordBox}"
+                                             FlowDirection="LeftToRight" FontFamily="Segoe UI"
+                                             PasswordChanged="PasswordBox_PasswordChanged"/>
+                                <TextBox x:Name="VisiblePasswordBox" Style="{StaticResource SoftTextBox}" 
+                                         FlowDirection="LeftToRight" FontFamily="Segoe UI"
+                                         Visibility="Collapsed" IsReadOnly="True"/>
+                                <ToggleButton x:Name="ShowPasswordToggle" Width="30" Height="30" HorizontalAlignment="Right"
+                                              Style="{StaticResource EyeButtonStyle}" Click="TogglePassword_Click"/>
+                            </Grid>
                         </StackPanel>
                     </Grid>
 
@@ -547,7 +556,7 @@
                             <!-- icon on the right of the label (RTL convention) -->
                             <TextBlock Text="&#xE896;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
                                        Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBlock Text="شروع همگامسازی" VerticalAlignment="Center"/>
+                            <TextBlock Text="شروع همگام سازی" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 

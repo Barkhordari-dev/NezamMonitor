@@ -19,7 +19,7 @@
         <TextBlock Grid.Row="0" Text="📋 پیگیری پرونده‌ها" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,0,15"/>
 
         <!-- پنل فیلتر -->
-        <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="12" Margin="0,0,0,15"
+        <Border Grid.Row="1" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,15"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
             <Grid>
                 <Grid.ColumnDefinitions>

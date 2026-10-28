@@ -50,6 +50,8 @@ public sealed class ThemeColors
     /// <summary>Light tint used for the selected table row.</summary>
     public string TableRowSelected { get; set; } = "#FFE0E7FF";
 
+    public string ShadowColor { get; set; } = "#FF0B1B33";
+
     public ThemeColors Clone()
     {
         return (ThemeColors)MemberwiseClone();
@@ -226,6 +228,7 @@ public sealed class ThemeColors
             ["ZebraRow"] = ZebraRow,
             ["TableRowHover"] = TableRowHover,
             ["TableRowSelected"] = TableRowSelected,
+            ["ShadowColor"] = ShadowColor,
         };
     }
 

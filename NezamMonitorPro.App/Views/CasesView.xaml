@@ -93,7 +93,7 @@
                       DragCompleted="GridSplitter_DragCompleted"/>
 
         <!-- Detail Panel -->
-        <Border x:Name="DetailPanel" Grid.Row="3" Background="White" CornerRadius="8" Padding="15"
+        <Border x:Name="DetailPanel" Grid.Row="3" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="15"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" FlowDirection="RightToLeft"
                 Visibility="{Binding HasDetail, Converter={StaticResource BoolToVisConverter}}">
             <Grid>
