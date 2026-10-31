@@ -108,6 +108,7 @@ public sealed class SettingsViewModel : ViewModelBase
     public ICommand ResetCommand { get; }
     public ICommand FactoryResetCommand { get; }
     public ICommand ImportAndroidCommand { get; }
+    public ICommand ChangePasswordCommand { get; }
 
     public SettingsViewModel(Services.ThemeManager themeManager, string dbPath = "")
     {
@@ -123,6 +124,7 @@ public sealed class SettingsViewModel : ViewModelBase
         ResetCommand = new RelayCommand(ResetToDefault);
         FactoryResetCommand = new RelayCommand(ExecuteFactoryReset);
         ImportAndroidCommand = new RelayCommand(ExecuteImportAndroid);
+        ChangePasswordCommand = new RelayCommand(ExecuteChangePassword);
 
         LoadThemeToUI(_theme);
     }
@@ -331,6 +333,15 @@ public sealed class SettingsViewModel : ViewModelBase
             StatusMessage = $"✅ {result.Message}";
         else
             StatusMessage = $"❌ خطا: {string.Join(", ", result.Errors)}";
+    }
+
+    private void ExecuteChangePassword()
+    {
+        var window = new NezamMonitorPro.App.Views.ChangePasswordWindow();
+        if (window.ShowDialog() == true)
+        {
+            StatusMessage = "✅ رمز عبور با موفقیت تغییر کرد ✓";
+        }
     }
 }
 

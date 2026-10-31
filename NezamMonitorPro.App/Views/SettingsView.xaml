@@ -242,6 +242,34 @@
                 </StackPanel>
             </Border>
 
+            <!-- ════════════ Security / Password ════════════ -->
+            <Border Style="{StaticResource SettingsCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Width="34" Height="34" CornerRadius="10" Background="#1A10B981" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE72E;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="{DynamicResource SuccessBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="امنیت و رمز عبور" Style="{StaticResource SettingsCardTitle}"/>
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="تغییر رمز عبور ورود و رمزنگاری پایگاه داده برنامه" Style="{StaticResource SettingsFieldLabel}"
+                                   VerticalAlignment="Center" Margin="0,0,0,0" TextWrapping="Wrap"/>
+                        <Button Grid.Column="2" Style="{StaticResource SettingsPrimaryButton}"
+                                Command="{Binding ChangePasswordCommand}" Content="تغییر رمز عبور..."
+                                MinWidth="160"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- ════════════ Status ════════════ -->
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,14"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
