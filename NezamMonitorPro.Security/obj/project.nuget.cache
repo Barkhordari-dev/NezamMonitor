@@ -1,0 +1,18 @@
+{
+  "version": 2,
+  "dgSpecHash": "MUmUrDN7jNg=",
+  "success": true,
+  "projectFilePath": "E:\\NezamMonitorPro.Security\\NezamMonitorPro.Security.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\konscious.security.cryptography.argon2\\1.3.0\\konscious.security.cryptography.argon2.1.3.0.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\konscious.security.cryptography.blake2\\1.1.0\\konscious.security.cryptography.blake2.1.1.0.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\microsoft.data.sqlite.core\\8.0.0\\microsoft.data.sqlite.core.8.0.0.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\microsoft.extensions.dependencyinjection.abstractions\\8.0.0\\microsoft.extensions.dependencyinjection.abstractions.8.0.0.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\sqlitepclraw.bundle_e_sqlcipher\\2.1.11\\sqlitepclraw.bundle_e_sqlcipher.2.1.11.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\sqlitepclraw.core\\2.1.11\\sqlitepclraw.core.2.1.11.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\sqlitepclraw.lib.e_sqlcipher\\2.1.11\\sqlitepclraw.lib.e_sqlcipher.2.1.11.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\sqlitepclraw.provider.e_sqlcipher\\2.1.11\\sqlitepclraw.provider.e_sqlcipher.2.1.11.nupkg.sha512",
+    "C:\\Users\\m.barkhordari\\.nuget\\packages\\system.memory\\4.5.4\\system.memory.4.5.4.nupkg.sha512"
+  ],
+  "logs": []
+}

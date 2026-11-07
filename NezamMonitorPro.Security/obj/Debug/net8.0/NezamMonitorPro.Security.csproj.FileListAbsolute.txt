@@ -1,0 +1,12 @@
+E:\NezamMonitorPro.Security\bin\Debug\net8.0\NezamMonitorPro.Security.deps.json
+E:\NezamMonitorPro.Security\bin\Debug\net8.0\NezamMonitorPro.Security.dll
+E:\NezamMonitorPro.Security\bin\Debug\net8.0\NezamMonitorPro.Security.pdb
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\NezamMonitorPro.Security.csproj.AssemblyReference.cache
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\NezamMonitorPro.Security.GeneratedMSBuildEditorConfig.editorconfig
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\NezamMonitorPro.Security.AssemblyInfoInputs.cache
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\NezamMonitorPro.Security.AssemblyInfo.cs
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\NezamMonitorPro.Security.csproj.CoreCompileInputs.cache
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\NezamMonitorPro.Security.dll
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\refint\NezamMonitorPro.Security.dll
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\NezamMonitorPro.Security.pdb
+E:\NezamMonitorPro.Security\obj\Debug\net8.0\ref\NezamMonitorPro.Security.dll
