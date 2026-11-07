@@ -16,8 +16,17 @@ public sealed class UpdateViewModel : ViewModelBase
         SetProperty(ref _username, value);
         try { _db.SaveSetting("username", value); } catch { }
     } }
-    public string Password { get => _password; set => SetProperty(ref _password, value); }
-    public bool RememberMe { get => _rememberMe; set => SetProperty(ref _rememberMe, value); }
+    public string Password { get => _password; set {
+        if (_password == value) return;
+        SetProperty(ref _password, value);
+        // The saved password only stays saved while "remember me" is on.
+        try { if (_rememberMe && value.Length > 0) _db.SaveSetting("password", value); } catch { }
+    } }
+    public bool RememberMe { get => _rememberMe; set {
+        if (_rememberMe == value) return;
+        SetProperty(ref _rememberMe, value);
+        try { _db.SaveSetting("remember_me", value ? "true" : "false"); } catch { }
+    } }
 
     public UpdateViewModel(NezamDatabase db)
     {
@@ -27,6 +36,7 @@ public sealed class UpdateViewModel : ViewModelBase
             var settings = _db.LoadSettings();
             if (settings.TryGetValue("username", out var u)) _username = u;
             if (settings.TryGetValue("password", out var p)) _password = p;
+            if (settings.TryGetValue("remember_me", out var r)) _rememberMe = r == "true";
         }
         catch { }
     }

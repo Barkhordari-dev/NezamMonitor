@@ -38,6 +38,13 @@ public partial class UpdateView : UserControl, INavigationAware
         {
             SubscribeController();
             UpdateButtonStates();
+            // Show the saved password as dots in the password box (it was
+            // loaded into the ViewModel but PasswordBox.Password is not
+            // bindable, so it stayed empty until now). The eye button then
+            // reveals exactly this saved password.
+            if (PasswordBox != null && string.IsNullOrEmpty(PasswordBox.Password)
+                && !string.IsNullOrEmpty(_vm.Password))
+                PasswordBox.Password = _vm.Password;
             if (!_initialized)
             {
                 _initialized = true;
@@ -339,6 +346,13 @@ public partial class UpdateView : UserControl, INavigationAware
         catch (Exception ex) { Log("UpdateView.TogglePassword", ex); }
     }
 
+    /// <summary>Editing the revealed password keeps the ViewModel in sync.</summary>
+    private void VisiblePasswordBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        if (VisiblePasswordBox.IsLoaded && VisiblePasswordBox.Visibility == Visibility.Visible)
+            _vm.Password = VisiblePasswordBox.Text;
+    }
+
     private void PasswordBox_PasswordChanged(object sender, RoutedEventArgs e)
     {
         if (PasswordBox.IsLoaded)
@@ -346,16 +360,8 @@ public partial class UpdateView : UserControl, INavigationAware
             _vm.Password = PasswordBox.Password;
             if (VisiblePasswordBox != null && VisiblePasswordBox.Visibility == Visibility.Visible)
                 VisiblePasswordBox.Text = PasswordBox.Password;
-
-            if (PasswordBox.Password.Length > 0)
-            {
-                var db = DatabaseService.Instance;
-                var rememberMe = db.GetSetting("remember_me");
-                if (rememberMe == "true")
-                {
-                    db.SaveSetting("password", PasswordBox.Password);
-                }
-            }
+            // Saving is decided by the live "remember me" checkbox, via the
+            // Password property setter — not by the previously stored value.
         }
     }
 

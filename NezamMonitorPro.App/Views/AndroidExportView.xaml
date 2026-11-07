@@ -30,39 +30,39 @@
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <Grid>
                     <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     
                     <TextBlock Grid.Column="0" Text="مسیر ذخیره:" VerticalAlignment="Center" FontWeight="Bold" 
                                FontSize="{DynamicResource FontSize}" Margin="0,0,10,0"/>
-                    <TextBox Grid.Column="1" Text="{Binding OutputPath, Mode=OneWay}" IsReadOnly="True" 
-                             Width="300" Height="34" VerticalContentAlignment="Center" FontSize="{DynamicResource InputFontSize}" Margin="0,0,10,0"/>
+                    <TextBox Grid.Column="1" Text="{Binding OutputPath, Mode=OneWay}" IsReadOnly="True"
+                             MinWidth="200" Height="34" VerticalContentAlignment="Center" FontSize="{DynamicResource InputFontSize}" Margin="0,0,10,0"/>
                     <Button Grid.Column="2" Content="📁 انتخاب مسیر" Command="{Binding BrowseCommand}" 
-                            Height="30" Width="120" Background="{DynamicResource PrimaryBrush}" Foreground="White" 
+                            MinWidth="120" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" 
                             FontSize="{DynamicResource ButtonFontSize}" VerticalAlignment="Center"/>
                 </Grid>
             </Border>
 
             <!-- Status -->
-            <Border Grid.Row="3" Background="{DynamicResource TextBrush}" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+            <Border Grid.Row="3" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="15" Margin="0,0,0,15" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <StackPanel>
-                    <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource SuccessBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
+                    <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource SuccessTextBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
                     
                     <!-- Progress indicator -->
                     <ProgressBar IsIndeterminate="{Binding IsExporting}" Height="6" Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource SuccessBrush}" Margin="0,0,0,10"/>
                     
                     <!-- Export info -->
-                    <TextBlock Text="{Binding LastExportInfo}" TextWrapping="Wrap" Foreground="{DynamicResource PanelBrush}" 
+                    <TextBlock Text="{Binding LastExportInfo}" TextWrapping="Wrap" Foreground="{DynamicResource TextBrush}" 
                                FontSize="{DynamicResource LabelFontSize}" LineHeight="22"/>
                 </StackPanel>
             </Border>
 
             <!-- Export Button -->
             <Button Grid.Row="4" Content="📦 ایجاد خروجی اندروید" Command="{Binding ExportCommand}" 
-                    Height="45" Background="{DynamicResource SuccessBrush}" Foreground="White" FontSize="{DynamicResource FontSize}" 
-                    FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,15" Width="250"/>
+                    MinHeight="45" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontSize="{DynamicResource FontSize}" 
+                    FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,15" MinWidth="250"/>
         </Grid>
     </ScrollViewer>
 </UserControl>

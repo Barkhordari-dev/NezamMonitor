@@ -13,13 +13,13 @@
 
         <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
             <Button Content="📊 ساخت فایل اکسل" Command="{Binding ExportCommand}"
-                    Width="160" Height="35" Background="{DynamicResource SuccessBrush}" Foreground="White" FontWeight="Bold" Margin="0,0,10,0"
+                    MinWidth="160" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontWeight="Bold" Margin="0,0,10,0"
                     FontSize="{DynamicResource ButtonFontSize}"/>
             <Button Content="📁 باز کردن پوشه" Command="{Binding OpenFolderCommand}"
-                    Width="130" Height="35" Background="{DynamicResource PrimaryBrush}" Foreground="White" Margin="0,0,10,0"
+                    MinWidth="130" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" Margin="0,0,10,0"
                     FontSize="{DynamicResource ButtonFontSize}"/>
             <Button Content="🔄 بروزرسانی" Command="{Binding RefreshCommand}"
-                    Width="100" Height="35" Background="{DynamicResource TextSecondaryBrush}" Foreground="White"
+                    MinWidth="100" Background="{DynamicResource TextSecondaryBrush}" Foreground="{DynamicResource OnSecondaryBrush}"
                     FontSize="{DynamicResource ButtonFontSize}"/>
         </StackPanel>
 

@@ -56,6 +56,21 @@
                         <SolidColorBrush x:Key="WarningBrush" Color="#D97706"/>
                         <SolidColorBrush x:Key="ErrorBrush" Color="#DC2626"/>
                         <SolidColorBrush x:Key="InfoBrush" Color="#2563EB"/>
+                        <!-- Defaults for the derived brushes ThemeManager sets
+                             in ApplyTheme; present here so DynamicResource
+                             lookups resolve even before the first ApplyTheme. -->
+                        <SolidColorBrush x:Key="OnPrimaryBrush" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="OnAccentBrush" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="OnSuccessBrush" Color="#111827"/>
+                        <SolidColorBrush x:Key="OnWarningBrush" Color="#111827"/>
+                        <SolidColorBrush x:Key="OnErrorBrush" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="OnInfoBrush" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="OnSecondaryBrush" Color="#FFFFFF"/>
+                        <SolidColorBrush x:Key="PrimaryTextBrush" Color="#1D4ED8"/>
+                        <SolidColorBrush x:Key="AccentTextBrush" Color="#6D28D9"/>
+                        <SolidColorBrush x:Key="SuccessTextBrush" Color="#047857"/>
+                        <SolidColorBrush x:Key="WarningTextBrush" Color="#92400E"/>
+                        <SolidColorBrush x:Key="ErrorTextBrush" Color="#B91C1C"/>
                         <SolidColorBrush x:Key="SidebarBrush" Color="#1E293B"/>
                         <SolidColorBrush x:Key="SidebarTextBrush" Color="#F8FAFC"/>
                         <SolidColorBrush x:Key="SidebarActiveBrush" Color="#2563EB"/>
@@ -69,6 +84,10 @@
             <FlowDirection x:Key="MainWindowFlowDirection">RightToLeft</FlowDirection>
             <FlowDirection x:Key="TextFlowDirection">RightToLeft</FlowDirection>
             <FlowDirection x:Key="TableFlowDirection">RightToLeft</FlowDirection>
+            <!-- Table text alignment (default Center; user-selectable in
+                 Settings, persisted as theme_TableAlignment). -->
+            <TextAlignment x:Key="TableTextAlignment">Center</TextAlignment>
+            <HorizontalAlignment x:Key="TableContentAlignment">Center</HorizontalAlignment>
             <FlowDirection x:Key="MenuFlowDirection">RightToLeft</FlowDirection>
 
             <!-- ══ Global window / control defaults ══ -->

@@ -31,7 +31,7 @@
                        Margin="30,20" Foreground="{DynamicResource TextBrush}"/>
 
             <Button Grid.Row="2" x:Name="CloseBtn" Content="بستن"
-                    Width="120" Height="40" Background="{DynamicResource SuccessBrush}" Foreground="White"
+                    Width="120" Height="40" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}"
                     FontSize="16" FontWeight="Bold" Cursor="Hand" Margin="0,0,0,20"
                     Click="CloseBtn_Click">
                 <Button.Template>

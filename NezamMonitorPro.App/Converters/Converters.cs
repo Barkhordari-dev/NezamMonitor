@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+using System.Windows.Media;
 
 namespace NezamMonitorPro.App.Converters;
 /// <summary>
@@ -118,9 +119,10 @@ public sealed class TabBgConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is int activeTab && parameter is string s && int.TryParse(s, out int tabIndex))
-            return activeTab == tabIndex ? "#3498DB" : "#ECF0F1";
-        return "#ECF0F1";
+        // Theme-aware: active tab uses the theme Primary, inactive uses Panel
+        // (was hard-coded #3498DB / #ECF0F1, wrong in dark themes).
+        var active = value is int activeTab && parameter is string s && int.TryParse(s, out int tabIndex) && activeTab == tabIndex;
+        return Application.Current?.TryFindResource(active ? "PrimaryBrush" : "PanelBrush") ?? Brushes.LightGray;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
@@ -133,9 +135,8 @@ public sealed class TabFgConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is int activeTab && parameter is string s && int.TryParse(s, out int tabIndex))
-            return activeTab == tabIndex ? "White" : "#2C3E50";
-        return "#2C3E50";
+        var active = value is int activeTab && parameter is string s && int.TryParse(s, out int tabIndex) && activeTab == tabIndex;
+        return Application.Current?.TryFindResource(active ? "OnPrimaryBrush" : "TextBrush") ?? Brushes.Black;
     }
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();

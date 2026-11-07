@@ -15,6 +15,20 @@ public partial class GeneratorView : UserControl
         DataContext = new GeneratorViewModel(DatabaseService.Instance);
     }
 
+    /// <summary>
+    /// Scales the two grids' height caps with the UI zoom: at 100% the caps
+    /// are 350/400px as before, but zoomed out the caps grow (350/scale), so
+    /// the smaller rows leave room for MORE rows in the same visual height
+    /// instead of just shrinking the same ~9 rows. Called by MainWindow
+    /// whenever the zoom changes and when navigating to this view.
+    /// </summary>
+    public void ApplyZoom(double scale)
+    {
+        if (scale <= 0) scale = 1.0;
+        CaseGrid.MaxHeight = 350 / scale;
+        HistoryGrid.MaxHeight = 400 / scale;
+    }
+
     private void StageFilter_Changed(object sender, SelectionChangedEventArgs e)
     {
         if (sender is ComboBox cb && cb.SelectedItem is ComboBoxItem item && item.Tag is string tag && int.TryParse(tag, out int stage))

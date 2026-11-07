@@ -14,13 +14,22 @@ public sealed class NavigationService
     private readonly Dictionary<string, System.Windows.Controls.UserControl> _views = new();
 
     /// <summary>
-    /// فقط این دو ویو کش می‌شوند (ساخت دوباره‌شان مشکل‌ساز بود)؛ بقیهٔ صفحات
-    /// مثل قبل هر بار نو ساخته می‌شوند تا داده‌شان همیشه تازه باشد.
+    /// این ویوها کش می‌شوند: update/history چون ساخت دوباره‌شان مشکل‌ساز بود،
+    /// و cases چون ساخت دوبارهٔ آن (پارس XAML + لود داده + چیدمان جدول ۳۵
+    /// ستونه) هر بار ورود به منوی پرونده‌ها را کند می‌کرد. تازگی دادهٔ
+    /// پرونده‌ها با بررسی شناسهٔ اسنپ‌شات فعال در OnNavigatedTo تضمین می‌شود:
+    /// اگر دادهٔ جدیدی استخراج شده باشد، همان‌جا دوباره لود می‌شود؛ وگرنه
+    /// ویوی آماده نمایش داده می‌شود. بقیهٔ صفحات مثل قبل هر بار نو ساخته
+    /// می‌شوند تا داده‌شان همیشه تازه باشد.
     /// </summary>
-    private readonly HashSet<string> _cacheable = new(StringComparer.OrdinalIgnoreCase) { "update", "history" };
+    private readonly HashSet<string> _cacheable = new(StringComparer.OrdinalIgnoreCase) { "update", "history", "cases" };
 
     private System.Windows.Controls.ContentControl? _frame;
     private string _currentKey = "";
+
+    /// <summary>True while the first Cases load is showing its loading
+    /// placeholder (prevents the deferred creation from re-showing it).</summary>
+    private bool _casesLoadingShown;
 
     public event Action<string>? Navigated;
     public string CurrentKey => _currentKey;
@@ -45,6 +54,44 @@ public sealed class NavigationService
             var cacheable = _cacheable.Contains(key);
             if (!cacheable || !_views.TryGetValue(key, out var view) || view is null)
             {
+                // First-ever Cases navigation: the view is heavy to build
+                // (XAML parse + ViewModel load + first layout of the
+                // 35-column grid), so show a friendly loading page first and
+                // build the real view right after it has painted. Later
+                // visits show the cached view instantly and skip this.
+                if (key.Equals("cases", StringComparison.OrdinalIgnoreCase) && !_casesLoadingShown)
+                {
+                    _casesLoadingShown = true;
+                    try
+                    {
+                        _frame.Content = new NezamMonitorPro.App.Views.CasesLoadingView();
+                        _currentKey = key;
+                        Navigated?.Invoke(key);
+                        System.Windows.Threading.Dispatcher.CurrentDispatcher.BeginInvoke(
+                            System.Windows.Threading.DispatcherPriority.Background,
+                            new Action(() =>
+                            {
+                                try
+                                {
+                                    // The user may have navigated away while
+                                    // the placeholder was showing; then don't
+                                    // yank them back — the next visit will
+                                    // show the placeholder again.
+                                    if (_currentKey != key) { _casesLoadingShown = false; return; }
+                                    NavigateTo(key);
+                                }
+                                catch { }
+                            }));
+                        return;
+                    }
+                    catch
+                    {
+                        // Loading placeholder unavailable: fall through and
+                        // build the real view directly (the flag stays set
+                        // so we don't retry the placeholder).
+                    }
+                }
+
                 Log($"NAVIGATE '{key}': creating view ...");
                 view = factory();
                 if (cacheable) _views[key] = view;
@@ -88,9 +135,13 @@ public sealed class NavigationService
         }
     }
 
-    /// <summary>Writes navigation diagnostics to startup.log next to the executable.</summary>
+    /// <summary>Writes navigation diagnostics to startup.log next to the
+    /// executable — only while a debugger is attached. In production every
+    /// navigation did ~7 synchronous file open/write/close cycles on the UI
+    /// thread for diagnostics nobody reads.</summary>
     private static void Log(string message)
     {
+        if (!System.Diagnostics.Debugger.IsAttached) return;
         try
         {
             var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)

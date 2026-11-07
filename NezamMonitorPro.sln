@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NezamMonitorPro.Core", "Nez
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NezamMonitorPro.Tests", "NezamMonitorPro.Tests\NezamMonitorPro.Tests.csproj", "{E94374BC-4FB7-44A4-903E-ED2898407B91}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NezamMonitorPro.Security", "NezamMonitorPro.Security\NezamMonitorPro.Security.csproj", "{EE12C667-5402-469F-ACEA-6DAF413A4F1B}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -30,5 +32,9 @@ Global
 		{E94374BC-4FB7-44A4-903E-ED2898407B91}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E94374BC-4FB7-44A4-903E-ED2898407B91}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E94374BC-4FB7-44A4-903E-ED2898407B91}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EE12C667-5402-469F-ACEA-6DAF413A4F1B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EE12C667-5402-469F-ACEA-6DAF413A4F1B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EE12C667-5402-469F-ACEA-6DAF413A4F1B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EE12C667-5402-469F-ACEA-6DAF413A4F1B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

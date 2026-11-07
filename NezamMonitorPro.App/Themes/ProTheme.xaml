@@ -1,7 +1,8 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib"
-                    xmlns:local="clr-namespace:NezamMonitorPro.App.Converters">
+                    xmlns:local="clr-namespace:NezamMonitorPro.App.Converters"
+                    xmlns:services="clr-namespace:NezamMonitorPro.App.Services">
 
     <!-- ══════════════════════════════════════════════════════════════
          NEZAM MONITOR PRO — DESIGN SYSTEM
@@ -19,15 +20,14 @@
     <sys:Double x:Key="SidebarFontSize">15</sys:Double>
     <sys:Double x:Key="CaptionFontSize">11</sys:Double>
     <sys:Double x:Key="DisplayFontSize">30</sys:Double>
-    <!-- NOTE: WPF FontFamily uses ',' as family+weight separator (e.g. "Tahoma, Bold"),
-         NOT a CSS-style fallback list. Keep single families here.
-         These are real FontFamily objects (not sys:String) so DynamicResource binding
-         to the FontFamily property works correctly.
-
-         Vazir is bundled with the app (Fonts/Vazirmatn-Regular.ttf) and referenced
-         through a pack:// URI, so Persian text renders identically on every Windows box. -->
-    <FontFamily x:Key="FontFamily">Vazir, Tahoma, Arial</FontFamily>
-    <FontFamily x:Key="HeadingFontFamily">Vazir, Tahoma, Arial</FontFamily>
+    <!-- Font chain: first family is tried first, the rest are fallbacks
+         (WPF FontFamily IS a comma-separated fallback list; "Tahoma, Bold"
+         is the same syntax with a weight). B Nazanin is bundled with the
+         app (Fonts/BNazanin.ttf) and referenced through a pack:// URI in
+         ThemeManager.BuildFontFamily, so Persian text renders identically
+         on every Windows box even when B Nazanin is not installed. -->
+    <FontFamily x:Key="FontFamily">B Nazanin, Tahoma, Arial</FontFamily>
+    <FontFamily x:Key="HeadingFontFamily">B Nazanin, Tahoma, Arial</FontFamily>
     <FontFamily x:Key="IconFontFamily">Segoe MDL2 Assets</FontFamily>
     <FontFamily x:Key="NumericFontFamily">Segoe UI</FontFamily>
 
@@ -120,6 +120,13 @@
     <!-- ══════════════════════════════════════════════════════════════
          BUTTONS
          ══════════════════════════════════════════════════════════════ -->
+    <DataTemplate x:Key="WrappingTextTemplate">
+        <TextBlock Text="{Binding}" TextWrapping="Wrap" TextAlignment="Center"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"/>
+    </DataTemplate>
+    <local:StringContentTemplateSelector x:Key="StringContentTemplateSelector"
+                                         StringTemplate="{StaticResource WrappingTextTemplate}"/>
+
     <Style x:Key="ProButtonBase" TargetType="Button">
         <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
         <Setter Property="FontSize" Value="{DynamicResource ButtonFontSize}"/>
@@ -127,6 +134,17 @@
         <Setter Property="MinHeight" Value="38"/>
         <Setter Property="MinWidth" Value="96"/>
         <Setter Property="Padding" Value="20,8"/>
+        <Setter Property="TextBlock.TextWrapping" Value="Wrap"/>
+        <Setter Property="TextBlock.TextAlignment" Value="Center"/>
+        <!-- String content is rendered through the wrapping template so long
+             labels wrap instead of clipping when the font grows. The
+             selector returns null for non-string content, so icon TextBlocks
+             and icon+label StackPanels are shown directly (a plain
+             ContentTemplate would override them and render their type name
+             as literal text — that broke the top-bar shortcut buttons, the
+             password windows' close buttons and UpdateView's action buttons).
+             See Converters/StringContentTemplateSelector.cs. -->
+        <Setter Property="ContentTemplateSelector" Value="{StaticResource StringContentTemplateSelector}"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="HorizontalContentAlignment" Value="Center"/>
@@ -146,17 +164,22 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonDisabledBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="IsEnabled" Value="False">
+                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="ProButton" TargetType="Button" BasedOn="{StaticResource ProButtonBase}">
         <Setter Property="Background" Value="{DynamicResource ButtonPrimaryBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -175,7 +198,7 @@
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
-                            <Setter TargetName="bd" Property="Opacity" Value="0.45"/>
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonDisabledBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -185,17 +208,17 @@
 
     <Style x:Key="ProButtonSuccess" TargetType="Button" BasedOn="{StaticResource ProButton}">
         <Setter Property="Background" Value="{DynamicResource SuccessBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnSuccessBrush}"/>
     </Style>
 
     <Style x:Key="ProButtonDanger" TargetType="Button" BasedOn="{StaticResource ProButton}">
         <Setter Property="Background" Value="{DynamicResource ErrorBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnErrorBrush}"/>
     </Style>
 
     <Style x:Key="ProButtonWarning" TargetType="Button" BasedOn="{StaticResource ProButton}">
         <Setter Property="Background" Value="{DynamicResource WarningBrush}"/>
-        <Setter Property="Foreground" Value="#1A1A1A"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnWarningBrush}"/>
     </Style>
 
     <Style x:Key="ProButtonGhost" TargetType="Button" BasedOn="{StaticResource ProButtonBase}">
@@ -228,7 +251,7 @@
         <Setter Property="MinWidth" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="Background" Value="{DynamicResource ButtonPrimaryBrush}"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
     </Style>
 
     <!-- ══════════════════════════════════════════════════════════════
@@ -265,13 +288,13 @@
                                 <Condition Property="IsChecked" Value="False"/>
                             </MultiTrigger.Conditions>
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource SidebarHoverBrush}"/>
-                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Foreground" Value="{DynamicResource SidebarTextBrush}"/>
                         </MultiTrigger>
                         <!-- Active item: soft, low-saturation tint + rounded corners -->
                         <Trigger Property="IsChecked" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource SidebarActiveSoftBrush}"/>
                             <Setter TargetName="accent" Property="Opacity" Value="1"/>
-                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Foreground" Value="{DynamicResource SidebarTextBrush}"/>
                             <Setter Property="FontWeight" Value="SemiBold"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
@@ -442,7 +465,7 @@
                         </Trigger>
                         <Trigger Property="IsSelected" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource PrimaryBrush}"/>
-                            <Setter Property="Foreground" Value="White"/>
+                            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -491,14 +514,48 @@
         </Setter>
     </Style>
 
+    <!-- Shared DataGrid cell/header styles.
+         GridCellEllipsis: right-aligned text, clipped text shows '...' and the
+         full text in a tooltip (bound to the cell's own Text).
+         GridHeaderCenter / GridCellEllipsisCenter: the centred pair, used only
+         for narrow numeric/symbol columns (row number, count, checkbox-like
+         values) so header and cell stay aligned together. -->
+    <Style x:Key="GridCellEllipsis" TargetType="TextBlock">
+        <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
+        <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+        <Setter Property="ToolTip" Value="{Binding RelativeSource={RelativeSource Self}, Path=Text}"/>
+    </Style>
+    <Style x:Key="GridCellEllipsisCenter" TargetType="TextBlock" BasedOn="{StaticResource GridCellEllipsis}">
+        <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
+    </Style>
+    <Style x:Key="GridHeaderCenter" TargetType="DataGridColumnHeader">
+        <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="Padding" Value="12,0"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+        <Setter Property="BorderThickness" Value="0,0,0,1"/>
+        <Setter Property="HorizontalContentAlignment" Value="{DynamicResource TableContentAlignment}"/>
+        <Setter Property="VerticalContentAlignment" Value="Center"/>
+    </Style>
+
     <!-- ══════════════════════════════════════════════════════════════
          DATA GRID
          ══════════════════════════════════════════════════════════════ -->
     <Style x:Key="ProDataGrid" TargetType="DataGrid">
+        <!-- Header checkbox of the row-selection column -> select/deselect
+             all rows (SelectAllHeaderBehavior). Listed BEFORE the alignment
+             menu so that behavior records the centred header style as the
+             column's original. Right-click a column header -> per-column
+             alignment menu (DataGridColumnAlignment); Recycling reuses row
+             containers on scroll instead of rebuilding them every time. -->
+        <Setter Property="services:SelectAllHeaderBehavior.EnableSelectAll" Value="True"/>
+        <Setter Property="services:DataGridColumnAlignment.EnableHeaderMenu" Value="True"/>
+        <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="RowHeight" Value="38"/>
+        <Setter Property="MinRowHeight" Value="38"/>
         <Setter Property="ColumnHeaderHeight" Value="40"/>
         <Setter Property="GridLinesVisibility" Value="Horizontal"/>
         <Setter Property="HorizontalGridLinesBrush" Value="{DynamicResource BorderBrush}"/>
@@ -522,10 +579,10 @@
                     <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
                     <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                     <Setter Property="FontWeight" Value="Bold"/>
-                    <Setter Property="Padding" Value="8,0"/>
+                    <Setter Property="Padding" Value="12,0"/>
                     <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
                     <Setter Property="BorderThickness" Value="0,0,0,1"/>
-                    <Setter Property="HorizontalContentAlignment" Value="Center"/>
+                    <Setter Property="HorizontalContentAlignment" Value="{DynamicResource TableContentAlignment}"/>
                     <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Setter Property="Template">
                         <Setter.Value>
@@ -534,10 +591,31 @@
                                     <Border x:Name="bd" Background="{TemplateBinding Background}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}">
-                                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                                          VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                                        <!-- Sort arrow: shown only on the sorted column.
+                                             Inner Grid is forced LeftToRight so the arrow stays on
+                                             the physical left even though the grid is RightToLeft. -->
+                                        <Grid FlowDirection="LeftToRight">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+                                            <TextBlock x:Name="SortArrow" Grid.Column="0" VerticalAlignment="Center"
+                                                       Margin="2,0,4,0" FontSize="10" FontFamily="Segoe UI Symbol"
+                                                       Foreground="{TemplateBinding Foreground}"
+                                                       Visibility="Collapsed" IsHitTestVisible="False"/>
+                                            <ContentPresenter Grid.Column="1" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                                              VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                                        </Grid>
                                     </Border>
-                                    <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Width="6"
+                                    <Thumb x:Name="PART_RightHeaderGripper" HorizontalAlignment="Right" Width="8"
+                                           Cursor="SizeWE" Opacity="0">
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border Background="Transparent"/>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                    <Thumb x:Name="PART_LeftHeaderGripper" HorizontalAlignment="Left" Width="8"
                                            Cursor="SizeWE" Opacity="0">
                                         <Thumb.Template>
                                             <ControlTemplate TargetType="Thumb">
@@ -549,6 +627,14 @@
                                 <ControlTemplate.Triggers>
                                     <Trigger Property="IsMouseOver" Value="True">
                                         <Setter TargetName="bd" Property="Background" Value="{DynamicResource HoverOverlayBrush}"/>
+                                    </Trigger>
+                                    <Trigger Property="SortDirection" Value="Ascending">
+                                        <Setter TargetName="SortArrow" Property="Text" Value="&#x25B2;"/>
+                                        <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
+                                    </Trigger>
+                                    <Trigger Property="SortDirection" Value="Descending">
+                                        <Setter TargetName="SortArrow" Property="Text" Value="&#x25BC;"/>
+                                        <Setter TargetName="SortArrow" Property="Visibility" Value="Visible"/>
                                     </Trigger>
                                 </ControlTemplate.Triggers>
                             </ControlTemplate>
@@ -578,12 +664,13 @@
                     <Setter Property="BorderThickness" Value="0"/>
                     <Setter Property="Padding" Value="12,0"/>
                     <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                    <Setter Property="HorizontalContentAlignment" Value="{DynamicResource TableContentAlignment}"/>
                     <Setter Property="VerticalContentAlignment" Value="Center"/>
                     <Setter Property="Template">
                         <Setter.Value>
                             <ControlTemplate TargetType="DataGridCell">
                                 <Border Background="Transparent" Padding="{TemplateBinding Padding}">
-                                    <ContentPresenter VerticalAlignment="Center"/>
+                                    <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="Center"/>
                                 </Border>
                             </ControlTemplate>
                         </Setter.Value>
@@ -635,7 +722,7 @@
     </Style>
 
     <Style x:Key="ProScrollBar" TargetType="ScrollBar">
-        <Setter Property="Width" Value="10"/>
+        <Setter Property="Width" Value="12"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="Template">
             <Setter.Value>
@@ -646,23 +733,41 @@
                                 <Thumb>
                                     <Thumb.Template>
                                         <ControlTemplate TargetType="Thumb">
-                                            <Border Background="{DynamicResource TextSecondaryBrush}" Opacity="0.5" CornerRadius="4"
-                                                    Width="6" HorizontalAlignment="Center"/>
+                                            <Border Background="{DynamicResource TextSecondaryBrush}" Opacity="0.85" CornerRadius="4"
+                                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                    MinWidth="8" MinHeight="24"/>
                                         </ControlTemplate>
                                     </Thumb.Template>
                                 </Thumb>
                             </Track.Thumb>
                             <Track.IncreaseRepeatButton>
-                                <RepeatButton Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False"/>
+                                <RepeatButton x:Name="PART_IncreaseRepeatButton" Command="ScrollBar.PageDownCommand" Opacity="0" Focusable="False"/>
                             </Track.IncreaseRepeatButton>
                             <Track.DecreaseRepeatButton>
-                                <RepeatButton Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False"/>
+                                <RepeatButton x:Name="PART_DecreaseRepeatButton" Command="ScrollBar.PageUpCommand" Opacity="0" Focusable="False"/>
                             </Track.DecreaseRepeatButton>
                         </Track>
                     </Grid>
+                    <ControlTemplate.Triggers>
+                        <!-- Horizontal scrollbar: the Track must run
+                             horizontally and the page buttons must page
+                             left/right, otherwise the thumb spans the whole
+                             bar and dragging it does nothing. -->
+                        <Trigger Property="Orientation" Value="Horizontal">
+                            <Setter TargetName="PART_Track" Property="Orientation" Value="Horizontal"/>
+                            <Setter TargetName="PART_IncreaseRepeatButton" Property="Command" Value="ScrollBar.PageRightCommand"/>
+                            <Setter TargetName="PART_DecreaseRepeatButton" Property="Command" Value="ScrollBar.PageLeftCommand"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
                 </ControlTemplate>
             </Setter.Value>
         </Setter>
+        <Style.Triggers>
+            <Trigger Property="Orientation" Value="Horizontal">
+                <Setter Property="Height" Value="12"/>
+                <Setter Property="Width" Value="Auto"/>
+            </Trigger>
+        </Style.Triggers>
     </Style>
 
     <Style x:Key="ProSeparator" TargetType="Separator">

@@ -44,23 +44,27 @@ public partial class App : Application
     }
 
     /// <summary>
-    /// Makes sure the bundled Persian font is available to WPF.
-    /// The font is referenced through a pack:// URI in the theme dictionary,
-    /// so this is only a safety net that also adds it to the system list.
+    /// Probes the bundled fonts so a missing font file is noticed early
+    /// (Debug output) instead of silently falling back to Tahoma at render
+    /// time. The fonts themselves are loaded by ThemeManager.BuildFontFamily
+    /// through a pack:// URI; adding a bare-name FontFamily to
+    /// SystemFontFamilies (what this used to do) does NOT make the font data
+    /// available — it only registers the name, which then resolves against
+    /// installed fonts and finds nothing.
     /// </summary>
     private static void RegisterEmbeddedFonts()
     {
-        try
+        foreach (var file in new[] { "Fonts/Vazirmatn-Regular.ttf", "Fonts/BNazanin.ttf" })
         {
-            var uri = new Uri("pack://application:,,,/Fonts/Vazirmatn-Regular.ttf", UriKind.Absolute);
-            var typeface = new System.Windows.Media.GlyphTypeface(uri);
-            var familyName = typeface.FamilyNames.Values.FirstOrDefault() ?? "Vazir";
-            System.Windows.Media.Fonts.SystemFontFamilies.Add(
-                new System.Windows.Media.FontFamily(familyName));
-        }
-        catch (Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Font registration skipped: {ex.Message}");
+            try
+            {
+                var uri = new Uri($"pack://application:,,,/{file}", UriKind.Absolute);
+                _ = new System.Windows.Media.GlyphTypeface(uri);
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Bundled font missing ({file}): {ex.Message}");
+            }
         }
     }
 

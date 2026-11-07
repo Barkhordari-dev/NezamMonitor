@@ -75,14 +75,14 @@
 
                     <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
                         <Button Grid.Column="3" Content="🧹 پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}"
-                            Height="28" Padding="10,0" Background="{DynamicResource ErrorBrush}" Foreground="White"
+                            Padding="10,0" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
                             FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold"
                             Visibility="{Binding HasActiveFilters, Converter={StaticResource BoolToVisConverter}}"/>
                         <Button Content="📥 کلید ورود اطلاعات مهندسین" Command="{Binding ImportFromExcelCommand}"
-                            Height="28" Padding="10,0" Background="{DynamicResource SuccessBrush}" Foreground="White"
+                            Padding="10,0" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}"
                             FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" Margin="10,0,0,0"/>
                         <Button Content="📱 خروجی مخاطبین" Command="{Binding ExportVCardCommand}"
-                            Height="28" Padding="10,0" Background="{DynamicResource PrimaryBrush}" Foreground="White"
+                            Padding="10,0" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"
                             FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" Margin="10,0,0,0"/>
                     </StackPanel>
 
@@ -98,14 +98,14 @@
                   HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
                   MouseRightButtonUp="EngineersGrid_MouseRightButtonUp" FlowDirection="{DynamicResource TableFlowDirection}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" Width="100"/>
-                <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" Width="120"/>
-                <DataGridTextColumn Header="رشته" Binding="{Binding Discipline}" Width="80"/>
-                <DataGridTextColumn Header="ناظر" Binding="{Binding Name}" Width="150"/>
-                <DataGridTextColumn Header="تلفن" Binding="{Binding Phone}" Width="110"/>
-                <DataGridTextColumn Header="پایه نظارت" Binding="{Binding SupervisionLevel}" Width="80"/>
-                <DataGridTextColumn Header="پایه طراحی" Binding="{Binding DesignLevel}" Width="80"/>
-                <DataGridTextColumn Header="پایه اجرا" Binding="{Binding ExecutionLevel}" Width="80"/>
+                <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="رشته" Binding="{Binding Discipline}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="ناظر" Binding="{Binding Name}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="تلفن" Binding="{Binding Phone}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="پایه نظارت" Binding="{Binding SupervisionLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="پایه طراحی" Binding="{Binding DesignLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="پایه اجرا" Binding="{Binding ExecutionLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
             </DataGrid.Columns>
         </DataGrid>
 

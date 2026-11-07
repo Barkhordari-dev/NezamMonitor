@@ -471,7 +471,10 @@ public sealed class GeneratorViewModel : ViewModelBase
 
             foreach (var s in saved)
             {
-                var shamsi = !string.IsNullOrWhiteSpace(s.GeneratedAtShamsi) ? s.GeneratedAtShamsi : PersianDateHelper.GregoryStringToShamsi(s.GeneratedAt);
+                // GeneratedAt در دیتابیس باید میلادی باشد، ولی ردیف‌های قدیمی ممکن است
+                // شمسی ذخیره شده باشند؛ اول به میلادی نرمال می‌کنیم و بعد شمسی را می‌سازیم.
+                var gregorianAt = PersianDateHelper.NormalizeToGregorian(s.GeneratedAt);
+                var shamsi = PersianDateHelper.GregoryStringToShamsi(gregorianAt);
                 var item = new CaseReportItem
                 {
                     CaseNumber = s.CaseNumber,
@@ -483,7 +486,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                     Companion = s.Companion,
                     StageName = s.StageName,
                     Status = s.Status,
-                    GeneratedAt = s.GeneratedAt,
+                    GeneratedAt = gregorianAt,
                     GeneratedAtShamsi = shamsi,
                     PermitDate = s.PermitDate,
                     Deadline = s.Deadline,
@@ -671,10 +674,11 @@ public sealed class GeneratorViewModel : ViewModelBase
                     var daysRemainingSort = CalculateDaysRemainingSort(deadline);
                     var deadlineStatus = GetDeadlineStatus(hasReport, daysRemaining);
 
-                    // تاریخ تولید
+                    // تاریخ تولید — در دیتابیس میلادی ذخیره می‌شود، ولی ردیف‌های قدیمی
+                    // ممکن است شمسی ذخیره شده باشند؛ اول به میلادی نرمال می‌کنیم.
                     var generatedAt = "";
                     if (hasReport && generatedDates.TryGetValue(reportKey, out var gDate))
-                        generatedAt = gDate;
+                        generatedAt = PersianDateHelper.NormalizeToGregorian(gDate);
 
                     var item = new CaseReportItem
                     {
@@ -987,7 +991,8 @@ public sealed class GeneratorViewModel : ViewModelBase
                     generated++;
                     item.Status = "✅ تولید شده";
                     var now2 = DateTime.Now;
-                    item.GeneratedAt = now2.ToString("yyyy/MM/dd HH:mm");
+                    // مهم: بدون InvariantCulture، با فرهنگ fa-IR این رشته شمسی می‌شود.
+                    item.GeneratedAt = now2.ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture);
                     item.GeneratedAtShamsi = PersianDateHelper.ToShamsiDateTime(now2);
                     item.IsSelected = false;
                 }
@@ -1774,6 +1779,7 @@ public class CaseReportItem : INotifyPropertyChanged
     private bool _isSelected;
     private string _status = "";
     private string _generatedAt = "";
+    private string _generatedAtShamsi = "";
     private bool _isChanged;
 
     public bool IsSelected
@@ -1802,7 +1808,11 @@ public class CaseReportItem : INotifyPropertyChanged
         get => _generatedAt;
         set { _generatedAt = value; OnPropertyChanged(); }
     }
-    public string GeneratedAtShamsi { get; set; } = "";
+    public string GeneratedAtShamsi
+    {
+        get => _generatedAtShamsi;
+        set { _generatedAtShamsi = value; OnPropertyChanged(); }
+    }
 
     public bool IsChanged
     {

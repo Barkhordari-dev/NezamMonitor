@@ -58,7 +58,7 @@
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
                     <TextBlock Grid.Column="0" Text="اسنپ‌شات‌های پایگاه‌دادهٔ فعال"
-                               FontSize="14" FontWeight="Bold"
+                               FontSize="{DynamicResource FontSize}" FontWeight="Bold"
                                Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"
                                TextAlignment="Center" HorizontalAlignment="Center"/>
                     <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center"
@@ -111,7 +111,7 @@
                                     <Border Grid.Column="1" Width="32" Height="32" CornerRadius="9"
                                             Background="#142563EB" VerticalAlignment="Center" Margin="0,0,10,0">
                                         <TextBlock Text="&#xE81C;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="14" Foreground="{DynamicResource PrimaryBrush}"
+                                                   FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource PrimaryTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
 
@@ -152,7 +152,7 @@
                     <Border Grid.Column="0" Width="30" Height="30" CornerRadius="9" Background="#14F59E0B"
                             VerticalAlignment="Center" Margin="0,0,10,0">
                         <TextBlock Text="&#xE8B7;" FontFamily="{DynamicResource IconFontFamily}"
-                                   FontSize="14" Foreground="{DynamicResource WarningBrush}"
+                                   FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource WarningTextBrush}"
                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
 

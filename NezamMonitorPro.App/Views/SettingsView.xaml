@@ -88,9 +88,11 @@
 
         <!-- ═══ Action buttons ═══ -->
         <Style x:Key="SettingsButton" TargetType="Button" BasedOn="{StaticResource ProButtonBase}">
-            <Setter Property="Height" Value="38"/>
+            <!-- No fixed Height here on purpose: the button must grow with
+                 the font size instead of clipping its text (MinHeight 38
+                 from ProButtonBase is only a minimum). -->
             <Setter Property="MinWidth" Value="130"/>
-            <Setter Property="Padding" Value="18,0"/>
+            <Setter Property="Padding" Value="18,8"/>
             <Setter Property="FontWeight" Value="SemiBold"/>
         </Style>
 
@@ -154,7 +156,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1A2563EB" Margin="0,0,10,0">
                             <TextBlock Text="&#xE790;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="انتخاب تم" Style="{StaticResource SettingsCardTitle}"/>
@@ -186,7 +188,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1A7C3AED" Margin="0,0,10,0">
                             <TextBlock Text="&#xE8D2;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource AccentBrush}"
+                                       Foreground="{DynamicResource AccentTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="فونتها" Style="{StaticResource SettingsCardTitle}"/>
@@ -235,10 +237,49 @@
                         <TextBox Grid.Row="1" Grid.Column="6" Style="{StaticResource SettingsInput}"
                                  Text="{Binding InputFontSize}" HorizontalAlignment="Left" Width="90" Margin="0,18,0,0"/>
 
+                        <TextBlock Grid.Row="2" Grid.Column="4" Text="اندازه سایدبار" Style="{StaticResource SettingsFieldLabel}"
+                                   VerticalAlignment="Center" Margin="0,18,0,0"/>
+                        <TextBox Grid.Row="2" Grid.Column="6" Style="{StaticResource SettingsInput}"
+                                 Text="{Binding SidebarFontSize}" HorizontalAlignment="Left" Width="90" Margin="0,18,0,0"/>
+
                         <Button Grid.Row="3" Grid.Column="2" Style="{StaticResource SettingsPrimaryButton}"
                                 Command="{Binding ApplyFontsCommand}" Content="اعمال فونتها"
                                 HorizontalAlignment="Left" Margin="0,22,0,0"/>
                     </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- ════════════ Table text alignment ════════════ -->
+            <Border Style="{StaticResource SettingsCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Width="34" Height="34" CornerRadius="10" Background="#1A0EA5E9" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE8E0;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="تراز متن جدول‌ها" Style="{StaticResource SettingsCardTitle}"/>
+                    </StackPanel>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="تراز متن داخل سلول‌ها" Style="{StaticResource SettingsFieldLabel}"
+                                   VerticalAlignment="Center" Margin="0,0,0,0"/>
+                        <ComboBox Grid.Column="2" Style="{StaticResource SettingsCombo}"
+                                  ItemsSource="{Binding TableAlignmentOptions}" SelectedItem="{Binding TableAlignmentDisplay}"
+                                  HorizontalAlignment="Left" Width="240"/>
+                        <Button Grid.Column="4" Style="{StaticResource SettingsPrimaryButton}"
+                                Command="{Binding ApplyTableAlignmentCommand}" Content="اعمال تراز جدول"/>
+                    </Grid>
+                    <TextBlock Text="پیش‌فرض وسط است؛ انتخاب شما برای همه‌ی جدول‌های برنامه اعمال می‌شود."
+                               Style="{StaticResource SettingsFieldLabel}" Margin="0,10,0,0"/>
                 </StackPanel>
             </Border>
 
@@ -248,7 +289,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1A10B981" Margin="0,0,10,0">
                             <TextBlock Text="&#xE72E;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource SuccessBrush}"
+                                       Foreground="{DynamicResource SuccessTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="امنیت و رمز عبور" Style="{StaticResource SettingsCardTitle}"/>
@@ -274,7 +315,7 @@
             <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,14"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextBrush}"
-                           FontSize="13" FontWeight="Medium" TextWrapping="Wrap"/>
+                           FontSize="{DynamicResource LabelFontSize}" FontWeight="Medium" TextWrapping="Wrap"/>
             </Border>
 
             <!-- ════════════ Factory reset ════════════ -->
@@ -283,7 +324,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1AEF4444" Margin="0,0,10,0">
                             <TextBlock Text="&#xE7BA;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource ErrorBrush}"
+                                       Foreground="{DynamicResource ErrorTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="پاکسازی کامل اطلاعات" Style="{StaticResource SettingsCardTitle}"/>

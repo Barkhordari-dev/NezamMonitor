@@ -17,7 +17,11 @@ public sealed class CasesViewModel : ViewModelBase
     private string _detailSpecs = "";
     private CaseDisplayItem? _selectedCase;
 
-    public ObservableCollection<CaseDisplayItem> Cases { get; } = new();
+    private ObservableCollection<CaseDisplayItem> _cases = new();
+    /// <summary>Replaced wholesale on load/filter so the grid rebinds once
+    /// instead of receiving one CollectionChanged per row (N UI updates on
+    /// every navigation). Backed by SetProperty for the binding.</summary>
+    public ObservableCollection<CaseDisplayItem> Cases { get => _cases; set => SetProperty(ref _cases, value); }
     public string SearchText { get => _searchText; set { SetProperty(ref _searchText, value); FilterCases(); } }
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string DetailTitle { get => _detailTitle; set => SetProperty(ref _detailTitle, value); }
@@ -31,6 +35,11 @@ public sealed class CasesViewModel : ViewModelBase
     public ICommand CloseDetailCommand { get; }
 
     private List<CaseDisplayItem> _allCases = new();
+
+    /// <summary>Snapshot the grid was loaded from. The view is cached now,
+    /// so OnNavigatedTo compares it with the active snapshot and reloads
+    /// only when new data was extracted in the meantime.</summary>
+    private int _loadedSnapshotId;
 
     public CasesViewModel(NezamDatabase db)
     {
@@ -48,12 +57,16 @@ public sealed class CasesViewModel : ViewModelBase
             var snapshotId = _db.GetActiveSnapshotId();
             if (snapshotId == 0)
             {
+                _loadedSnapshotId = 0;
                 StatusMessage = "هنوز داده‌ای ذخیره نشده است.";
                 return;
             }
-            var rawCases = _db.LoadCases(snapshotId);
+            // Light load: the grid shows only Case + Specification columns;
+            // Engineers/Fees/Reports are loaded on demand in ShowCaseDetails.
+            var rawCases = _db.LoadCasesLight(snapshotId);
             _allCases = rawCases.Select((c, i) => new CaseDisplayItem(c) { RowNumber = i + 1 }).ToList();
-            foreach (var item in _allCases) Cases.Add(item);
+            Cases = new ObservableCollection<CaseDisplayItem>(_allCases);
+            _loadedSnapshotId = snapshotId;
             StatusMessage = $"{Cases.Count} پرونده بارگذاری شد";
         }
         catch (Exception ex)
@@ -62,8 +75,21 @@ public sealed class CasesViewModel : ViewModelBase
         }
     }
 
+    /// <summary>Called on every navigation to the (now cached) Cases
+    /// view: a single cheap query; reloads (light load) only when the active
+    /// snapshot changed since the grid was loaded, so returning to the menu
+    /// is instant while newly extracted data still shows up.</summary>
+    public void RefreshIfSnapshotChanged()
+    {
+        if (_db.GetActiveSnapshotId() != _loadedSnapshotId) LoadCases();
+    }
+
     public void ShowCaseDetails(CaseDisplayItem item)
     {
+        // Children were not loaded by the light grid load; fetch this one
+        // case's Engineers/Fees/Reports (3 indexed queries) before building
+        // the detail strings.
+        _db.LoadCaseChildren(item.RawCase);
         SelectedCase = item;
         DetailTitle = $"{item.CaseNumber} | {item.Owner}";
 
@@ -180,7 +206,6 @@ public sealed class CasesViewModel : ViewModelBase
 
     private void FilterCases()
     {
-        Cases.Clear();
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? _allCases
             : _allCases.Where(c =>
@@ -188,7 +213,7 @@ public sealed class CasesViewModel : ViewModelBase
                 c.Owner.Contains(SearchText) ||
                 c.Serial.Contains(SearchText) ||
                 c.Id.ToString().Contains(SearchText)).ToList();
-        foreach (var c in filtered) Cases.Add(c);
+        Cases = new ObservableCollection<CaseDisplayItem>(filtered);
         StatusMessage = $"{Cases.Count} پرونده";
     }
 }

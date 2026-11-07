@@ -1,0 +1,18 @@
+<UserControl x:Class="NezamMonitorPro.App.Views.CasesLoadingView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Shown only on the very first visit to the Cases menu, while the
+         heavy 35-column view is being built, so the user sees that something
+         is happening instead of a frozen screen. -->
+    <Grid Background="{DynamicResource BackgroundBrush}">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="400">
+            <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+            <TextBlock Text="در حال بارگذاری پرونده‌ها…" FontSize="18" FontWeight="Bold"
+                       Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+            <TextBlock Text="لطفاً چند لحظه صبر کنید؛ جدول پرونده‌ها در حال آماده‌شدن است."
+                       FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
+                       HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,20"/>
+            <ProgressBar IsIndeterminate="True" Height="8"/>
+        </StackPanel>
+    </Grid>
+</UserControl>

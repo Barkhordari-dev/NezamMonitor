@@ -51,6 +51,8 @@
                 <Setter Property="FontSize" Value="13"/>
                 <Setter Property="Height" Value="40"/>
                 <Setter Property="Padding" Value="12,0"/>
+                <Setter Property="TextAlignment" Value="Center"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
@@ -67,6 +69,7 @@
                                 <ScrollViewer x:Name="PART_ContentHost"
                                               Margin="{TemplateBinding Padding}"
                                               Focusable="False"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Stretch"
                                               HorizontalScrollBarVisibility="Hidden"
                                               VerticalScrollBarVisibility="Hidden"/>
@@ -93,7 +96,8 @@
                 <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
                 <Setter Property="FontSize" Value="13"/>
                 <Setter Property="Height" Value="40"/>
-                <Setter Property="Padding" Value="12,0"/>
+                <Setter Property="Padding" Value="12,0,38,0"/>
+                <Setter Property="HorizontalContentAlignment" Value="Center"/>
                 <Setter Property="VerticalContentAlignment" Value="Center"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
                 <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
@@ -110,6 +114,7 @@
                                 <ScrollViewer x:Name="PART_ContentHost"
                                               Margin="{TemplateBinding Padding}"
                                               Focusable="False"
+                                              HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
                                               VerticalAlignment="Stretch"
                                               HorizontalScrollBarVisibility="Hidden"
                                               VerticalScrollBarVisibility="Hidden"/>
@@ -406,7 +411,7 @@
                         x:Name="CountBadge">
                     <StackPanel>
                         <TextBlock x:Name="BigCount" Text="" FontFamily="Segoe UI" FontSize="24" FontWeight="Bold"
-                                   Foreground="{DynamicResource PrimaryBrush}" HorizontalAlignment="Center"/>
+                                   Foreground="{DynamicResource PrimaryTextBrush}" HorizontalAlignment="Center"/>
                         <TextBlock Text="پرونده" FontSize="11" Foreground="{DynamicResource TextSecondaryBrush}"
                                    HorizontalAlignment="Center" Margin="0,1,0,0"/>
                     </StackPanel>
@@ -420,7 +425,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1A2563EB" Margin="0,0,10,0">
                             <TextBlock Text="&#xE72E;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="اطلاعات ورود به سامانه" Style="{StaticResource CardTitle}"/>
@@ -430,25 +435,26 @@
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="18"/>
-                            <ColumnDefinition Width="240"/>
+                            <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
 
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="نام کاربری" Style="{StaticResource FieldLabel}" HorizontalAlignment="Center"/>
                             <TextBox x:Name="UsernameBox" Style="{StaticResource SoftTextBox}"
-                                     FlowDirection="LeftToRight" FontFamily="Segoe UI"
+                                     FlowDirection="LeftToRight"
                                      Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="رمز عبور" Style="{StaticResource FieldLabel}" HorizontalAlignment="Center"/>
-                            <Grid Width="240">
+                            <Grid>
                                 <PasswordBox x:Name="PasswordBox" Style="{StaticResource SoftPasswordBox}"
-                                             FlowDirection="LeftToRight" FontFamily="Segoe UI"
+                                             FlowDirection="LeftToRight"
                                              PasswordChanged="PasswordBox_PasswordChanged"/>
-                                <TextBox x:Name="VisiblePasswordBox" Style="{StaticResource SoftTextBox}" 
-                                         FlowDirection="LeftToRight" FontFamily="Segoe UI"
-                                         Visibility="Collapsed" IsReadOnly="True"/>
+                                <TextBox x:Name="VisiblePasswordBox" Style="{StaticResource SoftTextBox}"
+                                         FlowDirection="LeftToRight"
+                                         Padding="12,0,38,0" TextChanged="VisiblePasswordBox_TextChanged"
+                                         Visibility="Collapsed"/>
                                 <ToggleButton x:Name="ShowPasswordToggle" Width="30" Height="30" HorizontalAlignment="Right"
                                               Style="{StaticResource EyeButtonStyle}" Click="TogglePassword_Click"/>
                             </Grid>
@@ -466,7 +472,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1AF59E0B" Margin="0,0,10,0">
                             <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource WarningBrush}"
+                                       Foreground="{DynamicResource WarningTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="گزینه‌های استخراج" Style="{StaticResource CardTitle}"/>
@@ -519,7 +525,7 @@
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1A7C3AED" Margin="0,0,10,0">
                             <TextBlock Text="&#xE8B7;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
-                                       Foreground="{DynamicResource AccentBrush}"
+                                       Foreground="{DynamicResource AccentTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                         <TextBlock Text="گزینه‌های فایل" Style="{StaticResource CardTitle}"/>
@@ -554,7 +560,7 @@
                             Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
                             <!-- icon on the right of the label (RTL convention) -->
-                            <TextBlock Text="&#xE896;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
+                            <TextBlock Text="&#xE896;" FontFamily="{DynamicResource IconFontFamily}" FontSize="{DynamicResource FontSize}"
                                        Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="شروع همگام سازی" VerticalAlignment="Center"/>
                         </StackPanel>
@@ -563,7 +569,7 @@
                     <Button x:Name="BtnStop" Style="{StaticResource OutlineAction}" Click="BtnStop_Click"
                             Margin="0,0,10,0" MinWidth="120">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE769;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
+                            <TextBlock Text="&#xE769;" FontFamily="{DynamicResource IconFontFamily}" FontSize="{DynamicResource FontSize}"
                                        Foreground="{DynamicResource TextSecondaryBrush}" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="توقف" VerticalAlignment="Center"/>
                         </StackPanel>
@@ -571,7 +577,7 @@
 
                     <Button x:Name="BtnLoad" Style="{StaticResource SecondaryAction}" Click="BtnLoad_Click" MinWidth="150">
                         <StackPanel Orientation="Horizontal">
-                            <TextBlock Text="&#xE8E5;" FontFamily="{DynamicResource IconFontFamily}" FontSize="14"
+                            <TextBlock Text="&#xE8E5;" FontFamily="{DynamicResource IconFontFamily}" FontSize="{DynamicResource FontSize}"
                                        Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
                             <TextBlock Text="بارگذاری آخرین" VerticalAlignment="Center" Foreground="White"/>
                         </StackPanel>

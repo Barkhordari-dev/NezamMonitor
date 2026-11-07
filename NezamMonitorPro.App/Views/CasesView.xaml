@@ -26,16 +26,16 @@
             <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
                      Height="34" VerticalContentAlignment="Center" Margin="0,0,10,0" local:Watermark.Text="جستجو در پروندهها..." />
             <Button Grid.Column="2" Content="📋 کپی انتخاب‌شده" Click="CopySelected_Click"
-                    Height="30" Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SidebarBrush}" Foreground="White" FontFamily="Vazir" FontSize="12"
+                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource SidebarTextBrush}" FontSize="12"
                     ToolTip="ردیف‌های تیک‌خورده را TSV کپی می‌کند (برای Excel)"/>
             <Button Grid.Column="3" Content="📤 خروجی اکسل" Click="ExportSelected_Click"
-                    Height="30" Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SuccessBrush}" Foreground="White" FontFamily="Vazir" FontSize="12"
+                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontSize="12"
                     ToolTip="ردیف‌های تیک‌خورده را به اکسل B Nazanin 14 راست‌چین خروجی می‌دهد — اگر چیزی انتخاب نشده همه فیلتر فعلی"/>
             <Button Grid.Column="4" Content="↺ چینش پیش‌فرض" Click="ResetColumns_Click"
-                    Height="30" Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource AccentBrush}" Foreground="White" FontFamily="Vazir" FontSize="12"
+                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource OnAccentBrush}" FontSize="12"
                     ToolTip="چیدمان ستون‌ها را به حالت اولیه برمی‌گرداند"/>
             <Button Grid.Column="5" Content="🔄" Command="{Binding RefreshCommand}"
-                    Width="30" Height="30" Background="{DynamicResource PrimaryBrush}" Foreground="White"/>
+                    Width="30" Height="30" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"/>
         </Grid>
 
         <!-- Main Table -->
@@ -48,41 +48,41 @@
                       PreviewMouseRightButtonUp="CasesGrid_PreviewMouseRightButtonUp"
                       SelectionChanged="CasesGrid_SelectionChanged" FlowDirection="{DynamicResource TableFlowDirection}">
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="☐" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="40" CanUserSort="False"/>
-                    <DataGridTextColumn x:Name="ColRowNumber" Header="ردیف" Binding="{Binding RowNumber}" Width="50" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColCaseNumber" Header="شماره پرونده" Binding="{Binding CaseNumber}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColSerial" Header="شماره سریال" Binding="{Binding Serial}" Width="70" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwner" Header="نام مالک" Binding="{Binding Owner}" Width="130" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwnerMobile" Header="همراه مالک" Binding="{Binding OwnerMobile}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwnerFather" Header="نام پدر" Binding="{Binding OwnerFather}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwnerNationalCode" Header="کد ملی" Binding="{Binding OwnerNationalCode}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwnerTel" Header="تلفن مالک" Binding="{Binding OwnerTel}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwnerAddress" Header="آدرس مالک" Binding="{Binding OwnerAddress}" Width="120" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwnerZip" Header="کد پستی" Binding="{Binding OwnerZip}" Width="80" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOwnerBirthLoc" Header="زادگاه" Binding="{Binding OwnerBirthLoc}" Width="80" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColUsageType" Header="نوع کاربری" Binding="{Binding UsageType}" Width="80" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColBuildingGroup" Header="گروه ساختمانی" Binding="{Binding BuildingGroup}" Width="90" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColRenovationCode" Header="کد نوسازی" Binding="{Binding RenovationCode}" Width="120" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColPlanInstructionNo" Header="شماره دستور نقشه" Binding="{Binding PlanInstructionNo}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColPlanInstructionType" Header="نوع دستور نقشه" Binding="{Binding PlanInstructionType}" Width="90" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColPlanInstructionDate" Header="تاریخ دستور نقشه" Binding="{Binding PlanInstructionDate}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColLandArea" Header="مساحت زمین" Binding="{Binding LandArea}" Width="80" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColParafArea" Header="متراژ پاراف" Binding="{Binding ParafArea}" Width="90" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColCapacityArea" Header="متراژ کسر ظرفیت" Binding="{Binding CapacityArea}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColStructureType" Header="نوع سازه" Binding="{Binding StructureType}" Width="70" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColBlockTitle" Header="عنوان بلوک" Binding="{Binding BlockTitle}" Width="80" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColBlockCount" Header="تعداد بلوک" Binding="{Binding BlockCount}" Width="70" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColFloors" Header="طبقات" Binding="{Binding Floors}" Width="50" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColUnits" Header="واحدها" Binding="{Binding Units}" Width="50" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColIssuer" Header="صادرکننده پروانه" Binding="{Binding Issuer}" Width="110" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColPermitNumber" Header="شماره پروانه" Binding="{Binding PermitNumber}" Width="90" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColPermitDate" Header="تاریخ صدور پروانه" Binding="{Binding PermitDate}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColReleaseDate" Header="تاریخ ترخیص" Binding="{Binding ReleaseDate}" Width="90" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColPlanZone" Header="محدوده طرح" Binding="{Binding PlanZone}" Width="80" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColAddress" Header="آدرس" Binding="{Binding Address}" Width="150" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColOffice" Header="دفتر" Binding="{Binding Office}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColCapacityDate" Header="تاریخ کسر ظرفیت" Binding="{Binding CapacityDate}" Width="100" IsReadOnly="True"/>
-                    <DataGridTextColumn x:Name="ColResponsibility" Header="مسئولیت" Binding="{Binding Responsibility}" Width="80" IsReadOnly="True"/>
+                    <DataGridCheckBoxColumn Header="☐" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="50" CanUserSort="False"/>
+                    <DataGridTextColumn x:Name="ColRowNumber" Header="ردیف" Binding="{Binding RowNumber}" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
+                    <DataGridTextColumn x:Name="ColCaseNumber" Header="شماره پرونده" Binding="{Binding CaseNumber}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColSerial" Header="شماره سریال" Binding="{Binding Serial}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwner" Header="نام مالک" Binding="{Binding Owner}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwnerMobile" Header="همراه مالک" Binding="{Binding OwnerMobile}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwnerFather" Header="نام پدر" Binding="{Binding OwnerFather}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwnerNationalCode" Header="کد ملی" Binding="{Binding OwnerNationalCode}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwnerTel" Header="تلفن مالک" Binding="{Binding OwnerTel}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwnerAddress" Header="آدرس مالک" Binding="{Binding OwnerAddress}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwnerZip" Header="کد پستی" Binding="{Binding OwnerZip}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOwnerBirthLoc" Header="زادگاه" Binding="{Binding OwnerBirthLoc}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColUsageType" Header="نوع کاربری" Binding="{Binding UsageType}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColBuildingGroup" Header="گروه ساختمانی" Binding="{Binding BuildingGroup}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColRenovationCode" Header="کد نوسازی" Binding="{Binding RenovationCode}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColPlanInstructionNo" Header="شماره دستور نقشه" Binding="{Binding PlanInstructionNo}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColPlanInstructionType" Header="نوع دستور نقشه" Binding="{Binding PlanInstructionType}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColPlanInstructionDate" Header="تاریخ دستور نقشه" Binding="{Binding PlanInstructionDate}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColLandArea" Header="مساحت زمین" Binding="{Binding LandArea}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColParafArea" Header="متراژ پاراف" Binding="{Binding ParafArea}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColCapacityArea" Header="متراژ کسر ظرفیت" Binding="{Binding CapacityArea}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColStructureType" Header="نوع سازه" Binding="{Binding StructureType}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColBlockTitle" Header="عنوان بلوک" Binding="{Binding BlockTitle}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColBlockCount" Header="تعداد بلوک" Binding="{Binding BlockCount}" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
+                    <DataGridTextColumn x:Name="ColFloors" Header="طبقات" Binding="{Binding Floors}" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
+                    <DataGridTextColumn x:Name="ColUnits" Header="واحدها" Binding="{Binding Units}" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
+                    <DataGridTextColumn x:Name="ColIssuer" Header="صادرکننده پروانه" Binding="{Binding Issuer}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColPermitNumber" Header="شماره پروانه" Binding="{Binding PermitNumber}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColPermitDate" Header="تاریخ صدور پروانه" Binding="{Binding PermitDate}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColReleaseDate" Header="تاریخ ترخیص" Binding="{Binding ReleaseDate}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColPlanZone" Header="محدوده طرح" Binding="{Binding PlanZone}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColAddress" Header="آدرس" Binding="{Binding Address}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColOffice" Header="دفتر" Binding="{Binding Office}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColCapacityDate" Header="تاریخ کسر ظرفیت" Binding="{Binding CapacityDate}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColResponsibility" Header="مسئولیت" Binding="{Binding Responsibility}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
@@ -105,10 +105,10 @@
                 <!-- Detail Header -->
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
                     <TextBlock Text="📄 جزئیات پرونده" FontSize="{DynamicResource FontSize}" FontWeight="Bold"/>
-                    <TextBlock Text="{Binding DetailTitle}" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold"
+                    <TextBlock Text="{Binding DetailTitle}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"
                                FontSize="{DynamicResource FontSize}" Margin="15,0,0,0" VerticalAlignment="Center"/>
                     <Button Content="✕" Command="{Binding CloseDetailCommand}"
-                            Width="25" Height="25" Background="{DynamicResource ErrorBrush}" Foreground="White"
+                            Width="25" Height="25" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
                             HorizontalAlignment="Right" Margin="0,0,0,0"/>
                 </StackPanel>
 
@@ -131,7 +131,7 @@
                                 <TextBlock Text="👷 ناظرین" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailEngineers}" TextWrapping="Wrap"
-                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource SidebarBrush}" FontFamily="Tahoma"/>
+                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>
@@ -146,7 +146,7 @@
                                 <TextBlock Text="💰 حق‌الزحمه" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailFees}" TextWrapping="Wrap"
-                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource SidebarBrush}" FontFamily="Tahoma"/>
+                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>
@@ -161,7 +161,7 @@
                                 <TextBlock Text="📄 گزارش‌ها" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailReports}" TextWrapping="Wrap"
-                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource SidebarBrush}" FontFamily="Tahoma"/>
+                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>
@@ -176,7 +176,7 @@
                                 <TextBlock Text="📋 مشخصات" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailSpecs}" TextWrapping="Wrap"
-                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource SidebarBrush}" FontFamily="Tahoma"/>
+                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>

@@ -56,7 +56,7 @@
                 <TextBlock Grid.Column="6" Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
                 <ComboBox Grid.Column="7" ItemsSource="{Binding DisciplineFilters}" SelectedItem="{Binding FilterDiscipline}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
                 <Button Grid.Column="9" Content="🧹 پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}"
-                        Height="28" Padding="10,0" Background="{DynamicResource ErrorBrush}" Foreground="White"
+                        Padding="10,0" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
                         FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold"
                         Visibility="{Binding HasActiveFilters, Converter={StaticResource BoolToVisConverter}}"/>
                 <TextBlock Grid.Column="12" Text="{Binding CountDisplay}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold"/>
@@ -83,13 +83,13 @@
                 </Style>
             </DataGrid.RowStyle>
             <DataGrid.Columns>
-                            <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" SortMemberPath="CaseNumber" Width="100"/>
-                            <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" SortMemberPath="Owner" Width="120"/>
-                            <DataGridTextColumn Header="نوع" Binding="{Binding ReportType}" SortMemberPath="ReportType" Width="100"/>
-                            <DataGridTextColumn Header="مرحله" Binding="{Binding Stage}" SortMemberPath="Stage" Width="100"/>
-                            <DataGridTextColumn Header="ناظر" Binding="{Binding Engineer}" SortMemberPath="Engineer" Width="120"/>
-                            <DataGridTextColumn Header="رشته" Binding="{Binding Discipline}" SortMemberPath="Discipline" Width="80"/>
-                            <DataGridTextColumn Header="تاریخ" Binding="{Binding VisitDate}" SortMemberPath="VisitDate" Width="100"/>
+                            <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" SortMemberPath="CaseNumber" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                            <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" SortMemberPath="Owner" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                            <DataGridTextColumn Header="نوع" Binding="{Binding ReportType}" SortMemberPath="ReportType" Width="Auto" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
+                            <DataGridTextColumn Header="مرحله" Binding="{Binding Stage}" SortMemberPath="Stage" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                            <DataGridTextColumn Header="ناظر" Binding="{Binding Engineer}" SortMemberPath="Engineer" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                            <DataGridTextColumn Header="رشته" Binding="{Binding Discipline}" SortMemberPath="Discipline" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                            <DataGridTextColumn Header="تاریخ" Binding="{Binding VisitDate}" SortMemberPath="VisitDate" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
                         </DataGrid.Columns>
         </DataGrid>
 
