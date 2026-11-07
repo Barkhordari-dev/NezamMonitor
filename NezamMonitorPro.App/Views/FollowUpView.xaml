@@ -42,15 +42,15 @@
                           Height="34" FontSize="{DynamicResource InputFontSize}" Width="180" Margin="0,0,10,0"/>
 
                 <Button Grid.Column="4" Content="💾 ذخیره" Command="{Binding SaveCommand}"
-                        Height="28" Background="{DynamicResource SuccessBrush}" Foreground="White" FontSize="{DynamicResource ButtonFontSize}" Margin="0,0,5,0"/>
+                        Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontSize="{DynamicResource ButtonFontSize}" Margin="0,0,5,0"/>
                 <Button Grid.Column="5" Content="🔄 بروزرسانی" Command="{Binding RefreshCommand}"
-                        Height="28" Background="{DynamicResource PrimaryBrush}" Foreground="White" FontSize="{DynamicResource ButtonFontSize}" Margin="0,0,5,0"/>
+                        Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource ButtonFontSize}" Margin="0,0,5,0"/>
                 <Button Grid.Column="6" Content="📱 خروجی مخاطبین"
                         Click="ExportVCard_Click"
-                        Height="28" Background="{DynamicResource PrimaryBrush}" Foreground="White" FontSize="{DynamicResource ButtonFontSize}" Margin="0,0,5,0"/>
+                        Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource ButtonFontSize}" Margin="0,0,5,0"/>
                 <Button Grid.Column="7" Content="📁 دسته‌بندی بر اساس محدوده"
                         Command="{Binding GroupByRangeCommand}"
-                        Height="28" Background="{DynamicResource AccentBrush}" Foreground="White" FontSize="{DynamicResource ButtonFontSize}"/>
+                        Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource OnAccentBrush}" FontSize="{DynamicResource ButtonFontSize}"/>
             </Grid>
         </Border>
 
@@ -63,93 +63,99 @@
                   MouseRightButtonUp="FollowUpGrid_MouseRightButtonUp"
                   CellEditEnding="FollowUpGrid_CellEditEnding" FlowDirection="{DynamicResource TableFlowDirection}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="ردیف" Binding="{Binding RowId}" Width="50" IsReadOnly="True">
+                <DataGridTextColumn Header="ردیف" Binding="{Binding RowId}" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                            <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="شماره پرونده" Binding="{Binding CaseNumber, Mode=TwoWay}" Width="120">
+                <DataGridTextColumn Header="شماره پرونده" Binding="{Binding CaseNumber, Mode=TwoWay}" Width="Auto">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                            <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsCaseNumberModified}" Value="True">
-                                    <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
                                     <Setter Property="FontWeight" Value="Bold"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="نام مالک" Binding="{Binding Owner, Mode=TwoWay}" Width="150">
+                <DataGridTextColumn Header="نام مالک" Binding="{Binding Owner, Mode=TwoWay}" Width="Auto">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                            <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsOwnerModified}" Value="True">
-                                    <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
                                     <Setter Property="FontWeight" Value="Bold"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="آدرس" Binding="{Binding Address, Mode=TwoWay}" Width="250">
+                <DataGridTextColumn Header="آدرس" Binding="{Binding Address, Mode=TwoWay}" Width="Auto">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                            <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                             <Setter Property="TextWrapping" Value="Wrap"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsAddressModified}" Value="True">
-                                    <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
                                     <Setter Property="FontWeight" Value="Bold"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="همراه مالک" Binding="{Binding OwnerMobile, Mode=TwoWay}" Width="120">
+                <DataGridTextColumn Header="همراه مالک" Binding="{Binding OwnerMobile, Mode=TwoWay}" Width="Auto">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+                            <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding IsOwnerMobileModified}" Value="True">
-                                    <Setter Property="Foreground" Value="{DynamicResource ErrorBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
                                     <Setter Property="FontWeight" Value="Bold"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="تعداد گزارش" Binding="{Binding ReportCount}" Width="90" IsReadOnly="True">
+                <DataGridTextColumn Header="تعداد گزارش" Binding="{Binding ReportCount}" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                            <Setter Property="HorizontalAlignment" Value="Center"/>
+                            <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                             <Style.Triggers>
                                 <DataTrigger Binding="{Binding ReportCount}" Value="0">
                                     <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding ReportCount}" Value="1">
-                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource SuccessTextBrush}"/>
                                 </DataTrigger>
                                 <DataTrigger>
                                     <DataTrigger.Binding>
                                         <Binding Path="ReportCount" Converter="{StaticResource ReportCountConverter}"/>
                                     </DataTrigger.Binding>
-                                    <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
+                                    <Setter Property="Foreground" Value="{DynamicResource WarningTextBrush}"/>
                                 </DataTrigger>
                             </Style.Triggers>
                         </Style>
                     </DataGridTextColumn.ElementStyle>
                 </DataGridTextColumn>
-                <DataGridTextColumn Header="توضیحات" Binding="{Binding Description, Mode=TwoWay}" Width="200">
+                <DataGridTextColumn Header="توضیحات" Binding="{Binding Description, Mode=TwoWay}" Width="*" MinWidth="120">
                     <DataGridTextColumn.ElementStyle>
                         <Style TargetType="TextBlock">
                             <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
-                            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                            <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource AccentTextBrush}"/>
                             <Setter Property="FontStyle" Value="Italic"/>
                             <Setter Property="TextWrapping" Value="Wrap"/>
                             <Setter Property="MaxHeight" Value="120"/>

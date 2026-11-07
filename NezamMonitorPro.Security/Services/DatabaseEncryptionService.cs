@@ -17,14 +17,14 @@ namespace NezamMonitorPro.Security.Services
             _databasePath = databasePath ?? throw new ArgumentNullException(nameof(databasePath));
         }
 
-        public EncryptedSqliteConnection Open(string password)
+        public EncryptedSqliteConnection Open(string? password)
         {
             if (string.IsNullOrEmpty(password))
                 throw new ArgumentException("Password cannot be null or empty", nameof(password));
 
             var logPath = Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName) ?? AppDomain.CurrentDomain.BaseDirectory, "startup.log");
             bool verified = _credentialStore.VerifyPassword(password);
-            try { File.AppendAllText(logPath, $"[{DateTime.Now}] DatabaseEncryptionService.Open VerifyPassword result: {verified}, passwordLen: {password?.Length}\n"); } catch { }
+            try { File.AppendAllText(logPath, $"[{DateTime.Now}] DatabaseEncryptionService.Open VerifyPassword result: {verified}, passwordLen: {password.Length}\n"); } catch { }
 
             if (!verified)
                 throw new UnauthorizedAccessException("Invalid password.");

@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
       <ProjectReference Include="..\NezamMonitorPro.Core\NezamMonitorPro.Core.csproj" />
-      <ProjectReference Include="..\..\..\NezamMonitorPro.Security\NezamMonitorPro.Security.csproj" />
+      <ProjectReference Include="..\NezamMonitorPro.Security\NezamMonitorPro.Security.csproj" />
     </ItemGroup>
 
   <ItemGroup>
@@ -32,6 +32,8 @@
   <!-- Embedded Persian font (Vazirmatn) so the UI looks identical on any Windows box -->
   <ItemGroup>
     <Resource Include="Fonts\Vazirmatn-Regular.ttf" />
+  <Resource Include="Fonts\BNazanin.ttf" />
+  <Resource Include="Fonts\BNaznnBd.ttf" />
   </ItemGroup>
 
   <!-- Publish: single-file, self-contained, compressed -->

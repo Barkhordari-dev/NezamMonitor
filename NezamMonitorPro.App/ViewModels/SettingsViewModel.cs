@@ -31,6 +31,7 @@ public sealed class SettingsViewModel : ViewModelBase
 
     private string _fontFamily = "B Nazanin";
     private double _fontSize = 14;
+    private double _sidebarFontSize = 14;
     private double _headingFontSize = 20;
     private double _buttonFontSize = 13;
     private double _inputFontSize = 13;
@@ -51,6 +52,10 @@ public sealed class SettingsViewModel : ViewModelBase
     private string _tableDirection = "RightToLeft";
     private string _menuDirection = "RightToLeft";
     private string _mainWindowDirection = "RightToLeft";
+
+    // Table text alignment: display value shown in the combo ("وسط" / "راست" /
+    // "چپ"), mapped to the stored "Center" / "Right" / "Left" in ApplyTableAlignment.
+    private string _tableAlignmentDisplay = "وسط";
 
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string SelectedThemeName { get => _selectedThemeName; set => SetProperty(ref _selectedThemeName, value); }
@@ -73,6 +78,10 @@ public sealed class SettingsViewModel : ViewModelBase
 
     public string FontFamily { get => _fontFamily; set => SetProperty(ref _fontFamily, value); }
     public double FontSize { get => _fontSize; set => SetProperty(ref _fontSize, value); }
+    /// <summary>Sidebar (navigation) font size. The sidebar used a
+    /// hard-coded 13.5 and never followed the font settings; it now reads
+    /// the SidebarFontSize resource published by ThemeManager.</summary>
+    public double SidebarFontSize { get => _sidebarFontSize; set => SetProperty(ref _sidebarFontSize, value); }
     public double HeadingFontSize { get => _headingFontSize; set => SetProperty(ref _headingFontSize, value); }
     public double ButtonFontSize { get => _buttonFontSize; set => SetProperty(ref _buttonFontSize, value); }
     public double InputFontSize { get => _inputFontSize; set => SetProperty(ref _inputFontSize, value); }
@@ -94,8 +103,12 @@ public sealed class SettingsViewModel : ViewModelBase
     public string MenuDirection { get => _menuDirection; set => SetProperty(ref _menuDirection, value); }
     public string MainWindowDirection { get => _mainWindowDirection; set => SetProperty(ref _mainWindowDirection, value); }
 
+    public string TableAlignmentDisplay { get => _tableAlignmentDisplay; set => SetProperty(ref _tableAlignmentDisplay, value); }
+
+    // Theme names are shown in English, as the user asked.
     public List<string> ThemeNames { get; } = BuiltInThemes.ThemeNameMap.Keys.ToList();
-    public List<string> LayoutNames { get; } = new() { "Light", "Spacious", "Professional", "Modern" };
+    public List<string> LayoutNames { get; } = new() { "Light", "Professional", "ProDark" };
+    public List<string> TableAlignmentOptions { get; } = new() { "وسط", "راست", "چپ" };
     public List<string> FontFamilies { get; } = new() { "Vazir", "B Nazanin", "Tahoma", "Segoe UI", "Arial" };
     public List<string> Alignments { get; } = new() { "Left", "Center", "Right" };
     public List<string> Directions { get; } = new() { "Horizontal", "Vertical" };
@@ -105,6 +118,7 @@ public sealed class SettingsViewModel : ViewModelBase
     public ICommand ApplyColorsCommand { get; }
     public ICommand ApplyFontsCommand { get; }
     public ICommand ApplyDimensionsCommand { get; }
+    public ICommand ApplyTableAlignmentCommand { get; }
     public ICommand ResetCommand { get; }
     public ICommand FactoryResetCommand { get; }
     public ICommand ImportAndroidCommand { get; }
@@ -121,6 +135,7 @@ public sealed class SettingsViewModel : ViewModelBase
         ApplyColorsCommand = new RelayCommand(ApplyColors);
         ApplyFontsCommand = new RelayCommand(ApplyFonts);
         ApplyDimensionsCommand = new RelayCommand(ApplyDimensions);
+        ApplyTableAlignmentCommand = new RelayCommand(ApplyTableAlignment);
         ResetCommand = new RelayCommand(ResetToDefault);
         FactoryResetCommand = new RelayCommand(ExecuteFactoryReset);
         ImportAndroidCommand = new RelayCommand(ExecuteImportAndroid);
@@ -149,6 +164,7 @@ public sealed class SettingsViewModel : ViewModelBase
         LogBgHex = theme.Colors.LogBackground;
         FontFamily = theme.Fonts.FontFamily;
         FontSize = theme.Fonts.GeneralFontSize;
+        SidebarFontSize = theme.Fonts.SidebarFontSize;
         HeadingFontSize = theme.Fonts.HeadingFontSize;
         ButtonFontSize = theme.Fonts.ButtonFontSize;
         InputFontSize = theme.Fonts.InputFontSize;
@@ -166,6 +182,12 @@ public sealed class SettingsViewModel : ViewModelBase
         TableDirection = theme.LayoutDirection.TableDirection;
         MenuDirection = theme.LayoutDirection.MenuDirection;
         MainWindowDirection = theme.LayoutDirection.MainWindowDirection;
+        TableAlignmentDisplay = _themeManager.GetTableAlignment() switch
+        {
+            "Right" => "راست",
+            "Left" => "چپ",
+            _ => "وسط",
+        };
     }
 
     private void ApplyTheme()
@@ -181,7 +203,7 @@ public sealed class SettingsViewModel : ViewModelBase
         LoadThemeToUI(_theme);
         _themeManager.SaveTheme(_theme);
         _themeManager.ApplyTheme(_theme);
-        StatusMessage = $"\u062a\u0645 \u00ab{BuiltInThemes.ThemeNameMap.GetValueOrDefault(SelectedThemeName, SelectedThemeName)}\u00bb \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
+        StatusMessage = $"\u062a\u0645 \u00ab{SelectedThemeName}\u00bb \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
     }
 
     private void ApplyColors()
@@ -216,10 +238,23 @@ public sealed class SettingsViewModel : ViewModelBase
         _theme.Fonts.HeadingFontSize = HeadingFontSize;
         _theme.Fonts.ButtonFontSize = ButtonFontSize;
         _theme.Fonts.InputFontSize = InputFontSize;
+        _theme.Fonts.SidebarFontSize = SidebarFontSize;
         _theme.Fonts.LabelFontSize = InputFontSize;
         _themeManager.SaveTheme(_theme);
         _themeManager.ApplyTheme(_theme);
         StatusMessage = "\u0641\u0648\u0646\u062a\u200c\u0647\u0627 \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
+    }
+
+    private void ApplyTableAlignment()
+    {
+        var value = TableAlignmentDisplay switch
+        {
+            "راست" => "Right",
+            "چپ" => "Left",
+            _ => "Center",
+        };
+        _themeManager.SaveTableAlignment(value);
+        StatusMessage = "تراز متن جدول‌ها اعمال شد ✓";
     }
 
     private void ApplyDimensions()

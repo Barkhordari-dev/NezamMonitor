@@ -57,7 +57,9 @@ public partial class FeeReceiptDialog : Window
         }
         foreach (var d in list)
         {
-            var cb = new CheckBox { Content = d, IsChecked = _selected.Contains(d.Trim()), Margin = new Thickness(4, 3, 4, 3), FontFamily = new System.Windows.Media.FontFamily("B Nazanin"), FontSize = 14 };
+            var appFont = System.Windows.Application.Current?.Resources["FontFamily"] as System.Windows.Media.FontFamily
+                          ?? new System.Windows.Media.FontFamily("B Nazanin");
+            var cb = new CheckBox { Content = d, IsChecked = _selected.Contains(d.Trim()), Margin = new Thickness(4, 3, 4, 3), FontFamily = appFont, FontSize = 14 };
             cb.Checked += (_, _) => _selected.Add(d.Trim());
             cb.Unchecked += (_, _) => _selected.Remove(d.Trim());
             EndDatePanel.Children.Add(cb);

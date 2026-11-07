@@ -129,7 +129,7 @@
                                 <Ellipse Width="6" Height="6" Fill="{DynamicResource PrimaryBrush}"
                                          VerticalAlignment="Center" Margin="0,0,6,0"/>
                                 <TextBlock Text="{Binding ConnectionStatus}" FontSize="11"
-                                           Foreground="{DynamicResource PrimaryBrush}" FontWeight="SemiBold"/>
+                                           Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Border>
 
@@ -146,9 +146,9 @@
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
                             <Button Content="به‌روزرسانی از سامانه" Click="GoToUpdate_Click"
-                                    Style="{StaticResource ProButton}" Height="38" Margin="0,0,10,0"/>
+                                    Style="{StaticResource ProButton}" Margin="0,0,10,0"/>
                             <Button Content="تولید گزارش" Click="GoToGenerator_Click"
-                                    Style="{StaticResource ProButtonGhost}" Height="38"/>
+                                    Style="{StaticResource ProButtonGhost}"/>
                         </StackPanel>
                     </StackPanel>
 
@@ -210,7 +210,7 @@
                         <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#142563EB"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE8C8;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource PrimaryBrush}"
+                                       FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -231,7 +231,7 @@
                         <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#1410B981"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE77B;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource SuccessBrush}"
+                                       FontSize="20" Foreground="{DynamicResource SuccessTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -252,7 +252,7 @@
                         <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#14F59E0B"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE8C7;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource WarningBrush}"
+                                       FontSize="20" Foreground="{DynamicResource WarningTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -273,7 +273,7 @@
                         <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#147C3AED"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE7C3;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource AccentBrush}"
+                                       FontSize="20" Foreground="{DynamicResource AccentTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -323,7 +323,7 @@
                                              Style="{StaticResource ProProgressBar}" VerticalAlignment="Center"
                                              HorizontalAlignment="Stretch"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CasesWithSpecs}" FontWeight="Bold"
-                                           FontSize="13" Foreground="{DynamicResource SuccessBrush}"
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource SuccessTextBrush}"
                                            VerticalAlignment="Center" MinWidth="44" TextAlignment="Center"/>
                             </Grid>
                         </Border>
@@ -343,7 +343,7 @@
                                              Style="{StaticResource ProProgressBar}" VerticalAlignment="Center"
                                              HorizontalAlignment="Stretch"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CasesWithEngineers}" FontWeight="Bold"
-                                           FontSize="13" Foreground="{DynamicResource PrimaryBrush}"
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource PrimaryTextBrush}"
                                            VerticalAlignment="Center" MinWidth="44" TextAlignment="Center"/>
                             </Grid>
                         </Border>
@@ -363,7 +363,7 @@
                                              Style="{StaticResource ProProgressBar}" VerticalAlignment="Center"
                                              HorizontalAlignment="Stretch"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CasesWithFees}" FontWeight="Bold"
-                                           FontSize="13" Foreground="{DynamicResource WarningBrush}"
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource WarningTextBrush}"
                                            VerticalAlignment="Center" MinWidth="44" TextAlignment="Center"/>
                             </Grid>
                         </Border>
@@ -383,7 +383,7 @@
                                              Style="{StaticResource ProProgressBar}" VerticalAlignment="Center"
                                              HorizontalAlignment="Stretch"/>
                                 <TextBlock Grid.Column="2" Text="{Binding CasesWithReports}" FontWeight="Bold"
-                                           FontSize="13" Foreground="{DynamicResource AccentBrush}"
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource AccentTextBrush}"
                                            VerticalAlignment="Center" MinWidth="44" TextAlignment="Center"/>
                             </Grid>
                         </Border>
@@ -413,7 +413,7 @@
                                     <Border Width="34" Height="34" CornerRadius="10" Background="#1410B981"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE895;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource SuccessBrush}"
+                                                   FontSize="16" Foreground="{DynamicResource SuccessTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="به‌روزرسانی" HorizontalAlignment="Center"
@@ -426,7 +426,7 @@
                                     <Border Width="34" Height="34" CornerRadius="10" Background="#142563EB"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE70C;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource PrimaryBrush}"
+                                                   FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="تولید گزارش" HorizontalAlignment="Center"
@@ -439,7 +439,7 @@
                                     <Border Width="34" Height="34" CornerRadius="10" Background="#147C3AED"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE8C8;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource AccentBrush}"
+                                                   FontSize="16" Foreground="{DynamicResource AccentTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="پرونده‌ها" HorizontalAlignment="Center"
@@ -452,7 +452,7 @@
                                     <Border Width="34" Height="34" CornerRadius="10" Background="#14F59E0B"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE7BA;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource WarningBrush}"
+                                                   FontSize="16" Foreground="{DynamicResource WarningTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="پیگیری" HorizontalAlignment="Center"

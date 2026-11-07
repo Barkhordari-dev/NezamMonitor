@@ -9,7 +9,7 @@ using NezamMonitorPro.App.ViewModels;
 
 namespace NezamMonitorPro.App.Views;
 
-public partial class CasesView : UserControl
+public partial class CasesView : UserControl, INavigationAware
 {
     private CasesViewModel _vm;
     private bool _isLoaded = false;
@@ -36,46 +36,145 @@ public partial class CasesView : UserControl
             if (!_isLoaded)
             {
                 _isLoaded = true;
+                CaptureDefaultColumnLayout();
                 RestoreColumnOrder();
-            }
-            Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
-            {
-                var sv = FindChild<ScrollViewer>(CasesGrid);
-                if (sv != null) sv.ScrollToEnd();
-            });
-        };
-        _vm.PropertyChanged += (_, e) =>
-        {
-            if (e.PropertyName == nameof(CasesViewModel.Cases))
+                AttachColumnWidthTracking();
+                // Scroll to the end only on the very first load. The view is
+                // cached now, so Loaded fires on every return — scrolling here
+                // would yank the user to the last row each time they came back.
                 Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Loaded, () =>
                 {
                     var sv = FindChild<ScrollViewer>(CasesGrid);
                     if (sv != null) sv.ScrollToEnd();
                 });
+            }
         };
+        // NOTE: no ScrollToEnd on Cases refresh on purpose — jumping to the
+        // last row on every refresh made the scrollbar position meaningless
+        // (the thumb always sat at the bottom after any change).
         CasesGrid.ColumnReordered += (_, _) => { if (_suppressColumnSave) return; SaveColumnOrder(); };
+        Unloaded += (_, _) => SaveColumnOrder();
+    }
+
+    /// <summary>Called on every navigation (the view is cached):
+    /// reloads only when new data was extracted since the last load.</summary>
+    public void OnNavigatedTo() => _vm.RefreshIfSnapshotChanged();
+
+    // ── Column layout (order + width) ──────────────────────────────
+    // Saved in Settings under "cases_column_order" as
+    //   v2;<escaped header>=<displayIndex>:<width>;<escaped header>=...
+    // Only columns the user resized by dragging carry a width; the rest
+    // have an empty width part and keep their Auto width. Keyed by header
+    // text (headers contain no ';' or '='); the old format (comma-joined
+    // headers, no widths) is ignored so a stale value can never resurrect
+    // the default order, and pre-v2 saves (a width for every column) are
+    // treated as order-only so they cannot freeze Auto columns again.
+    private Dictionary<string, (int DisplayIndex, DataGridLength Width)>? _defaultColumnLayout;
+
+    // Headers of columns the user actually dragged wider/narrower. Only
+    // these get a saved width: every other column stays Auto, so it keeps
+    // growing with the window/font instead of freezing at the pixel width
+    // it happened to have when the layout was first saved.
+    private readonly HashSet<string> _userResizedColumns = new();
+
+    private void CaptureDefaultColumnLayout()
+    {
+        if (_defaultColumnLayout != null) return;
+        _defaultColumnLayout = CasesGrid.Columns
+            .Select((c, i) => (Key: ColumnKey(c), Index: i, Width: c.Width))
+            .ToDictionary(x => x.Key, x => (x.Index, x.Width));
+    }
+
+    private static string ColumnKey(DataGridColumn c)
+        => c is DataGridCheckBoxColumn ? "☐" : c.Header?.ToString() ?? "";
+
+    private void AttachColumnWidthTracking()
+    {
+        // DataGrid has no ColumnWidthChanged event; listen to the Width
+        // dependency property of each column so a manual resize is saved too.
+        foreach (var col in CasesGrid.Columns)
+        {
+            var dp = System.ComponentModel.DependencyPropertyDescriptor
+                .FromProperty(DataGridColumn.WidthProperty, typeof(DataGridColumn));
+            dp?.AddValueChanged(col, (_, _) =>
+            {
+                if (_suppressColumnSave) return;
+                // Width changes while restoring/resetting are programmatic
+                // (_suppressColumnSave is true then); anything else is the
+                // user dragging a column border.
+                _userResizedColumns.Add(ColumnKey(col));
+                SaveColumnOrder();
+            });
+        }
     }
 
     private void SaveColumnOrder()
     {
-        var order = string.Join(",", CasesGrid.Columns.Select(c => c.Header?.ToString() ?? ""));
-        DatabaseService.Instance.SaveSetting("cases_column_order", order);
+        try
+        {
+            // BUG FIX (was: Columns.Select(...)): DataGrid.Columns is always
+            // in XAML declaration order — dragging a column only changes its
+            // DisplayIndex. Saving the collection order therefore always
+            // saved the DEFAULT order, so no reorder ever stuck.
+            var parts = CasesGrid.Columns
+                .OrderBy(c => c.DisplayIndex)
+                .Select(c =>
+                {
+                    // Width is saved only for columns the user resized by
+                    // dragging; the rest keep their Auto width (empty width
+                    // part) so they keep growing with the window and font.
+                    var w = _userResizedColumns.Contains(ColumnKey(c)) && c.Width.IsAbsolute
+                        ? $"{c.Width.Value:0}"
+                        : "";
+                    return $"{Uri.EscapeDataString(ColumnKey(c))}={c.DisplayIndex}:{w}";
+                });
+            DatabaseService.Instance.SaveSetting("cases_column_order", "v2;" + string.Join(";", parts));
+        }
+        catch { }
     }
 
     private void RestoreColumnOrder()
     {
-        var savedOrder = DatabaseService.Instance.GetSetting("cases_column_order");
-        if (string.IsNullOrEmpty(savedOrder)) return;
-        var orderHeaders = savedOrder.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        var saved = DatabaseService.Instance.GetSetting("cases_column_order");
+        if (string.IsNullOrEmpty(saved) || !saved.Contains(';')) return; // old format: ignore
+        // v2 = widths are saved only for columns the user resized. Older
+        // saves wrote a pixel width for EVERY column, which froze all Auto
+        // columns — for those, restore the order only and leave widths Auto.
+        var isV2 = saved.StartsWith("v2;");
         var columns = CasesGrid.Columns.ToList();
         _suppressColumnSave = true;
         try
         {
+            var seen = new HashSet<string>();
             int displayIndex = 0;
-            foreach (var header in orderHeaders)
+            foreach (var entry in saved.Split(';', StringSplitOptions.RemoveEmptyEntries))
             {
-                var col = columns.FirstOrDefault(c => c.Header?.ToString() == header);
-                if (col != null) { col.DisplayIndex = displayIndex; displayIndex++; }
+                var eq = entry.IndexOf('=');
+                if (eq <= 0) continue;
+                var key = Uri.UnescapeDataString(entry[..eq]);
+                var rest = entry[(eq + 1)..].Split(':');
+                if (rest.Length != 2 || !int.TryParse(rest[0], out _)) continue;
+                var col = columns.FirstOrDefault(c => ColumnKey(c) == key);
+                if (col == null || !seen.Add(key)) continue;
+                col.DisplayIndex = displayIndex++;
+                // Restore a saved width only for v2 saves (user-resized
+                // columns); the checkbox column keeps its fixed 40.
+                // No upper limit on restored widths: a column the user dragged
+                // wider than 600px must come back that wide (only the 20px
+                // floor stays, so an accidentally collapsed column is not
+                // restored at zero width).
+                if (isV2 && ColumnKey(col) != "☐" && double.TryParse(rest[1], out double w) && w >= 20)
+                {
+                    col.Width = new DataGridLength(w);
+                    _userResizedColumns.Add(ColumnKey(col));
+                }
+            }
+            // Columns not in the saved layout (e.g. added later) go last,
+            // in their XAML order, so DisplayIndex values never collide.
+            foreach (var col in columns)
+            {
+                if (!seen.Contains(ColumnKey(col)))
+                    col.DisplayIndex = displayIndex++;
             }
         }
         finally { _suppressColumnSave = false; }
@@ -83,40 +182,33 @@ public partial class CasesView : UserControl
 
     private void ResetColumns_Click(object sender, RoutedEventArgs e)
     {
-        // چینش پیش‌فرض دقیقاً مطابق ترتیب XAML
-        string[] defaultHeaders = new[]
-        {
-            "☐", "ردیف", "شماره پرونده", "شماره سریال", "نام مالک", "همراه مالک",
-            "نام پدر", "کد ملی", "تلفن مالک", "آدرس مالک", "کد پستی", "زادگاه",
-            "نوع کاربری", "گروه ساختمانی", "کد نوسازی", "شماره دستور نقشه",
-            "نوع دستور نقشه", "تاریخ دستور نقشه", "مساحت زمین", "متراژ پاراف",
-            "متراژ کسر ظرفیت", "نوع سازه", "عنوان بلوک", "تعداد بلوک",
-            "طبقات", "واحدها", "صادرکننده پروانه", "شماره پروانه",
-            "تاریخ صدور پروانه", "تاریخ ترخیص", "محدوده طرح", "آدرس",
-            "دفتر", "تاریخ کسر ظرفیت", "مسئولیت"
-        };
         _suppressColumnSave = true;
         try
         {
-            var columns = CasesGrid.Columns.ToList();
-            for (int i = 0; i < defaultHeaders.Length; i++)
+            // Restore the exact XAML defaults captured on first load:
+            // declaration order AND declared width (Auto for most columns).
+            if (_defaultColumnLayout != null)
             {
-                var col = columns.FirstOrDefault(c => c.Header?.ToString() == defaultHeaders[i]);
-                if (col != null) col.DisplayIndex = i;
+                foreach (var col in CasesGrid.Columns)
+                {
+                    if (_defaultColumnLayout.TryGetValue(ColumnKey(col), out var d))
+                    {
+                        col.DisplayIndex = d.DisplayIndex;
+                        col.Width = d.Width;
+                    }
+                }
             }
-            // ستون‌های ناشناخته (در صورت افزوده شدن در آینده) انتهای جدول
-            int next = defaultHeaders.Length;
-            foreach (var col in columns)
+            else
             {
-                var h = col.Header?.ToString() ?? "";
-                if (!defaultHeaders.Contains(h))
-                    col.DisplayIndex = next++;
+                for (int i = 0; i < CasesGrid.Columns.Count; i++)
+                    CasesGrid.Columns[i].DisplayIndex = i;
             }
         }
         finally { _suppressColumnSave = false; }
         try
         {
             DatabaseService.Instance.SaveSetting("cases_column_order", "");
+            _userResizedColumns.Clear();
             _vm.StatusMessage = "چینش ستون‌ها به حالت پیش‌فرض برگشت ✓";
         }
         catch { }
@@ -174,7 +266,10 @@ public partial class CasesView : UserControl
         string cellText = GetCellText(cell);
         var item = cell.DataContext as CaseDisplayItem;
 
-        var menu = new ContextMenu { FlowDirection = FlowDirection.RightToLeft, FontFamily = new FontFamily("B Nazanin"), FontSize = 14 };
+        // Follow the font the user picked in Settings (falls back to B Nazanin).
+        var appFont = System.Windows.Application.Current?.Resources["FontFamily"] as FontFamily
+                      ?? new FontFamily("B Nazanin");
+        var menu = new ContextMenu { FlowDirection = FlowDirection.RightToLeft, FontFamily = appFont, FontSize = 14 };
 
         if (!string.IsNullOrEmpty(cellText))
         {
@@ -244,7 +339,7 @@ public partial class CasesView : UserControl
     private void CopyRowsToClipboard(IReadOnlyList<CaseDisplayItem> rows)
     {
         if (rows.Count == 0) { MessageBox.Show("ردیفی انتخاب نشده.", "کپی", MessageBoxButton.OK, MessageBoxImage.Information); return; }
-        var headers = CasesGrid.Columns.Where(c => c.Header?.ToString() != "☐" && c.Visibility == Visibility.Visible)
+        var headers = CasesGrid.Columns.Where(c => c is not DataGridCheckBoxColumn && c.Visibility == Visibility.Visible)
                         .Select(c => c.Header?.ToString() ?? "").ToList();
         var lines = new List<string> { string.Join("\t", headers) };
         foreach (var r in rows)
@@ -252,7 +347,7 @@ public partial class CasesView : UserControl
             var vals = new List<string>();
             foreach (var col in CasesGrid.Columns)
             {
-                if (col.Header?.ToString() == "☐" || col.Visibility != Visibility.Visible) continue;
+                if (col is DataGridCheckBoxColumn || col.Visibility != Visibility.Visible) continue;
                 vals.Add(GetValueForColumn(r, col));
             }
             lines.Add(string.Join("\t", vals));
@@ -321,7 +416,7 @@ public partial class CasesView : UserControl
             ws.Style.Font.FontName = "B Nazanin";
             ws.Style.Font.FontSize = 14;
 
-            var cols = CasesGrid.Columns.Where(c => c.Header?.ToString() != "☐" && c.Visibility == Visibility.Visible).ToList();
+            var cols = CasesGrid.Columns.Where(c => c is not DataGridCheckBoxColumn && c.Visibility == Visibility.Visible).ToList();
             // header
             for (int i = 0; i < cols.Count; i++)
             {

@@ -10,8 +10,8 @@ namespace NezamMonitorPro.Security.Services
     /// </summary>
     public sealed class CredentialData
     {
-        public byte[] Hash { get; set; }
-        public byte[] Salt { get; set; }
+        public byte[] Hash { get; set; } = null!;
+        public byte[] Salt { get; set; } = null!;
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
         public int Argon2Iterations { get; set; } = Argon2PasswordHasher.Iterations;
         public int Argon2MemoryKib { get; set; } = Argon2PasswordHasher.MemoryKib;

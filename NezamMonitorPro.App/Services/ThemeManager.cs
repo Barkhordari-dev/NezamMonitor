@@ -20,19 +20,44 @@ public sealed class ThemeManager
     public ThemeManager(NezamDatabase db)
     {
         _db = db;
-        _currentTheme = BuiltInThemes.Pro;
+        _currentTheme = BuiltInThemes.Light;
     }
 
     public AppTheme LoadTheme()
     {
         var settings = _db.LoadSettings();
-        var theme = BuiltInThemes.Pro;
+        var theme = BuiltInThemes.Light;
+        var foundSavedTheme = false;
 
         if (settings.TryGetValue($"{DbPrefix}Name", out var name))
         {
             var allThemes = BuiltInThemes.GetAllThemes();
             var match = allThemes.FirstOrDefault(t => t.Name == name);
-            if (match != null) theme = match.Clone();
+            if (match != null) { theme = match.Clone(); foundSavedTheme = true; }
+            // A user-customised theme is stored under the name "Custom" with
+            // its colours/fonts/dimensions in the Settings table — it is not
+            // a deleted built-in theme, so keep it and apply its saved dicts.
+            else if (string.Equals(name, "Custom", StringComparison.OrdinalIgnoreCase))
+                foundSavedTheme = true;
+            // Any other unknown name is a deleted built-in theme: fall through
+            // to the migration below (foundSavedTheme stays false).
+        }
+        else
+        {
+            // Nothing saved yet (fresh install) — Light is the default, and
+            // there is nothing to migrate.
+            foundSavedTheme = true;
+        }
+
+        // If the saved theme no longer exists (deleted theme, or a custom
+        // "Custom" name from the old theme list), do NOT resurrect it by
+        // applying the saved colour/font/dimension dictionaries on top of
+        // the fallback — migrate the user to Light instead.
+        if (!foundSavedTheme)
+        {
+            _currentTheme = theme;
+            SaveTheme(theme);
+            return theme;
         }
 
         if (settings.TryGetValue($"{DbPrefix}Colors", out var colorJson))
@@ -75,7 +100,51 @@ public sealed class ThemeManager
     {
         var defaultTheme = BuiltInThemes.Light;
         SaveTheme(defaultTheme);
+        SaveTableAlignment("Center");
         return defaultTheme;
+    }
+
+    /// <summary>Table text alignment setting (theme_TableAlignment):
+    /// "Center" (default), "Right" or "Left". Kept outside the theme so a
+    /// theme change does not wipe it.</summary>
+    public string GetTableAlignment()
+    {
+        var value = _db.GetSetting("theme_TableAlignment", "Center");
+        return value is "Right" or "Left" or "Center" ? value : "Center";
+    }
+
+    public void SaveTableAlignment(string value)
+    {
+        if (value is not ("Right" or "Left" or "Center")) value = "Center";
+        _db.SaveSetting("theme_TableAlignment", value);
+        ApplyTableAlignment(value);
+    }
+
+    private static void ApplyTableAlignment(string value)
+    {
+        var app = Application.Current;
+        if (app == null) return;
+        // The setting means a PHYSICAL direction. HorizontalContentAlignment
+        // is physical, but TextAlignment is flow-direction-relative in WPF:
+        // in an RTL paragraph Left lands on the physical right and Right on
+        // the physical left. Setting both resources to the same value
+        // therefore put the cell text and the header on OPPOSITE sides
+        // (invisible while the default was Center, which is symmetric).
+        // So the TextAlignment value is inverted in RTL.
+        var rtl = app.Resources["TableFlowDirection"] is not FlowDirection fd
+                  || fd == FlowDirection.RightToLeft;
+        app.Resources["TableTextAlignment"] = value switch
+        {
+            "Right" => rtl ? TextAlignment.Left : TextAlignment.Right,
+            "Left" => rtl ? TextAlignment.Right : TextAlignment.Left,
+            _ => TextAlignment.Center,
+        };
+        app.Resources["TableContentAlignment"] = value switch
+        {
+            "Right" => HorizontalAlignment.Right,
+            "Left" => HorizontalAlignment.Left,
+            _ => HorizontalAlignment.Center,
+        };
     }
 
     public void ApplyTheme(AppTheme? theme = null)
@@ -87,6 +156,8 @@ public sealed class ThemeManager
         // Settings table that were saved before this colour existed.
         try { theme.Colors.DeriveSidebarActiveSoft(); } catch { }
         try { theme.Colors.DeriveTableTints(); } catch { }
+        try { theme.Colors.DeriveOnColors(); } catch { }
+        try { theme.Colors.DeriveTextColors(); } catch { }
 
         _currentTheme = theme;
 
@@ -114,6 +185,21 @@ public sealed class ThemeManager
         app.Resources["WarningBrush"] = new SolidColorBrush(HexToColor(theme.Colors.Warning));
         app.Resources["ErrorBrush"] = new SolidColorBrush(HexToColor(theme.Colors.Error));
         app.Resources["InfoBrush"] = new SolidColorBrush(HexToColor(theme.Colors.Info));
+        // Text that goes ON a filled colour (buttons, badges) — white or
+        // near-black, whichever reads better on that fill in this theme.
+        app.Resources["OnPrimaryBrush"] = new SolidColorBrush(HexToColor(theme.Colors.OnPrimary));
+        app.Resources["OnAccentBrush"] = new SolidColorBrush(HexToColor(theme.Colors.OnAccent));
+        app.Resources["OnSuccessBrush"] = new SolidColorBrush(HexToColor(theme.Colors.OnSuccess));
+        app.Resources["OnWarningBrush"] = new SolidColorBrush(HexToColor(theme.Colors.OnWarning));
+        app.Resources["OnErrorBrush"] = new SolidColorBrush(HexToColor(theme.Colors.OnError));
+        app.Resources["OnInfoBrush"] = new SolidColorBrush(HexToColor(theme.Colors.OnInfo));
+        app.Resources["OnSecondaryBrush"] = new SolidColorBrush(HexToColor(theme.Colors.OnSecondary));
+        // Coloured text that goes ON a card/surface (dashboard numbers, ...).
+        app.Resources["PrimaryTextBrush"] = new SolidColorBrush(HexToColor(theme.Colors.PrimaryText));
+        app.Resources["AccentTextBrush"] = new SolidColorBrush(HexToColor(theme.Colors.AccentText));
+        app.Resources["SuccessTextBrush"] = new SolidColorBrush(HexToColor(theme.Colors.SuccessText));
+        app.Resources["WarningTextBrush"] = new SolidColorBrush(HexToColor(theme.Colors.WarningText));
+        app.Resources["ErrorTextBrush"] = new SolidColorBrush(HexToColor(theme.Colors.ErrorText));
         app.Resources["SidebarBrush"] = new SolidColorBrush(HexToColor(theme.Colors.Sidebar));
         app.Resources["SidebarTextBrush"] = new SolidColorBrush(HexToColor(theme.Colors.SidebarText));
         app.Resources["SidebarActiveBrush"] = new SolidColorBrush(HexToColor(theme.Colors.SidebarActive));
@@ -158,6 +244,10 @@ public sealed class ThemeManager
         app.Resources["TableFlowDirection"] = ToFlowDirection(dir.TableDirection);
         app.Resources["MenuFlowDirection"] = ToFlowDirection(dir.MenuDirection);
 
+        // Table text alignment — read from its own setting (not from the
+        // theme), so changing the theme never resets it. Default: Center.
+        ApplyTableAlignment(GetTableAlignment());
+
         // Language برای BiDi (فارسی)
         var xmlLang = System.Windows.Markup.XmlLanguage.GetLanguage("fa-IR");
 
@@ -198,34 +288,70 @@ public sealed class ThemeManager
     }
 
     /// <summary>
-    /// Builds a FontFamily safely. The bundled Vazir font is referenced through a
-    /// pack:// URI so it resolves even on machines where it is not installed.
+    /// Builds a FontFamily safely. The bundled B Nazanin and Vazir fonts are
+    /// referenced through pack:// URIs so they resolve even on machines where
+    /// they are not installed; other names fall back to Tahoma, then Arial.
+    ///
+    /// NOTE — why the two-argument constructor: the previous code built a
+    /// single string "pack://application:,,,/Fonts/BNazanin.ttf#B Nazanin,
+    /// Tahoma, Arial". WPF splits a FontFamily string on commas, and the
+    /// pack:// URI itself contains commas ("application:,,,"), so the URI
+    /// was torn apart and the font never resolved — the app silently fell
+    /// back to Tahoma. That is why picking "B Nazanin" in Settings changed
+    /// nothing (the app was already rendering Tahoma) while picking Arial
+    /// (a plain system-font name) worked. The documented
+    /// FontFamily(baseUri, "./Fonts/File.ttf#Family") form has no such
+    /// parsing problem. The GlyphTypeface probe keeps the behaviour safe:
+    /// if the bundled file is missing from the build, the name falls back
+    /// to an installed copy of the font, then Tahoma, then Arial.
     /// </summary>
     private static FontFamily BuildFontFamily(string name)
     {
         try
         {
-            if (string.IsNullOrWhiteSpace(name)) name = "Vazir";
-            
-            // ساخت زنجیره فونت برای Fallback استاندارد (فونت انتخابی کاربر -> تاهوما -> آریال)
-            string fallbackChain = $"{name}, Tahoma, Arial";
+            if (string.IsNullOrWhiteSpace(name)) name = "B Nazanin";
 
             if (name.StartsWith("pack://", StringComparison.OrdinalIgnoreCase))
                 return new FontFamily(name);
 
-            if (string.Equals(name, "Vazir", StringComparison.OrdinalIgnoreCase))
+            if (string.Equals(name, "B Nazanin", StringComparison.OrdinalIgnoreCase)
+                && EmbeddedFontExists("Fonts/BNazanin.ttf"))
             {
-                var uri = new Uri("pack://application:,,,/Fonts/Vazirmatn-Regular.ttf", UriKind.Absolute);
-                // WPF از کاما برای لیست Fallback در FontFamily پشتیبانی می‌کند
-                return new FontFamily($"{uri}#Vazir, Tahoma, Arial");
+                return new FontFamily(new Uri("pack://application:,,,/"),
+                    "./Fonts/BNazanin.ttf#B Nazanin");
             }
 
-            return new FontFamily(fallbackChain);
+            if (string.Equals(name, "Vazir", StringComparison.OrdinalIgnoreCase)
+                && EmbeddedFontExists("Fonts/Vazirmatn-Regular.ttf"))
+            {
+                return new FontFamily(new Uri("pack://application:,,,/"),
+                    "./Fonts/Vazirmatn-Regular.ttf#Vazir");
+            }
+
+            // System font (or an installed copy of a bundled name): a plain
+            // comma list is parsed correctly because it contains no URI.
+            return new FontFamily($"{name}, Tahoma, Arial");
         }
         catch
         {
             try { return new FontFamily("Tahoma, Arial"); }
             catch { return new FontFamily(); }
+        }
+    }
+
+    /// <summary>True when the bundled font file exists as an application
+    /// resource (i.e. it was included in the build as a Resource).</summary>
+    private static bool EmbeddedFontExists(string relativePath)
+    {
+        try
+        {
+            var uri = new Uri($"pack://application:,,,/{relativePath}", UriKind.Absolute);
+            _ = new System.Windows.Media.GlyphTypeface(uri);
+            return true;
+        }
+        catch
+        {
+            return false;
         }
     }
 

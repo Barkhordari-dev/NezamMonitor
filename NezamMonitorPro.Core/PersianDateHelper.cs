@@ -44,6 +44,9 @@ public static class PersianDateHelper
     /// <summary>
     /// رشته تاریخ میلادی "yyyy/MM/dd HH:mm" (یا با ثانیه/خط‌تیره) را به شمسی "yyyy/MM/dd HH:mm" تبدیل می‌کند.
     /// اگر پارس نشد، خود رشته برگردانده می‌شود.
+    /// توجه: تاریخ‌هایی که قبلاً به‌اشتباه با تقویم شمسی ذخیره شده‌اند (سال ۱۳۰۰ تا ۱۴۹۹،
+    /// چون App فرهنگ fa-IR را پیش‌فرض می‌کند و ToString بدون InvariantCulture شمسی می‌دهد)
+    /// دوباره تبدیل نمی‌شوند؛ همان رشته برگردانده می‌شود تا به سال ۰۷۸۴ تبدیل نشود.
     /// </summary>
     public static string GregoryStringToShamsi(string? gregorianDateTime)
     {
@@ -57,7 +60,40 @@ public static class PersianDateHelper
                 System.Globalization.DateTimeStyles.None, out var dt)
             || DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
                 System.Globalization.DateTimeStyles.None, out dt))
+        {
+            // سال ۱۳۰۰ تا ۱۴۹۹ یعنی تاریخ در واقع شمسی است، نه میلادی ۱۴۰۵.
+            if (dt.Year >= 1300 && dt.Year <= 1499)
+                return s;
             return ToShamsiDateTime(dt);
+        }
         return s;
+    }
+
+    /// <summary>
+    /// رشته تاریخ را به میلادی "yyyy/MM/dd HH:mm" نرمال می‌کند.
+    /// اگر رشته در واقع شمسی ذخیره شده باشد (سال ۱۳۰۰ تا ۱۴۹۹)، آن را به میلادی تبدیل می‌کند؛
+    /// در غیر این صورت رشته بدون تغییر برگردانده می‌شود.
+    /// </summary>
+    public static string NormalizeToGregorian(string? dateTimeString)
+    {
+        if (string.IsNullOrWhiteSpace(dateTimeString)) return "";
+        var s = dateTimeString.Trim();
+        string[] fmts = { "yyyy/MM/dd HH:mm:ss", "yyyy/MM/dd HH:mm", "yyyy/MM/dd",
+                          "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd HH:mm", "yyyy-MM-dd" };
+        if (!DateTime.TryParseExact(s, fmts, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out var dt)
+            && !DateTime.TryParse(s, System.Globalization.CultureInfo.InvariantCulture,
+                System.Globalization.DateTimeStyles.None, out dt))
+            return s;
+        if (dt.Year < 1300 || dt.Year > 1499) return s;
+        try
+        {
+            var gregorian = _pc.ToDateTime(dt.Year, dt.Month, dt.Day, dt.Hour, dt.Minute, dt.Second, 0);
+            return gregorian.ToString("yyyy/MM/dd HH:mm", System.Globalization.CultureInfo.InvariantCulture);
+        }
+        catch
+        {
+            return s;
+        }
     }
 }

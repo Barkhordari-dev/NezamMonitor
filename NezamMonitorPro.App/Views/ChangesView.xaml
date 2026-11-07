@@ -12,35 +12,49 @@
 
         <TextBlock Grid.Row="0" Text="📈 مقایسه اسنپ‌شات‌ها" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
 
-        <Grid Grid.Row="1" Margin="0,0,0,10">
+        <Grid Grid.Row="1" Margin="0,0,0,10" HorizontalAlignment="Center">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
                 <ColumnDefinition Width="Auto"/>
-                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
                 <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="از:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource FontSize}"/>
             <ComboBox Grid.Column="1" ItemsSource="{Binding Snapshots}" SelectedValue="{Binding FromSnapshotId}"
-                      SelectedValuePath="Id" DisplayMemberPath="DisplayText" Width="250" Margin="5,0" FontSize="{DynamicResource FontSize}"/>
-            <TextBlock Grid.Column="2" Text="تا:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource FontSize}"/>
+                      SelectedValuePath="Id" MinWidth="340" Margin="5,0" FontSize="{DynamicResource FontSize}"
+                      ToolTip="{Binding SelectedItem.DisplayText, RelativeSource={RelativeSource Self}}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayText}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayText}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
+            <TextBlock Grid.Column="2" Text="تا:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="15,0,0,0"/>
             <ComboBox Grid.Column="3" ItemsSource="{Binding Snapshots}" SelectedValue="{Binding ToSnapshotId}"
-                      SelectedValuePath="Id" DisplayMemberPath="DisplayText" Width="250" Margin="5,0" FontSize="{DynamicResource FontSize}"/>
+                      SelectedValuePath="Id" MinWidth="340" Margin="5,0" FontSize="{DynamicResource FontSize}"
+                      ToolTip="{Binding SelectedItem.DisplayText, RelativeSource={RelativeSource Self}}">
+                <ComboBox.ItemTemplate>
+                    <DataTemplate>
+                        <TextBlock Text="{Binding DisplayText}" TextTrimming="CharacterEllipsis" ToolTip="{Binding DisplayText}"/>
+                    </DataTemplate>
+                </ComboBox.ItemTemplate>
+            </ComboBox>
         </Grid>
 
         <Button Grid.Row="2" Content="🔍 مقایسه" Command="{Binding CompareCommand}"
-                Width="120" Height="35" Background="{DynamicResource PrimaryBrush}" Foreground="White"
+                MinWidth="120" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"
                 FontWeight="Bold" FontSize="{DynamicResource ButtonFontSize}" Margin="0,0,0,10"/>
 
         <DataGrid Grid.Row="3" ItemsSource="{Binding Changes}" AutoGenerateColumns="False"
                   IsReadOnly="True" AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="Horizontal"
                   HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" FlowDirection="{DynamicResource TableFlowDirection}">
             <DataGrid.Columns>
-                <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" Width="100"/>
-                <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" Width="120"/>
-                <DataGridTextColumn Header="نوع" Binding="{Binding ChangeType}" Width="80"/>
-                <DataGridTextColumn Header="فیلد" Binding="{Binding Field}" Width="100"/>
-                <DataGridTextColumn Header="مقدار قبلی" Binding="{Binding OldValue}" Width="150"/>
-                <DataGridTextColumn Header="مقدار جدید" Binding="{Binding NewValue}" Width="150"/>
+                <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="نوع" Binding="{Binding ChangeType}" Width="Auto" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
+                <DataGridTextColumn Header="فیلد" Binding="{Binding Field}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="مقدار قبلی" Binding="{Binding OldValue}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="مقدار جدید" Binding="{Binding NewValue}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
             </DataGrid.Columns>
         </DataGrid>
 

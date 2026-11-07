@@ -45,19 +45,69 @@ public partial class MainWindow : Window
             else _uiScale -= 0.1;
 
             _uiScale = Math.Max(0.7, Math.Min(1.5, _uiScale));
-
-            _uiScaleTransform.ScaleX = _uiScale;
-            _uiScaleTransform.ScaleY = _uiScale;
-            
+            ApplyZoom();
             e.Handled = true;
         }
+    }
+
+    private void Window_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        // Ctrl+0 resets the zoom to 100%.
+        if (System.Windows.Input.Keyboard.Modifiers == System.Windows.Input.ModifierKeys.Control
+            && e.Key == System.Windows.Input.Key.D0)
+        {
+            _uiScale = 1.0;
+            ApplyZoom();
+            e.Handled = true;
+        }
+    }
+
+    /// <summary>
+    /// Applies the current zoom scale. The scale itself is a LayoutTransform
+    /// (vector, so text is re-rendered, not stretched as a bitmap), but the
+    /// text-rendering mode must follow it: ClearType + Display mode assume
+    /// glyphs land exactly on the monitor's sub-pixel grid, which breaks at
+    /// fractional scales (1.1, 1.3, ...) and makes Persian text look blurry
+    /// with colour fringing. While zoomed, switch to device-independent
+    /// Ideal + Grayscale rendering and turn off layout rounding, which also
+    /// fights fractional scales; at 100% the crisp Display/ClearType
+    /// rendering is restored.
+    /// </summary>
+    private void ApplyZoom()
+    {
+        _uiScaleTransform.ScaleX = _uiScale;
+        _uiScaleTransform.ScaleY = _uiScale;
+        bool zoomed = Math.Abs(_uiScale - 1.0) > 0.001;
+        TextOptions.SetTextFormattingMode(MainContentGrid,
+            zoomed ? TextFormattingMode.Ideal : TextFormattingMode.Display);
+        TextOptions.SetTextRenderingMode(MainContentGrid,
+            zoomed ? TextRenderingMode.Grayscale : TextRenderingMode.ClearType);
+        MainContentGrid.UseLayoutRounding = !zoomed;
+        RenderOptions.SetBitmapScalingMode(MainContentGrid,
+            zoomed ? BitmapScalingMode.HighQuality : BitmapScalingMode.Linear);
+        SyncGeneratorZoom();
+    }
+
+    /// <summary>Keeps GeneratorView's grid height caps in step with the zoom
+    /// (see GeneratorView.ApplyZoom): the caps must grow when zooming out,
+    /// otherwise the tables just shrink instead of showing more rows.</summary>
+    private void SyncGeneratorZoom()
+    {
+        try
+        {
+            if (MainFrame?.Content is Views.GeneratorView gv)
+                gv.ApplyZoom(_uiScale);
+        }
+        catch { }
     }
 
     public MainWindow()
     {
         InitializeComponent();
         this.PreviewMouseWheel += Window_PreviewMouseWheel;
+        this.PreviewKeyDown += Window_PreviewKeyDown;
         MainContentGrid.LayoutTransform = _uiScaleTransform;
+        ApplyZoom();
         DataContext = _vm;
         _nav = App.Navigation;
         _nav.SetFrame(MainFrame);
@@ -241,6 +291,7 @@ public partial class MainWindow : Window
         _nav.NavigateTo(key);
         UpdatePageHeader(key);
         SelectNavItem(key);
+        SyncGeneratorZoom();
     }
 
     /// <summary>The currently displayed view (Frame content). Used by the render/verification mode.</summary>

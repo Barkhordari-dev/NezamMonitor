@@ -1,4 +1,4 @@
-﻿using System.Globalization;
+using System.Globalization;
 using System.Windows.Input;
 using NezamMonitorPro.Core.Data;
 using NezamMonitorPro.Core.Models;
@@ -48,13 +48,10 @@ public sealed class DashboardViewModel : ViewModelBase
     {
         _db = db;
         RefreshCommand = new RelayCommand(() => LoadDashboard());
-        _ = LoadDashboardAsync();
-    }
-
-    private async Task LoadDashboardAsync()
-    {
-        await Task.Delay(150);
-        LoadDashboard();
+        // No load here: NavigationService calls OnNavigatedTo() (DashboardView)
+        // on every navigation, including the first one, which runs
+        // LoadDashboard. Loading here too meant every dashboard visit loaded
+        // the whole database twice.
     }
 
     private void LoadDashboard()

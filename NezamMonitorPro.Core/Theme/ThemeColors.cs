@@ -52,6 +52,28 @@ public sealed class ThemeColors
 
     public string ShadowColor { get; set; } = "#FF0B1B33";
 
+    /// <summary>Text colour to use ON a filled Primary/Success/... background.
+    /// Derived by ThemeManager from the fill colour (white or near-black,
+    /// whichever has the better WCAG contrast), so a bright fill in one theme
+    /// never gets unreadable white text.</summary>
+    public string OnPrimary { get; set; } = "#FFFFFFFF";
+    public string OnAccent { get; set; } = "#FFFFFFFF";
+    public string OnSuccess { get; set; } = "#FF111827";
+    public string OnWarning { get; set; } = "#FF111827";
+    public string OnError { get; set; } = "#FFFFFFFF";
+    public string OnInfo { get; set; } = "#FFFFFFFF";
+    public string OnSecondary { get; set; } = "#FFFFFFFF";
+
+    /// <summary>Coloured text used ON a card/surface (e.g. dashboard numbers).
+    /// A fill colour is often too light to read as text on a light card, or
+    /// too dark on a dark card, so these are the fill colour mixed towards
+    /// black (light card) or white (dark card).</summary>
+    public string PrimaryText { get; set; } = "#FF2563EB";
+    public string AccentText { get; set; } = "#FF7C3AED";
+    public string SuccessText { get; set; } = "#FF047857";
+    public string WarningText { get; set; } = "#FF92400E";
+    public string ErrorText { get; set; } = "#FFB91C1C";
+
     public ThemeColors Clone()
     {
         return (ThemeColors)MemberwiseClone();
@@ -120,6 +142,56 @@ public sealed class ThemeColors
         var byteAlpha = Math.Clamp((int)Math.Round(alpha * 255), 0x0A, 0xE0);
         SidebarActiveSoft = $"#{byteAlpha:X2}{chosen.R:X2}{chosen.G:X2}{chosen.B:X2}";
     }
+
+    /// <summary>
+    /// Derives the On* colours: for each filled colour, pick white or
+    /// near-black text, whichever has the better WCAG contrast against it.
+    /// </summary>
+    public void DeriveOnColors()
+    {
+        OnPrimary = BestOn(Primary);
+        OnAccent = BestOn(Accent);
+        OnSuccess = BestOn(Success);
+        OnWarning = BestOn(Warning);
+        OnError = BestOn(Error);
+        OnInfo = BestOn(Info);
+        OnSecondary = BestOn(TextSecondary);
+    }
+
+    private static string BestOn(string hex)
+    {
+        var bg = ParseRgb(hex);
+        if (bg is null) return "#FFFFFFFF";
+        var white = (255, 255, 255);
+        var dark = (17, 24, 39);
+        return Contrast(white, bg.Value) >= Contrast(dark, bg.Value) ? "#FFFFFFFF" : "#FF111827";
+    }
+
+    /// <summary>
+    /// Derives the *Text colours for coloured text on a card: mix the fill
+    /// colour towards black on a light card, towards white on a dark card.
+    /// </summary>
+    public void DeriveTextColors()
+    {
+        var card = ParseRgb(Card);
+        if (card is null) return;
+        var lightCard = Luminance(card.Value) > 0.5;
+        double mix = 0.45;
+        PrimaryText = ToHex8(MixText(Primary, lightCard, mix));
+        AccentText = ToHex8(MixText(Accent, lightCard, mix));
+        SuccessText = ToHex8(MixText(Success, lightCard, mix));
+        WarningText = ToHex8(MixText(Warning, lightCard, mix));
+        ErrorText = ToHex8(MixText(Error, lightCard, mix));
+    }
+
+    private static (int R, int G, int B) MixText(string hex, bool lightCard, double mix)
+    {
+        var c = ParseRgb(hex) ?? (128, 128, 128);
+        var towards = lightCard ? (0, 0, 0) : (255, 255, 255);
+        return Blend(towards, c, mix);
+    }
+
+    private static string ToHex8((int R, int G, int B) c) => $"#FF{c.R:X2}{c.G:X2}{c.B:X2}";
 
     /// <summary>
     /// Recomputes the table tints from the theme's own background/panel
@@ -229,6 +301,18 @@ public sealed class ThemeColors
             ["TableRowHover"] = TableRowHover,
             ["TableRowSelected"] = TableRowSelected,
             ["ShadowColor"] = ShadowColor,
+            ["OnPrimary"] = OnPrimary,
+            ["OnAccent"] = OnAccent,
+            ["OnSuccess"] = OnSuccess,
+            ["OnWarning"] = OnWarning,
+            ["OnError"] = OnError,
+            ["OnInfo"] = OnInfo,
+            ["OnSecondary"] = OnSecondary,
+            ["PrimaryText"] = PrimaryText,
+            ["AccentText"] = AccentText,
+            ["SuccessText"] = SuccessText,
+            ["WarningText"] = WarningText,
+            ["ErrorText"] = ErrorText,
         };
     }
 

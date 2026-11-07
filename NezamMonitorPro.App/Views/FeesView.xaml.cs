@@ -23,11 +23,19 @@ public partial class FeesView : UserControl
         if (DataContext is FeesViewModel vm) vm.ActiveTab = tab;
         PanelFees.Visibility = tab == 0 ? Visibility.Visible : Visibility.Collapsed;
         PanelReceipts.Visibility = tab == 1 ? Visibility.Visible : Visibility.Collapsed;
-        BtnTabFee.Background = tab == 0 ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3498DB")) : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#ECF0F1"));
-        BtnTabFee.Foreground = tab == 0 ? System.Windows.Media.Brushes.White : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C3E50"));
-        BtnTabReceipt.Background = tab == 1 ? new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#3498DB")) : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#ECF0F1"));
-        BtnTabReceipt.Foreground = tab == 1 ? System.Windows.Media.Brushes.White : new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#2C3E50"));
+        // Tab colours follow the active theme (was hard-coded #3498DB + white,
+        // 3.15:1, and a fixed light #ECF0F1 that looked wrong in dark themes).
+        BtnTabFee.Background = TabBackground(tab == 0);
+        BtnTabFee.Foreground = TabForeground(tab == 0);
+        BtnTabReceipt.Background = TabBackground(tab == 1);
+        BtnTabReceipt.Foreground = TabForeground(tab == 1);
     }
+
+    private static Brush TabBackground(bool active)
+        => (Brush)(Application.Current?.TryFindResource(active ? "PrimaryBrush" : "PanelBrush") ?? Brushes.LightGray);
+
+    private static Brush TabForeground(bool active)
+        => (Brush)(Application.Current?.TryFindResource(active ? "OnPrimaryBrush" : "TextBrush") ?? Brushes.Black);
 
     private void ReceiptsGrid_DoubleClick(object sender, MouseButtonEventArgs e)
     {

@@ -31,6 +31,11 @@ public sealed class Case
     public List<Fee> Fees { get; set; } = new();
     public List<ReportRecord> Reports { get; set; } = new();
 
+    /// <summary>True when Engineers/Fees/Reports were loaded for this case
+    /// (LoadCases sets it; LoadCasesLight leaves it false and the children
+    /// are loaded on demand by LoadCaseChildren).</summary>
+    public bool ChildrenLoaded { get; set; }
+
     public CaseKey Key => new(CaseNumber, Serial);
 }
 

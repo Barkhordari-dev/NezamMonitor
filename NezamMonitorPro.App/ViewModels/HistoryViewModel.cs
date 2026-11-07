@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Windows.Input;
 using NezamMonitorPro.App.Services;
+using NezamMonitorPro.Core;
 using NezamMonitorPro.Core.Data;
 
 namespace NezamMonitorPro.App.ViewModels;
@@ -289,5 +290,9 @@ public sealed class SnapshotItem : ViewModelBase
     public bool IsActive { get => _isActive; set { SetProperty(ref _isActive, value); OnPropertyChanged(nameof(DisplayText)); } }
     private bool _isSelectedForMerge;
     public bool IsSelectedForMerge { get => _isSelectedForMerge; set => SetProperty(ref _isSelectedForMerge, value); }
-    public string DisplayText => $"#{Id} | {CreatedAt} | {CaseCount} پرونده {(IsActive ? "← فعلی" : "")}";
+    // All digits in this column must be English (Latin) digits, even when the
+    // stored CreatedAt string or the fa-IR thread culture carries Persian
+    // digits (old snapshots were saved that way).
+    public string DisplayText => DigitNormalizer.ToAsciiDigits(
+        $"#{Id} | {CreatedAt} | {CaseCount} پرونده {(IsActive ? "← فعلی" : "")}");
 }

@@ -6,15 +6,15 @@ namespace NezamMonitorPro.Core.Theme;
 /// </summary>
 public sealed class ThemeFonts
 {
-    public string FontFamily { get; set; } = "Vazir";
-    public string HeadingFontFamily { get; set; } = "Vazir";
+    public string FontFamily { get; set; } = "B Nazanin";
+    public string HeadingFontFamily { get; set; } = "B Nazanin";
     public double GeneralFontSize { get; set; } = 14;
     public double HeadingFontSize { get; set; } = 20;
     public double ButtonFontSize { get; set; } = 13;
     public double InputFontSize { get; set; } = 13;
     public double LabelFontSize { get; set; } = 13;
     public double LogFontSize { get; set; } = 11;
-    public double SidebarFontSize { get; set; } = 16;
+    public double SidebarFontSize { get; set; } = 14;
 
     public ThemeFonts Clone() => (ThemeFonts)MemberwiseClone();
 

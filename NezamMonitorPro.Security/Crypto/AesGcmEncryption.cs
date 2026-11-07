@@ -13,14 +13,14 @@ namespace NezamMonitorPro.Security.Crypto
         /// Encrypts plaintext using AES-256-GCM.
         /// Returns ciphertext || tag (16 bytes tag appended).
         /// </summary>
-        public static byte[] Encrypt(byte[] plaintext, byte[] key, byte[] nonce, byte[] associatedData = null)
+        public static byte[] Encrypt(byte[] plaintext, byte[] key, byte[] nonce, byte[]? associatedData = null)
         {
             if (key == null || key.Length != 32)
                 throw new ArgumentException("Key must be 32 bytes (256 bits)", nameof(key));
             if (nonce == null || nonce.Length != 12)
                 throw new ArgumentException("Nonce must be 12 bytes (96 bits)", nameof(nonce));
 
-            var cipher = new AesGcm(key);
+            var cipher = new AesGcm(key, 16);
             var tag = new byte[16];
             var ciphertext = new byte[plaintext.Length];
             cipher.Encrypt(nonce, plaintext, ciphertext, tag, associatedData);
@@ -35,7 +35,7 @@ namespace NezamMonitorPro.Security.Crypto
         /// <summary>
         /// Decrypts ciphertext that was encrypted with Encrypt (ciphertext || tag).
         /// </summary>
-        public static byte[] Decrypt(byte[] ciphertextWithTag, byte[] key, byte[] nonce, byte[] associatedData = null)
+        public static byte[] Decrypt(byte[] ciphertextWithTag, byte[] key, byte[] nonce, byte[]? associatedData = null)
         {
             if (key == null || key.Length != 32)
                 throw new ArgumentException("Key must be 32 bytes (256 bits)", nameof(key));
@@ -48,8 +48,8 @@ namespace NezamMonitorPro.Security.Crypto
             var ciphertext = ciphertextWithTag[..^16];
             var plaintext = new byte[ciphertext.Length];
             
-            var cipher = new AesGcm(key);
-            cipher.Decrypt(nonce, ciphertext, tag, plaintext, null);
+            var cipher = new AesGcm(key, 16);
+            cipher.Decrypt(nonce, ciphertext, tag, plaintext, associatedData);
             return plaintext;
         }
 

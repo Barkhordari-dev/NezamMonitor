@@ -22,7 +22,7 @@
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="GroupName" Value="ProNav"/>
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
-            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="FontSize" Value="{DynamicResource SidebarFontSize}"/>
             <Setter Property="Foreground" Value="#C7D2E1"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
@@ -59,7 +59,8 @@
         </Style>
 
         <Style x:Key="NavLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="13.5"/>
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+            <Setter Property="FontSize" Value="{DynamicResource SidebarFontSize}"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="TextAlignment" Value="Right"/>
             <Setter Property="Margin" Value="10,0,0,0"/>
@@ -68,6 +69,7 @@
         </Style>
 
         <Style x:Key="SectionLabel" TargetType="TextBlock">
+            <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
             <Setter Property="FontSize" Value="10.5"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Foreground" Value="#7C8CA3"/>
@@ -154,7 +156,7 @@
                                  TextChanged="NavSearchBox_TextChanged"
                                  ToolTip="جستجوی منو (مثلاً: پرونده)"/>
                         <TextBlock Text="&#xE721;" FontFamily="{DynamicResource IconFontFamily}"
-                                   FontSize="14" Foreground="#7C8CA3" HorizontalAlignment="Right"
+                                   FontSize="{DynamicResource FontSize}" Foreground="#7C8CA3" HorizontalAlignment="Right"
                                    Margin="0,0,12,0" VerticalAlignment="Center" IsHitTestVisible="False"/>
                     </Grid>
                 </Border>
@@ -269,7 +271,7 @@
                     <StackPanel>
                         <StackPanel Margin="10,15">
                             <TextBlock Text="تولید و توسعه" FontSize="11" Foreground="#8FA3BC" TextAlignment="Center" HorizontalAlignment="Center"/>
-                            <TextBlock Text="مهندس محمد مهدی برخورداری" FontSize="13" FontWeight="Bold" Foreground="#E4EBF4" TextAlignment="Center" HorizontalAlignment="Center" Padding="4,4" Margin="0,4,0,12"/>
+                            <TextBlock Text="مهندس محمد مهدی برخورداری" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" Foreground="#E4EBF4" TextAlignment="Center" HorizontalAlignment="Center" Padding="4,4" Margin="0,4,0,12"/>
 
                             <TextBlock Text="راه ارتباطی:" FontSize="10" Foreground="#8FA3BC" TextAlignment="Center" HorizontalAlignment="Center"/>
                             <TextBlock Text="mmahdib2020@gmail.com" FontSize="11" Foreground="#E4EBF4" FontFamily="Segoe UI" 
@@ -327,7 +329,7 @@
                             <Border Background="#142563EB" CornerRadius="7" Padding="8,2" Margin="10,0,0,0"
                                     VerticalAlignment="Center">
                                 <TextBlock Text="نسخه پرو" FontSize="9.5" FontWeight="Bold"
-                                           Foreground="{DynamicResource PrimaryBrush}"/>
+                                           Foreground="{DynamicResource PrimaryTextBrush}"/>
                             </Border>
                         </StackPanel>
                         <TextBlock x:Name="PageSubtitleText" Text="نمای کلی وضعیت پرونده‌ها"
