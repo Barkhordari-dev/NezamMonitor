@@ -28,6 +28,12 @@ SinaYazd*.xlsx
 owners_*.vcf
 engineers_*.vcf
 
+# Stray deliverables — fix zips and exported Office files must never be committed
+*.zip
+*.docx
+*.xlsx
+*.xls
+
 # اجازه انتشار قالب‌ها
 !templates/
 !templates/*.docx
