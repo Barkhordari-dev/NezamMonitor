@@ -369,7 +369,7 @@ public partial class CasesView : UserControl, INavigationAware
         }
         menu.Items.Add(new Separator());
         var copyAll = new MenuItem { Header = "📋 کپی همه (فیلتر فعلی)" };
-        copyAll.Click += (_, _) => CopyRowsToClipboard(_vm.Cases.Where(c => true).ToList());
+        copyAll.Click += (_, _) => CopyRowsToClipboard(_vm.FilteredCases.ToList());
         menu.Items.Add(copyAll);
 
         menu.IsOpen = true;
@@ -378,21 +378,24 @@ public partial class CasesView : UserControl, INavigationAware
 
     private void CopySelected_Click(object sender, RoutedEventArgs e)
     {
-        var sel = _vm.Cases.Where(c => c.IsSelected).ToList();
-        if (sel.Count == 0) sel = _vm.Cases.ToList();
+        // v12.4: read the VISIBLE (filtered) rows, never the full list.
+        var sel = _vm.FilteredCases.Where(c => c.IsSelected).ToList();
+        if (sel.Count == 0) sel = _vm.FilteredCases.ToList();
         CopyRowsToClipboard(sel);
     }
 
     private void ExportSelected_Click(object sender, RoutedEventArgs e)
     {
-        var sel = _vm.Cases.Where(c => c.IsSelected).ToList();
-        if (sel.Count == 0) sel = _vm.Cases.ToList();
+        // v12.4: read the VISIBLE (filtered) rows, never the full list.
+        var sel = _vm.FilteredCases.Where(c => c.IsSelected).ToList();
+        if (sel.Count == 0) sel = _vm.FilteredCases.ToList();
         ExportRowsToExcel(sel);
     }
 
     private List<CaseDisplayItem> GetSelectedOrCurrent(CaseDisplayItem? current)
     {
-        var sel = _vm.Cases.Where(c => c.IsSelected).ToList();
+        // v12.4: only checked rows that are currently visible count.
+        var sel = _vm.FilteredCases.Where(c => c.IsSelected).ToList();
         if (sel.Count > 0) return sel;
         if (current != null) return new List<CaseDisplayItem> { current };
         return new List<CaseDisplayItem>();

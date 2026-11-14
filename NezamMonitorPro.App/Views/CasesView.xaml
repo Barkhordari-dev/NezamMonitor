@@ -72,9 +72,10 @@
 
         <!-- Main Table -->
         <Border Grid.Row="2" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="{DynamicResource RadiusSmall}">
-            <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" x:Name="CasesGrid" ItemsSource="{Binding Cases}" AutoGenerateColumns="False"
+            <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" x:Name="CasesGrid" ItemsSource="{Binding FilteredView}" AutoGenerateColumns="False"
                       IsReadOnly="False" AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="All"
                       HeadersVisibility="Column" BorderThickness="0" CanUserSortColumns="True" FrozenColumnCount="3"
+                      EnableRowVirtualization="True" VirtualizingPanel.VirtualizationMode="Recycling"
                       SelectionMode="Extended" SelectionUnit="FullRow"
                       PreviewMouseLeftButtonDown="CasesGrid_PreviewMouseLeftButtonDown"
                       PreviewMouseRightButtonUp="CasesGrid_PreviewMouseRightButtonUp"

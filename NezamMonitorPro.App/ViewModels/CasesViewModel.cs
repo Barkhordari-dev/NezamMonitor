@@ -1,5 +1,9 @@
 ﻿using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.Text;
+using System.Windows.Data;
 using System.Windows.Input;
+using NezamMonitorPro.Core;
 using NezamMonitorPro.Core.Data;
 using NezamMonitorPro.Core.Models;
 
@@ -18,10 +22,22 @@ public sealed class CasesViewModel : ViewModelBase
     private CaseDisplayItem? _selectedCase;
 
     private ObservableCollection<CaseDisplayItem> _cases = new();
-    /// <summary>Replaced wholesale on load/filter so the grid rebinds once
-    /// instead of receiving one CollectionChanged per row (N UI updates on
-    /// every navigation). Backed by SetProperty for the binding.</summary>
+    /// <summary>Full unfiltered list. The grid is NOT bound to this anymore
+    /// (v12.4): it is bound to FilteredView over this same collection, so
+    /// filtering hides/shows rows instead of replacing ItemsSource. The
+    /// instance is never replaced after construction — LoadCases repopulates
+    /// it in place.</summary>
     public ObservableCollection<CaseDisplayItem> Cases { get => _cases; set => SetProperty(ref _cases, value); }
+
+    /// <summary>Live view over Cases (v12.4): the grid's ItemsSource.
+    /// Refresh() re-evaluates the filter without rebuilding the grid.</summary>
+    private readonly ICollectionView _filteredView;
+    public ICollectionView FilteredView => _filteredView;
+
+    /// <summary>Rows currently visible in the grid (search + applied
+    /// filters), in grid order. Copy/Excel read THIS — never the full
+    /// Cases list — so they always operate on the filtered set.</summary>
+    public IEnumerable<CaseDisplayItem> FilteredCases => _filteredView.Cast<CaseDisplayItem>();
     public string SearchText
     {
         get => _searchText;
@@ -105,6 +121,11 @@ public sealed class CasesViewModel : ViewModelBase
             _searchDebounceTimer.Stop();
             FilterCases();
         };
+        // PERF (v12.4): one stable view over the stable collection.
+        // The predicate reads _normalizedQuery + the applied P4 filters;
+        // Refresh() (not a new ItemsSource) is what re-filters the grid.
+        _filteredView = CollectionViewSource.GetDefaultView(_cases);
+        _filteredView.Filter = o => o is CaseDisplayItem item && MatchesFilter(item);
         LoadCases();
     }
 
@@ -112,11 +133,13 @@ public sealed class CasesViewModel : ViewModelBase
     {
         try
         {
-            Cases.Clear();
             var snapshotId = _db.GetActiveSnapshotId();
             if (snapshotId == 0)
             {
                 _loadedSnapshotId = 0;
+                _allCases = new List<CaseDisplayItem>();
+                _cases.Clear();
+                _filteredView.Refresh();
                 StatusMessage = "هنوز داده‌ای ذخیره نشده است.";
                 return;
             }
@@ -125,9 +148,17 @@ public sealed class CasesViewModel : ViewModelBase
             var rawCases = _db.LoadCasesLight(snapshotId);
             _allCases = rawCases.Select((c, i) => new CaseDisplayItem(c) { RowNumber = i + 1 }).ToList();
             RebuildFilterOptions();
-            Cases = new ObservableCollection<CaseDisplayItem>(_allCases);
+            // PERF (v12.4): repopulate the SAME collection instance in place
+            // — the grid stays bound to FilteredView over it, so a reload
+            // does not discard row containers or re-measure Auto columns.
+            // The active search/filter (if any) still applies to the new
+            // rows, so a refresh no longer silently shows all rows while
+            // a query is still typed in the search box.
+            _cases.Clear();
+            foreach (var item in _allCases) _cases.Add(item);
+            _filteredView.Refresh();
             _loadedSnapshotId = snapshotId;
-            StatusMessage = $"{Cases.Count} پرونده بارگذاری شد";
+            StatusMessage = $"{_allCases.Count} پرونده بارگذاری شد";
         }
         catch (Exception ex)
         {
@@ -266,34 +297,62 @@ public sealed class CasesViewModel : ViewModelBase
         return long.TryParse(cleaned, out var r) ? r : 0;
     }
 
+    /// <summary>Normalized search query (empty = no search). Set once per
+    /// filter run in FilterCases; the predicate reads it — rows are never
+    /// re-normalized per keystroke (their Search* keys were computed at load).</summary>
+    private string _normalizedQuery = "";
+
     private void FilterCases()
     {
         // تایمر معلق را خاموش کن تا دوبار اجرا نشود (مثلا «اعمال فیلتر»
         // بلافاصله بعد از تایپ).
         _searchDebounceTimer.Stop();
-        var filtered = string.IsNullOrWhiteSpace(SearchText)
-            ? _allCases
-            : _allCases.Where(c =>
-                c.CaseNumber.Contains(SearchText) ||
-                c.Owner.Contains(SearchText) ||
-                c.Serial.Contains(SearchText) ||
-                c.Id.ToString().Contains(SearchText)).ToList();
-        // P4: applied selection filters (draft values only take effect via Apply).
-        filtered = FilterHelper.ApplyFilters(filtered,
-            (c => c.BuildingGroup, Filters.GetApplied("Group")),
-            (c => c.Responsibility, Filters.GetApplied("Discipline")),
-            (c => c.Owner, Filters.GetApplied("Owner")),
-            (c => c.Office, Filters.GetApplied("Office"))).ToList();
-        // PERF: اگر نتیجه دقیقاً همان چیزی است که الان نشان داده می‌شود،
-        // جایگذاری دوبارهٔ ItemsSource (و اندازه‌گیری دوبارهٔ ۳۴ ستون Auto)
-        // بیهوده است. پیام وضعیت را اول به‌روز می‌کنیم تا متن آن دقیقاً
-        // مثل قبل باشد، بعد فقط جایگذاری را رد می‌کنیم.
+        // PERF (v12.4): only the query is normalized here, once. The grid
+        // re-filters via FilteredView.Refresh() — rows are hidden/shown,
+        // ItemsSource is never replaced, Auto columns are not re-measured.
+        _normalizedQuery = string.IsNullOrWhiteSpace(SearchText) ? "" : NormalizeForSearch(SearchText);
+        _filteredView.Refresh();
         // M-9: وقتی جستجو/فیلتر چیزی پیدا نکرد، پیام روشن است.
-        StatusMessage = filtered.Count == 0 && _allCases.Count > 0 ? "چیزی پیدا نشد" : $"{filtered.Count} پرونده";
-        if (_cases.Count == filtered.Count && _cases.SequenceEqual(filtered))
-            return;
-        Cases = new ObservableCollection<CaseDisplayItem>(filtered);
+        int count = _filteredView.Cast<CaseDisplayItem>().Count();
+        StatusMessage = count == 0 && _allCases.Count > 0 ? "چیزی پیدا نشد" : $"{count} پرونده";
         OnPropertyChanged(nameof(HasActiveFilters));
+    }
+
+    /// <summary>One row's pass/fail for the live view: normalized search
+    /// (substring over the precomputed Search* keys) AND the applied P4
+    /// selection filters — the same AND semantics FilterCases used to
+    /// compute with LINQ, so the visible set is identical.</summary>
+    private bool MatchesFilter(CaseDisplayItem c)
+    {
+        if (_normalizedQuery.Length > 0 &&
+            !c.SearchCaseNumber.Contains(_normalizedQuery, StringComparison.Ordinal) &&
+            !c.SearchOwner.Contains(_normalizedQuery, StringComparison.Ordinal) &&
+            !c.SearchSerial.Contains(_normalizedQuery, StringComparison.Ordinal) &&
+            !c.SearchId.Contains(_normalizedQuery, StringComparison.Ordinal))
+            return false;
+        // P4: same semantics as FilterHelper.Matches (blank or «همه» = no filter).
+        return FilterHelper.Matches(c.BuildingGroup, Filters.GetApplied("Group")) &&
+               FilterHelper.Matches(c.Responsibility, Filters.GetApplied("Discipline")) &&
+               FilterHelper.Matches(c.Owner, Filters.GetApplied("Owner")) &&
+               FilterHelper.Matches(c.Office, Filters.GetApplied("Office"));
+    }
+
+    /// <summary>Search normalization (v12.4): TextNormalizer.NormalizeForCompare
+    /// unifies ي→ی, ك→ک, digits→Latin, trims/collapses whitespace; on top of
+    /// that, tashkeel (U+064B–U+0652, U+0670) and tatweel (U+0640) are stripped,
+    /// so a query typed without diacritics matches data stored with them.
+    /// Query and row values are normalized with this SAME function.</summary>
+    internal static string NormalizeForSearch(string? s)
+    {
+        var n = TextNormalizer.NormalizeForCompare(s);
+        if (string.IsNullOrEmpty(n)) return "";
+        var sb = new StringBuilder(n.Length);
+        foreach (var ch in n)
+        {
+            if ((ch >= '\u064B' && ch <= '\u0652') || ch == '\u0670' || ch == '\u0640') continue;
+            sb.Append(ch);
+        }
+        return sb.ToString();
     }
 
     /// <summary>Commits the draft filter selections (P4).</summary>
@@ -374,5 +433,21 @@ public sealed class CaseDisplayItem : System.ComponentModel.INotifyPropertyChang
     public string Address => RawCase.Specification?.Address ?? "";
     public string UsageType => RawCase.Specification?.UsageType ?? "";
 
-    public CaseDisplayItem(Case c) => RawCase = c;
+    // Search keys, normalized ONCE at load (v12.4): the query is normalized
+    // with the same function, so Persian/Arabic letters and digits match
+    // both ways («سمیرا» == «سميرا», «123» == «۱۲۳») without re-normalizing
+    // rows on every keystroke. Id is already Latin digits.
+    public string SearchCaseNumber { get; }
+    public string SearchOwner { get; }
+    public string SearchSerial { get; }
+    public string SearchId { get; }
+
+    public CaseDisplayItem(Case c)
+    {
+        RawCase = c;
+        SearchCaseNumber = CasesViewModel.NormalizeForSearch(c.CaseNumber);
+        SearchOwner = CasesViewModel.NormalizeForSearch(c.Owner);
+        SearchSerial = CasesViewModel.NormalizeForSearch(c.Serial);
+        SearchId = c.Id.ToString();
+    }
 }
