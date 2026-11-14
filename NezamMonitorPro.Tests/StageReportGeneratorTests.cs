@@ -122,4 +122,69 @@ public class StageReportGeneratorTests
         Assert.Single(StageReportRules.FindMatchingReports(c, 1));
         Assert.Empty(StageReportRules.FindMatchingReports(c, 2));
     }
+
+    /// <summary>v12.5: the logged-in user's name replaces "نام ناظر" in the
+    /// template (straight quotes, as written in templates/2.docx). The name
+    /// is deliberately different from the sample case's owner ("سمیرا رجبی")
+    /// so the test proves the supervisor-name replacement, not the owner one.</summary>
+    [Fact]
+    public void GenerateReport_SupervisorName_ReplacesNamePlaceholder()
+    {
+        var template = TestHelpers.FindRepoFile(Path.Combine("templates", "2.docx"));
+        Assert.True(template != null, "templates/2.docx not found under the repo root.");
+
+        using var tmp = new TestHelpers.TempDirectory();
+        var templateCopy = tmp.File("2.docx");
+        File.Copy(template!, templateCopy);
+
+        var beforeDoc = LoadDocumentXml(templateCopy);
+        var beforeText = string.Concat(beforeDoc.Descendants(W + "t").Select(t => t.Value));
+        Assert.Contains("نام ناظر", beforeText);
+
+        var generator = new StageReportGenerator(tmp.Path)
+        {
+            UserName = "محمد مهدی برخورداری"
+        };
+        var result = generator.GenerateReport(
+            TestHelpers.SampleCase(), stage: 2, rowNumber: 1,
+            outputDir: tmp.Path, now: new DateTime(2026, 11, 13),
+            templatePathOverride: templateCopy);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.NotNull(result.OutputPath);
+
+        var afterDoc = LoadDocumentXml(result.OutputPath!);
+        var afterText = string.Concat(afterDoc.Descendants(W + "t").Select(t => t.Value));
+
+        Assert.DoesNotContain("نام ناظر", afterText);
+        Assert.Contains("محمد مهدی برخورداری", afterText);
+    }
+
+    /// <summary>v12.5: when no user name is known (fresh install, never
+    /// extracted), the placeholder must stay visible in the output — never
+    /// be blanked out.</summary>
+    [Fact]
+    public void GenerateReport_EmptyUserName_LeavesSupervisorPlaceholder()
+    {
+        var template = TestHelpers.FindRepoFile(Path.Combine("templates", "2.docx"));
+        Assert.True(template != null, "templates/2.docx not found under the repo root.");
+
+        using var tmp = new TestHelpers.TempDirectory();
+        var templateCopy = tmp.File("2.docx");
+        File.Copy(template!, templateCopy);
+
+        var generator = new StageReportGenerator(tmp.Path);
+        var result = generator.GenerateReport(
+            TestHelpers.SampleCase(), stage: 2, rowNumber: 1,
+            outputDir: tmp.Path, now: new DateTime(2026, 11, 13),
+            templatePathOverride: templateCopy);
+
+        Assert.True(result.Success, result.ErrorMessage);
+        Assert.NotNull(result.OutputPath);
+
+        var afterDoc = LoadDocumentXml(result.OutputPath!);
+        var afterText = string.Concat(afterDoc.Descendants(W + "t").Select(t => t.Value));
+
+        Assert.Contains("نام ناظر", afterText);
+    }
 }

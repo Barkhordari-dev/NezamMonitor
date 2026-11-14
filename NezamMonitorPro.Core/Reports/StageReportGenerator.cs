@@ -127,7 +127,7 @@ public static class StageReportRules
             }
 
             // Optional placeholders
-            var optional = new[] { "عنوان_بلوک", "شماره_پروانه", "تاریخ_صدور_پروانه", "تعداد_بلوک", "نوع_سازه", "گروه_ساختمانی", "تعداد_طبقات", "هماهنگکننده" };
+            var optional = new[] { "عنوان_بلوک", "شماره_پروانه", "تاریخ_صدور_پروانه", "تعداد_بلوک", "نوع_سازه", "گروه_ساختمانی", "تعداد_طبقات", "هماهنگکننده", "نام ناظر" };
 
             foreach (var placeholder in optional)
             {
@@ -186,6 +186,11 @@ public class StageReportGenerator
 
     /// <summary>When true, FindTemplate looks in the signed folder first (P1).</summary>
     public bool UseSignedTemplates { get; set; }
+
+    /// <summary>Full name of the logged-in user (the api_user_name setting);
+    /// used for the «نام ناظر» / "نام ناظر" placeholder. Empty means the
+    /// placeholder is left untouched, never blanked out.</summary>
+    public string UserName { get; set; } = "";
 
     /// <summary>Folder holding the signed (stamped) templates. Not part of
     /// the normal search list — only consulted when UseSignedTemplates is on.</summary>
@@ -520,6 +525,17 @@ public class StageReportGenerator
             ["«صلاحیت_ناظر_مکانیک»"] = engineers.FirstOrDefault(e => e.Discipline.Contains("مکانیک") || e.Discipline.Contains("مكانيك"))?.SupervisionLevel ?? "",
             ["«صلاحیت_ناظر_برق»"] = engineers.FirstOrDefault(e => e.Discipline.Contains("برق"))?.SupervisionLevel ?? "",
         };
+
+        // «نام ناظر» (v12.5): the logged-in user's full name. The templates
+        // write it with straight quotes ("نام ناظر"); Android uses guillemets
+        // («نام ناظر») — add both forms. Only when a name is known: an empty
+        // name must leave the placeholder visible, never blank it out.
+        // Value is passed as-is, like «مالک» (no digit conversion).
+        if (!string.IsNullOrWhiteSpace(UserName))
+        {
+            replacements["\"نام ناظر\""] = UserName;
+            replacements["«نام ناظر»"] = UserName;
+        }
 
         // Also add trailing-space variants (Word may add spaces)
         var extraReplacements = new Dictionary<string, string>();

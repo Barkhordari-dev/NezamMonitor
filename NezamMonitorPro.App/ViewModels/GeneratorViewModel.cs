@@ -478,6 +478,7 @@ public sealed class GeneratorViewModel : ViewModelBase
     private StageReportGenerator CreateGenerator(string? primaryDir = null)
     {
         var generator = new StageReportGenerator(primaryDir ?? _templatePath);
+        generator.UserName = _db.GetSetting(SettingKeys.ApiUserName) ?? "";
         generator.UseSignedTemplates = UseSignedTemplates;
         generator.SetSignedTemplateDirectory(SignedTemplatePath);
 
