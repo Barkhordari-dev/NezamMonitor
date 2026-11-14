@@ -85,12 +85,14 @@ namespace NezamMonitorPro.Security.Services
         }
 
         /// <summary>
-        /// Sets a new password (creates or overwrites).
+        /// Sets a new password (creates or overwrites). No length or
+        /// character rules are enforced here — any non-empty password is
+        /// accepted; the UI only suggests a stronger password.
         /// </summary>
         public void SetPassword(string password)
         {
             if (string.IsNullOrEmpty(password))
-                throw new ArgumentException("Password cannot be null or empty", nameof(password));
+                throw new ArgumentException("رمز عبور نمی‌تواند خالی باشد.", nameof(password));
 
             var (hash, salt) = Argon2PasswordHasher.Hash(password);
             var data = new CredentialData
@@ -146,16 +148,6 @@ namespace NezamMonitorPro.Security.Services
 
                 SetPassword(newPassword);
             }
-        }
-
-        /// <summary>
-        /// Resets the password (admin/reset flow - no current password required).
-        /// </summary>
-        public void ResetPassword(string newPassword)
-        {
-            if (string.IsNullOrEmpty(newPassword))
-                throw new ArgumentException("New password cannot be empty", nameof(newPassword));
-            SetPassword(newPassword);
         }
 
         /// <summary>

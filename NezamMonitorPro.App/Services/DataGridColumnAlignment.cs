@@ -1,31 +1,32 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
+using NezamMonitorPro.Core.Data;
 
 namespace NezamMonitorPro.App.Services;
 
 /// <summary>
 /// راست‌کلیک روی هدر هر جدول → منوی «تراز ستون» (راست‌چین / وسط‌چین /
-/// چپ‌چین) برای همان ستون، ذخیره‌شده در Settings، به‌علاوهٔ گزینهٔ
+/// چپ‌چین) برای همان ستون، ذخیره‌شده در Settings، به‌علاوه گزینه
 /// «هدر همیشه وسط» که هدر را وسط نگه می‌دارد هرچند متن ستون راست‌چین یا
 /// چپ‌چین باشد. ستونی که انتخابی ندارد، تراز کلی تنظیمات
 /// (theme_TableAlignment) را دنبال می‌کند؛ «بازگشت به پیش‌فرض» هر دو
 /// انتخاب را پاک می‌کند. تراز کلی همچنان فقط از منوی تنظیمات تغییر می‌کند.
 ///
-/// روی همهٔ DataGridها فعال است: از طریق استایل ProDataGrid (App.xaml آن را
-/// استایل پیش‌فرض همهٔ جدول‌ها کرده).
+/// روی همه DataGridها فعال است: از طریق استایل ProDataGrid (App.xaml آن را
+/// استایل پیش‌فرض همه جدول‌ها کرده).
 ///
-/// نحوهٔ اعمال: برای ستون متنی یک ElementStyle جدید بر پایهٔ استایل اصلی
-/// (GridCellEllipsis) با TextAlignment مشخص ساخته می‌شود، به‌علاوهٔ CellStyle
-/// و HeaderStyle بر پایهٔ استایل‌های اصلی جدول با HorizontalContentAlignment
+/// نحوه اعمال: برای ستون متنی یک ElementStyle جدید بر پایه استایل اصلی
+/// (GridCellEllipsis) با TextAlignment مشخص ساخته می‌شود، به‌علاوه CellStyle
+/// و HeaderStyle بر پایه استایل‌های اصلی جدول با HorizontalContentAlignment
 /// متناظر — پس هم متن سلول، هم جای متن در سلول، و هم متن هدر جابه‌جا می‌شود.
-/// استایل‌های اصلی هر ستون در اولین Loaded ذخیره می‌شوند تا «پیش‌فرض» دقیقاً
+/// استایل‌های اصلی هر ستون در اولین Loaded ذخیره می‌شوند تا «پیش‌فرض» دقیقا
 /// همان حالت XAML را برگرداند.
 ///
-/// نکتهٔ مهم — TextAlignment در WPF نسبت به جهت جریان متن است، نه فیزیکی:
-/// در پاراگراف راست‌به‌چپ، Left روی لبهٔ فیزیکی راست و Right روی لبهٔ
+/// نکته مهم — TextAlignment در WPF نسبت به جهت جریان متن است، نه فیزیکی:
+/// در پاراگراف راست‌به‌چپ، Left روی لبه فیزیکی راست و Right روی لبه
 /// فیزیکی چپ می‌نشیند؛ درحالی‌که HorizontalContentAlignment فیزیکی است.
 /// اگر هر دو را یک مقدار می‌گذاشتیم، متن سلول و هدر در جهت مخالف هم قرار
 /// می‌گرفتند (همین باگی که گزارش شد). پس مقدار TextAlignment در RTL
@@ -253,10 +254,10 @@ public static class DataGridColumnAlignment
          : col is DataGridCheckBoxColumn ? "checkbox" : col.GetType().Name;
 
     private static string Key(GridState state, int index, DataGridColumn col)
-        => $"col_align_{state.ViewName}_{state.GridName}_{index}_{HeaderKeyPart(col)}";
+        => SettingKeys.ColumnAlign(state.ViewName, state.GridName, index, HeaderKeyPart(col));
 
     private static string HeaderCenterKey(GridState state, int index, DataGridColumn col)
-        => $"col_align_hdr_center_{state.ViewName}_{state.GridName}_{index}_{HeaderKeyPart(col)}";
+        => SettingKeys.ColumnAlignHeaderCenter(state.ViewName, state.GridName, index, HeaderKeyPart(col));
 
     private static TextAlignment? LoadAlignment(GridState state, int index, DataGridColumn col)
     {

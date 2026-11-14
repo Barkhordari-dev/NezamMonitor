@@ -148,6 +148,73 @@ public class ApiExtractorTests
     }
 
     [Fact]
+    public void MapFees_NumericConfirmStatus_IsConfirmed()
+    {
+        var apiList = new List<Dictionary<string, object?>>
+        {
+            new()
+            {
+                ["mas_title"] = "مكانيك",
+                ["dbm_mablagh"] = "7719431",
+                ["payed"] = "no",
+                ["dbm_marhala_id"] = "2",
+                ["pardakht_date"] = "",
+                ["sanad_num"] = "80",
+                ["sanad_date"] = "",
+                ["dbm_p_type"] = "n",
+            },
+            new()
+            {
+                ["mas_title"] = "برق",
+                ["dbm_mablagh"] = "7719431",
+                ["payed"] = "no",
+                ["dbm_marhala_id"] = "2",
+                ["pardakht_date"] = "",
+                ["sanad_num"] = "12",
+                ["sanad_date"] = "",
+                ["dbm_p_type"] = "n",
+            },
+            new()
+            {
+                ["mas_title"] = "عمران",
+                ["dbm_mablagh"] = "7719431",
+                ["payed"] = "no",
+                ["dbm_marhala_id"] = "2",
+                ["pardakht_date"] = "",
+                ["sanad_num"] = "78",
+                ["sanad_date"] = "",
+                ["dbm_p_type"] = "n",
+            },
+            new()
+            {
+                ["mas_title"] = "معماري",
+                ["dbm_mablagh"] = "7719431",
+                ["payed"] = "no",
+                ["dbm_marhala_id"] = "2",
+                ["pardakht_date"] = "",
+                ["sanad_num"] = "86",
+                ["sanad_date"] = "",
+                ["dbm_p_type"] = "n",
+            },
+        };
+
+        var result = ApiExtractor.MapFees(apiList);
+        Assert.Equal(4, result.Count);
+        // 80 is inside the confirmed-document range 78-85.
+        Assert.Equal("تایید شده", result[0].PayStatus);
+        Assert.Equal("تایید شده", result[0].ConfirmStatus);
+        // 12 is a document number but not a confirmation document.
+        Assert.Equal("پرداخت نشده", result[1].PayStatus);
+        Assert.Equal("12", result[1].ConfirmStatus);
+        // 78 is the lower bound of the range.
+        Assert.Equal("تایید شده", result[2].PayStatus);
+        Assert.Equal("تایید شده", result[2].ConfirmStatus);
+        // 86 is just outside the range.
+        Assert.Equal("پرداخت نشده", result[3].PayStatus);
+        Assert.Equal("86", result[3].ConfirmStatus);
+    }
+
+    [Fact]
     public void MapCase_EmptyFields_DoesNotThrow()
     {
         var api = new Dictionary<string, object?>();

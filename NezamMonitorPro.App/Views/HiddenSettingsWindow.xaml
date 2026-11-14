@@ -1,0 +1,209 @@
+﻿<Window x:Class="NezamMonitorPro.App.Views.HiddenSettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="منوی مخفی"
+        Width="1000" Height="650"
+        WindowStartupLocation="CenterOwner"
+        FlowDirection="RightToLeft"
+        Background="{DynamicResource BackgroundBrush}"
+        PreviewKeyDown="Window_PreviewKeyDown">
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <TabControl Grid.Row="0">
+            <!-- ── ویرایش داده‌ها ── -->
+            <TabItem Header="ویرایش داده‌ها">
+                <Grid Margin="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="0" ItemsSource="{Binding Overrides}" SelectedItem="{Binding SelectedOverride}"
+                              AutoGenerateColumns="False" IsReadOnly="True" SelectionMode="Single"
+                              ToolTip="تغییرهایی که در منوی مخفی داده‌ای؛ دایمی‌ها بعد از هر به‌روزرسانی دوباره اعمال می‌شوند، موقت‌ها فقط تا به‌روزرسانی بعدی می‌مانند.">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="نوع" Binding="{Binding TypeDisplay}" Width="90"/>
+                            <DataGridTextColumn Header="کلید" Binding="{Binding Override.RecordKey}" Width="*"/>
+                            <DataGridTextColumn Header="فیلد" Binding="{Binding FieldDisplay}" Width="110"/>
+                            <DataGridTextColumn Header="مقدار" Binding="{Binding Override.Value}" Width="*"/>
+                            <DataGridTextColumn Header="حالت" Binding="{Binding ModeDisplay}" Width="70"/>
+                            <DataGridTextColumn Header="تاریخ" Binding="{Binding Override.UpdatedAt}" Width="130"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                    <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12" Margin="0,10,0,0">
+                        <StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="نوع:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <ComboBox ItemsSource="{Binding RecordTypes}" DisplayMemberPath="Display"
+                                          SelectedItem="{Binding SelectedRecordType}" Width="130"
+                                          ToolTip="روی چه چیزی تغییر می‌دهی: پرونده، حق‌الزحمه یا مهندس."/>
+                                <TextBlock Text="شماره پرونده:" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                <TextBox Text="{Binding FormCaseNumber, UpdateSourceTrigger=PropertyChanged}" Width="140"
+                                         ToolTip="شماره پرونده؛ مثلا 1400/123."/>
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding ShowStageRow, Converter={StaticResource BoolToVisConverter}}">
+                                    <TextBlock Text="مرحله:" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                    <ComboBox ItemsSource="{Binding StageOptions}" SelectedItem="{Binding FormStage}" Width="70"
+                                              ToolTip="مرحله حق‌الزحمه: ۱ تا ۴."/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Visibility="{Binding ShowNameRow, Converter={StaticResource BoolToVisConverter}}">
+                                    <TextBlock Text="نام مهندس:" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                    <TextBox Text="{Binding FormEngineerName, UpdateSourceTrigger=PropertyChanged}" Width="150"
+                                             ToolTip="نام مهندسی که می‌خواهی تغییرش دهی."/>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                <TextBlock Text="فیلد:" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                <ComboBox ItemsSource="{Binding FormFields}" DisplayMemberPath="Display"
+                                          SelectedItem="{Binding SelectedField}" Width="150"
+                                          ToolTip="کدام فیلد عوض شود."/>
+                                <TextBlock Text="مقدار تازه:" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                <TextBox Text="{Binding FormValue, UpdateSourceTrigger=PropertyChanged}" Width="220"
+                                         Visibility="{Binding FormFieldIsText, Converter={StaticResource BoolToVisConverter}}"
+                                         ToolTip="مقدار تازه فیلد."/>
+                                <CheckBox Content="بایگانی شده" IsChecked="{Binding FormIsArchived}" VerticalAlignment="Center"
+                                          Visibility="{Binding FormFieldIsCheckbox, Converter={StaticResource BoolToVisConverter}}"
+                                          ToolTip="تیک بخورد پرونده به بایگانی می‌رود، برداشته شود از بایگانی بیرون می‌آید."/>
+                                <TextBlock Text="حالت:" VerticalAlignment="Center" Margin="14,0,6,0"/>
+                                <ComboBox ItemsSource="{Binding ModeOptions}" SelectedItem="{Binding SelectedModeDisplay}" Width="100"
+                                          ToolTip="دایمی یعنی بعد از هر به‌روزرسانی دوباره اعمال می‌شود؛ موقت یعنی فقط تا به‌روزرسانی بعدی می‌ماند."/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal">
+                                <Button Content="💾 ذخیره تغییر" Command="{Binding SaveOverrideCommand}"
+                                        ToolTip="تغییر ذخیره و همان‌جا روی پایگاه داده اعمال می‌شود."/>
+                                <Button Content="🗑 حذف انتخاب‌شده" Command="{Binding DeleteOverrideCommand}" Margin="8,0,0,0"
+                                        ToolTip="تغییر انتخاب‌شده از لیست پاک می‌شود؛ مقدار پایگاه داده سر جایش می‌ماند."/>
+                                <Button Content="🔄 اعمال دوباره دایمی‌ها" Command="{Binding ReapplyCommand}" Margin="8,0,0,0"
+                                        ToolTip="همه تغییرهای دایمی دوباره روی پایگاه داده اعمال می‌شوند."/>
+                            </StackPanel>
+                            <!-- S-019: فرق موقت و دایمی همیشه زیر فرم نوشته شده (نه فقط در ToolTip). -->
+                            <TextBlock Text="دایمی یعنی بعد از هر به‌روزرسانی دوباره اعمال می‌شود؛ موقت فقط تا به‌روزرسانی بعدی می‌ماند و بعد مقدار سامانه برمی‌گردد."
+                                       FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                       TextWrapping="Wrap" Margin="0,10,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </Grid>
+            </TabItem>
+
+            <!-- ── شخصی‌سازی ظاهر ── -->
+            <TabItem Header="شخصی‌سازی ظاهر">
+                <ScrollViewer Margin="8" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="آیتم‌های منوی کناری" FontWeight="Bold" FontSize="14" Margin="0,0,0,8"
+                                   ToolTip="اسم و نمایش هر آیتم منوی کناری را اینجا عوض می‌کنی."/>
+                        <ItemsControl ItemsSource="{Binding NavItems}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                                        <CheckBox IsChecked="{Binding Visible}" VerticalAlignment="Center"
+                                                  ToolTip="تیک بخورد این آیتم در منو دیده می‌شود."/>
+                                        <TextBlock Text="{Binding DefaultTitle}" Width="150" VerticalAlignment="Center" Margin="8,0,0,0"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                        <TextBox Text="{Binding Title, UpdateSourceTrigger=PropertyChanged}" Width="220"
+                                                 ToolTip="اسمی که در منو نشان داده می‌شود."/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        <TextBlock Text="اسم نمایشی" FontWeight="Bold" FontSize="14" Margin="0,12,0,6"
+                                   ToolTip="اسمی که به‌جای اسم سامانه در پیام خوش‌آمد داشبورد نشان داده می‌شود."/>
+                        <TextBox Text="{Binding DisplayName, UpdateSourceTrigger=PropertyChanged}" Width="260"
+                                 HorizontalAlignment="Right"
+                                 ToolTip="خالی بگذاری اسم سامانه نشان داده می‌شود."/>
+                        <CheckBox Content="پنهان کردن نشان «نسخه پرو»" IsChecked="{Binding HideProBadge}"
+                                  Margin="0,12,0,0"
+                                  ToolTip="تیک بخورد نشان «نسخه پرو» بالای صفحه و کنار لوگو پنهان می‌شود."/>
+                        <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                            <Button Content="💾 ذخیره ظاهر" Command="{Binding SaveUiCommand}"
+                                    ToolTip="شخصی‌سازی ظاهر ذخیره و همان‌جا اعمال می‌شود."/>
+                            <Button Content="📤 خروجی JSON" Command="{Binding ExportBackupCommand}" Margin="8,0,0,0"
+                                    ToolTip="تغییرها و شخصی‌سازی در فایل hidden-settings-backup.json کنار برنامه ذخیره می‌شود."/>
+                            <Button Content="📥 ورودی JSON" Command="{Binding ImportBackupCommand}" Margin="8,0,0,0"
+                                    ToolTip="تغییرها و شخصی‌سازی از فایل hidden-settings-backup.json برگردانده می‌شود."/>
+                            <Button Content="↺ برگرداندن به پیش‌فرض" Command="{Binding ResetUiCommand}" Margin="8,0,0,0"
+                                    ToolTip="همه شخصی‌سازی ظاهر پاک و منو به حالت اول برمی‌گردد."/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ── ابزار دیتابیس ── -->
+            <TabItem Header="ابزار دیتابیس">
+                <ScrollViewer Margin="8" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="{Binding DbPath}" Style="{StaticResource PathTextBlockStyle}" TextWrapping="Wrap"
+                                   ToolTip="مسیر فایل پایگاه داده."/>
+                        <TextBlock Text="{Binding DbInfo}" Margin="0,10,0,0" TextWrapping="Wrap"
+                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                   ToolTip="حجم فایل و تعداد ردیف‌های جدول‌های اصلی."/>
+                        <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                            <Button Content="🩺 بررسی سلامت" Command="{Binding CheckIntegrityCommand}"
+                                    ToolTip="سلامت پایگاه داده بررسی می‌شود؛ سالم باشد «ok» می‌گوید."/>
+                            <Button Content="🗜 فشرده‌سازی" Command="{Binding VacuumCommand}" Margin="8,0,0,0"
+                                    ToolTip="فضای خالی پایگاه داده جمع می‌شود و فایل کوچک‌تر می‌شود."/>
+                            <Button Content="💾 نقطه بازیابی" Command="{Binding CreateRestorePointCommand}" Margin="8,0,0,0"
+                                    ToolTip="یک کپی کامل از پایگاه داده گرفته می‌شود تا اگر چیزی خراب شد برگردی."/>
+                            <Button Content="🔄 به‌روزرسانی" Command="{Binding RefreshDbInfoCommand}" Margin="8,0,0,0"
+                                    ToolTip="اطلاعات و لیست نقطه‌های بازیابی دوباره خوانده می‌شود."/>
+                        </StackPanel>
+                        <TextBlock Text="نقطه‌های بازیابی" FontWeight="Bold" FontSize="14" Margin="0,16,0,8"
+                                   ToolTip="کپی‌هایی که از پایگاه داده گرفته‌ای؛ با «بازگردانی» به آن‌ها برمی‌گردی."/>
+                        <ListBox ItemsSource="{Binding RestorePoints}" SelectedItem="{Binding SelectedRestorePoint}"
+                                 DisplayMemberPath="Info" Height="150"
+                                 ToolTip="یک نقطه را انتخاب کن و «بازگردانی» را بزن."/>
+                        <Button Content="↩️ بازگردانی نقطه انتخاب‌شده" Command="{Binding RestorePointCommand}"
+                                HorizontalAlignment="Right" Margin="0,10,0,0"
+                                ToolTip="پایگاه‌داده فعلی با این کپی جایگزین می‌شود؛ بعد برنامه بسته می‌شود و باید دوباره بازش کنی."/>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+
+            <!-- ── منطقه خطر ── -->
+            <TabItem Header="منطقه خطر">
+                <ScrollViewer Margin="8" VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="اینجا کارهای برگشت‌ناپذیر است؛ هر کدام اول رمز برنامه را می‌خواهد و بعد ازت می‌پرسد."
+                                   Foreground="{DynamicResource ErrorTextBrush}" TextWrapping="Wrap" Margin="0,0,0,12"
+                                   ToolTip="این دکمه‌ها داده یا تنظیم را پاک می‌کنند؛ قبل از هر کدام رمز برنامه و بعد تایید می‌خواهد."/>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button Content="💥 بازنشانی کامل" Command="{Binding FactoryResetCommand}"
+                                    Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
+                                    ToolTip="همه اطلاعات برنامه پاک می‌شود؛ مثل «پاکسازی کامل اطلاعات» در تنظیمات."/>
+                            <Button Content="🗑 حذف همه گزارش‌های تولیدشده" Command="{Binding DeleteGeneratedReportsCommand}" Margin="8,0,0,0"
+                                    ToolTip="لاگ همه گزارش‌های تولیدشده پاک می‌شود؛ فایل‌های Word و PDF سر جایشان می‌مانند."/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <!-- SEC-008: «پاک کردن توکن» به «خروج از سامانه» تغییر کرد. -->
+                            <Button Content="🚪 خروج از سامانه" Command="{Binding LogoutCommand}"
+                                    ToolTip="از سامانه خارج می‌شود؛ توکن و رمز ذخیره‌شده سامانه پاک می‌شود."/>
+                            <Button Content="↺ برگرداندن تنظیمات به پیش‌فرض" Command="{Binding ResetSettingsCommand}" Margin="8,0,0,0"
+                                    ToolTip="تم، حالت دکمه‌ها و شخصی‌سازی منو به پیش‌فرض برمی‌گردد."/>
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                            <Button Content="🧹 بازگردانی همه به پیش‌فرض" Command="{Binding ResetAllHiddenCommand}"
+                                    ToolTip="همه تغییرهای منوی مخفی و شخصی‌سازی ظاهر پاک می‌شود."/>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+
+        <!-- S-023: فوتر در Grid سه‌ستونه؛ پیام وضعیت کش می‌آید و سرریز نمی‌کند. -->
+        <Grid Grid.Row="1" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <TextBlock Grid.Column="0" Text="{Binding StatusMessage}" VerticalAlignment="Center"
+                       TextWrapping="Wrap" TextTrimming="CharacterEllipsis"
+                       Foreground="{DynamicResource TextSecondaryBrush}"/>
+            <Button Grid.Column="1" Content="🔒 _قفل کردن" Command="{Binding LockNowCommand}" Margin="8,0,0,0"
+                    ToolTip="منوی مخفی همان‌جا قفل می‌شود؛ برای باز کردنش دوباره رمز می‌خواهد."/>
+            <Button Grid.Column="2" Content="_بستن" Click="CloseButton_Click" Margin="8,0,0,0"
+                    ToolTip="این پنجره بسته می‌شود؛ منو تا بستن برنامه باز می‌ماند."/>
+        </Grid>
+    </Grid>
+</Window>

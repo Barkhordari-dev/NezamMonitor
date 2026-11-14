@@ -1,10 +1,34 @@
-namespace NezamMonitorPro.Core.Models;
+﻿namespace NezamMonitorPro.Core.Models;
 
 /// <summary>Normalized case identity used as stable key.</summary>
 public sealed record CaseKey(string CaseNumber, string Serial)
 {
     public override string ToString() => $"{CaseNumber}|{Serial}";
 }
+
+/// <summary>یک ردیف جدول GeneratedReports (DUP-004: جایگزین ۱۱-تاپل).</summary>
+public record struct GeneratedReportRow(
+    string CaseNumber,
+    int Stage,
+    string OutputPath,
+    string CreatedAt,
+    string Status,
+    string OwnerName,
+    string NumberFormat,
+    string FolderName,
+    string FileHash,
+    string PdfPath,
+    string FileType);
+
+/// <summary>یک ردیف جدول FollowUpEdits (DUP-004: جایگزین ۷-تاپل).</summary>
+public record struct FollowUpEditRow(
+    string Description,
+    string CaseNumberEdit,
+    string OwnerEdit,
+    string AddressEdit,
+    string OwnerMobileEdit,
+    string CreatedAt,
+    string UpdatedAt);
 
 /// <summary>A single monitored case (پرونده).</summary>
 public sealed class Case
@@ -26,6 +50,8 @@ public sealed class Case
     public string OwnerZip { get; set; } = "";            // کد پستی
     public string OwnerTel { get; set; } = "";            // تلفن
     public string OwnerBirthLoc { get; set; } = "";       // زادگاه
+    public string ApiDbId { get; set; } = "";            // شناسه پرونده در سامانه (db_id)
+    public bool Archived { get; set; }                   // بایگانی‌شده (پرچم محلی؛ با فایل .nzmdata رفت‌وبرگشت می‌کند)
     public CaseSpecification? Specification { get; set; }
     public List<Engineer> Engineers { get; set; } = new();
     public List<Fee> Fees { get; set; } = new();
@@ -136,11 +162,12 @@ public sealed record ReportRecord(
     string ReportType,       // نوع گزارش
     string Stage,            // مرحله
     string Engineer,         // مهندس ناظر
-    string Discipline,       // مسئولیت
+    string Discipline,       // مسولیت
     string VisitDate,        // تاریخ بازدید
     string CeilingCount,     // تعداد سقف اجرا شده
     string Indicator,        // شماره اندیکاتور
-    bool HasFile)
+    bool HasFile,
+    string ImageName = "")   // نام فایل تصویر در سامانه (image_name)
 {
     public string Identity => $"{TextNormalizer.Normalize(RowNo)}|{TextNormalizer.Normalize(ReportType)}|{TextNormalizer.Normalize(Stage)}|{TextNormalizer.Normalize(Engineer)}|{TextNormalizer.Normalize(VisitDate)}";
 }

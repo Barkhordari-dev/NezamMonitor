@@ -1,9 +1,10 @@
-<UserControl
+﻿<UserControl
              xmlns:local="clr-namespace:NezamMonitorPro.App.Converters" x:Class="NezamMonitorPro.App.Views.CasesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid Margin="15">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition x:Name="TableRow" Height="3*"/>
             <RowDefinition Height="5"/>
@@ -23,32 +24,67 @@
             </Grid.ColumnDefinitions>
             <TextBlock Grid.Column="0" Text="📋 پرونده‌ها" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,15,0"
                        VerticalAlignment="Center"/>
-            <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                     Height="34" VerticalContentAlignment="Center" Margin="0,0,10,0" local:Watermark.Text="جستجو در پروندهها..." />
-            <Button Grid.Column="2" Content="📋 کپی انتخاب‌شده" Click="CopySelected_Click"
-                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource SidebarTextBrush}" FontSize="12"
-                    ToolTip="ردیف‌های تیک‌خورده را TSV کپی می‌کند (برای Excel)"/>
-            <Button Grid.Column="3" Content="📤 خروجی اکسل" Click="ExportSelected_Click"
-                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontSize="12"
-                    ToolTip="ردیف‌های تیک‌خورده را به اکسل B Nazanin 14 راست‌چین خروجی می‌دهد — اگر چیزی انتخاب نشده همه فیلتر فعلی"/>
-            <Button Grid.Column="4" Content="↺ چینش پیش‌فرض" Click="ResetColumns_Click"
-                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource OnAccentBrush}" FontSize="12"
-                    ToolTip="چیدمان ستون‌ها را به حالت اولیه برمی‌گرداند"/>
+            <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="جستجو با نام مالک یا شماره پرونده."
+                     VerticalContentAlignment="Center" Margin="0,0,10,0" MinWidth="200" TabIndex="1" local:Watermark.Text="جستجو در پرونده‌ها..." />
+            <Button Grid.Column="2" Content="📋 _کپی" Click="CopySelected_Click"
+                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource SidebarTextBrush}" FontSize="{DynamicResource LabelFontSize}"
+                    ToolTip="ردیف‌های تیک‌خورده را TSV کپی می‌کند (برای Excel)" TabIndex="2"/>
+            <Button Grid.Column="3" Content="📤 _خروجی اکسل" Click="ExportSelected_Click"
+                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontSize="{DynamicResource LabelFontSize}"
+                    ToolTip="ردیف‌های تیک‌خورده را به اکسل B Nazanin 14 راست‌چین خروجی می‌دهد — اگر چیزی انتخاب نشده همه فیلتر فعلی" TabIndex="3"/>
+            <Button Grid.Column="4" Content="↺ _چینش" Click="ResetColumns_Click"
+                    Padding="12,0" Margin="0,0,6,0" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource OnAccentBrush}" FontSize="{DynamicResource LabelFontSize}"
+                    ToolTip="چیدمان ستون‌ها را به حالت اولیه برمی‌گرداند" TabIndex="4"/>
             <Button Grid.Column="5" Content="🔄" Command="{Binding RefreshCommand}"
-                    Width="30" Height="30" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"/>
+                    Width="30" Height="30" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" ToolTip="به‌روزرسانی" TabIndex="5" AutomationProperties.Name="به‌روزرسانی"/>
         </Grid>
 
+        <!-- Advanced filters: selection-based, draft + apply (P4).
+             WrapPanel so the groups flow to a second line on narrow screens
+             (e.g. 1024x768) instead of pushing the buttons off the edge. -->
+        <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="0,0,0,8"
+                BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="گروه:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding GroupFilters}" SelectedItem="{Binding DraftGroup}" Width="150" FontSize="{DynamicResource InputFontSize}" TabIndex="6" ToolTip="فقط پرونده‌های یک گروه ساختمانی (الف، ب، ج، د) رو نشون می‌ده."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding DisciplineFilters}" SelectedItem="{Binding DraftDiscipline}" Width="150" FontSize="{DynamicResource InputFontSize}" TabIndex="7" ToolTip="فقط پرونده‌های یک رشته (مثلا مکانیک) رو نشون می‌ده."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding OwnerFilters}" SelectedItem="{Binding DraftOwner}" Width="150" FontSize="{DynamicResource InputFontSize}" TabIndex="8" ToolTip="فقط پرونده‌های یک مالک رو نشون می‌ده."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="دفتر:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding OfficeFilters}" SelectedItem="{Binding DraftOffice}" Width="150" FontSize="{DynamicResource InputFontSize}" TabIndex="9" ToolTip="فقط پرونده‌های یک دفتر رو نشون می‌ده."/>
+                </StackPanel>
+                <Button Content="✔ _اعمال فیلتر" Command="{Binding ApplyFiltersCommand}" Height="34" Padding="10,0" Margin="0,0,10,4" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" TabIndex="10" ToolTip="فیلترهایی که انتخاب کرده‌ای روی جدول اعمال می‌شه."/>
+                <Button Content="🧹 _پاک کردن" Command="{Binding ClearFiltersCommand}" Height="34" Padding="10,0" Margin="0,0,0,4" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" TabIndex="11" Visibility="{Binding HasActiveFilters, Converter={StaticResource BoolToVisConverter}}" ToolTip="همه‌ی فیلترها و جستجو پاک می‌شه و همه‌ی پرونده‌ها دیده می‌شن."/>
+                <!-- L-016: راهنمای فیلتر پیش‌نویس/اعمال‌شده -->
+                <TextBlock Text="فیلترهایی که انتخاب کرده‌ای هنوز اعمال نشده‌اند — دکمه «اعمال فیلتر» را بزن."
+                           VerticalAlignment="Center" FontSize="{DynamicResource CaptionFontSize}" Foreground="{DynamicResource WarningTextBrush}"
+                           Margin="0,0,0,4" Visibility="{Binding HasPendingFilters, Converter={StaticResource BoolToVisConverter}}"/>
+            </WrapPanel>
+        </Border>
+
         <!-- Main Table -->
-        <Border Grid.Row="1" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="4">
-            <DataGrid x:Name="CasesGrid" ItemsSource="{Binding Cases}" AutoGenerateColumns="False"
+        <Border Grid.Row="2" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}" CornerRadius="{DynamicResource RadiusSmall}">
+            <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" x:Name="CasesGrid" ItemsSource="{Binding Cases}" AutoGenerateColumns="False"
                       IsReadOnly="False" AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="All"
-                      HeadersVisibility="Column" BorderThickness="0" CanUserSortColumns="True"
+                      HeadersVisibility="Column" BorderThickness="0" CanUserSortColumns="True" FrozenColumnCount="3"
                       SelectionMode="Extended" SelectionUnit="FullRow"
                       PreviewMouseLeftButtonDown="CasesGrid_PreviewMouseLeftButtonDown"
                       PreviewMouseRightButtonUp="CasesGrid_PreviewMouseRightButtonUp"
                       SelectionChanged="CasesGrid_SelectionChanged" FlowDirection="{DynamicResource TableFlowDirection}">
                 <DataGrid.Columns>
-                    <DataGridCheckBoxColumn Header="☐" Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="50" CanUserSort="False"/>
+                    <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="50" CanUserSort="False">
+                        <DataGridCheckBoxColumn.Header>
+                            <TextBlock Text="☐" ToolTip="تیک زدن ردیف برای کپی یا خروجی اکسل."/>
+                        </DataGridCheckBoxColumn.Header>
+                    </DataGridCheckBoxColumn>
                     <DataGridTextColumn x:Name="ColRowNumber" Header="ردیف" Binding="{Binding RowNumber}" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
                     <DataGridTextColumn x:Name="ColCaseNumber" Header="شماره پرونده" Binding="{Binding CaseNumber}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                     <DataGridTextColumn x:Name="ColSerial" Header="شماره سریال" Binding="{Binding Serial}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
@@ -82,18 +118,18 @@
                     <DataGridTextColumn x:Name="ColAddress" Header="آدرس" Binding="{Binding Address}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                     <DataGridTextColumn x:Name="ColOffice" Header="دفتر" Binding="{Binding Office}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                     <DataGridTextColumn x:Name="ColCapacityDate" Header="تاریخ کسر ظرفیت" Binding="{Binding CapacityDate}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn x:Name="ColResponsibility" Header="مسئولیت" Binding="{Binding Responsibility}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn x:Name="ColResponsibility" Header="مسولیت" Binding="{Binding Responsibility}" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                 </DataGrid.Columns>
             </DataGrid>
         </Border>
 
-        <!-- GridSplitter - مستقیم بین جدول و جزئیات -->
-        <GridSplitter Grid.Row="2" Height="5" HorizontalAlignment="Stretch"
+        <!-- GridSplitter - مستقیم بین جدول و جزییات -->
+        <GridSplitter Grid.Row="3" Height="5" HorizontalAlignment="Stretch"
                       Background="{DynamicResource BorderBrush}" Cursor="SizeNS"
                       DragCompleted="GridSplitter_DragCompleted"/>
 
         <!-- Detail Panel -->
-        <Border x:Name="DetailPanel" Grid.Row="3" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="15"
+        <Border x:Name="DetailPanel" Grid.Row="4" Background="{DynamicResource CardBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="15"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" FlowDirection="RightToLeft"
                 Visibility="{Binding HasDetail, Converter={StaticResource BoolToVisConverter}}">
             <Grid>
@@ -102,18 +138,20 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <!-- Detail Header -->
+                <!-- Detail Header — ساختار اصلی: StackPanel افقی (عنوان +
+                     عنوان پرونده + دکمه بستن ۲۵×۲۵)؛ مثل قبل، نه Grid با
+                     دکمه ۳۰×۳۰ در انتها. -->
                 <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,10">
-                    <TextBlock Text="📄 جزئیات پرونده" FontSize="{DynamicResource FontSize}" FontWeight="Bold"/>
+                    <TextBlock Text="📄 جزییات پرونده" FontSize="{DynamicResource FontSize}" FontWeight="Bold" ToolTip="اطلاعات کلی پرونده انتخاب‌شده." VerticalAlignment="Center" Margin="15,0,0,0"/>
                     <TextBlock Text="{Binding DetailTitle}" Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="Bold"
                                FontSize="{DynamicResource FontSize}" Margin="15,0,0,0" VerticalAlignment="Center"/>
-                    <Button Content="✕" Command="{Binding CloseDetailCommand}"
+                    <Button Content="✕" Command="{Binding CloseDetailCommand}" ToolTip="پنل جزییات پرونده بسته می‌شه."
                             Width="25" Height="25" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
-                            HorizontalAlignment="Right" Margin="0,0,0,0"/>
+                            TabIndex="12" AutomationProperties.Name="بستن جزییات"/>
                 </StackPanel>
 
                 <!-- 4-Column Horizontal Detail with GridSplitters -->
-                <Grid Grid.Row="1">
+                <Grid x:Name="DetailGrid" Grid.Row="1">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="5"/>
@@ -125,10 +163,10 @@
                     </Grid.ColumnDefinitions>
 
                     <!-- Column 1: Engineers -->
-                    <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="10" Margin="0,0,2,0">
+                    <Border Grid.Column="0" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10" Margin="0,0,2,0">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="👷 ناظرین" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
+                                <TextBlock Text="👷 ناظرین" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8" ToolTip="ناظرین این پرونده با نقش و تلفن."
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailEngineers}" TextWrapping="Wrap"
                                            FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
@@ -140,10 +178,10 @@
                     <GridSplitter Grid.Column="1" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" Cursor="SizeWE"/>
 
                     <!-- Column 2: Fees -->
-                    <Border Grid.Column="2" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="10" Margin="2,0">
+                    <Border Grid.Column="2" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10" Margin="2,0">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="💰 حق‌الزحمه" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
+                                <TextBlock Text="💰 حق‌الزحمه" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8" ToolTip="حق‌الزحمه‌های این پرونده با مبلغ و وضعیت."
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailFees}" TextWrapping="Wrap"
                                            FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
@@ -155,10 +193,10 @@
                     <GridSplitter Grid.Column="3" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" Cursor="SizeWE"/>
 
                     <!-- Column 3: Reports -->
-                    <Border Grid.Column="4" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="10" Margin="2,0">
+                    <Border Grid.Column="4" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10" Margin="2,0">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="📄 گزارش‌ها" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
+                                <TextBlock Text="📄 گزارش‌ها" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8" ToolTip="گزارش‌های این پرونده با مرحله و تاریخ."
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailReports}" TextWrapping="Wrap"
                                            FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
@@ -170,10 +208,10 @@
                     <GridSplitter Grid.Column="5" Width="5" HorizontalAlignment="Stretch" Background="{DynamicResource BorderBrush}" Cursor="SizeWE"/>
 
                     <!-- Column 4: Specifications -->
-                    <Border Grid.Column="6" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="10" Margin="2,0,0,0">
+                    <Border Grid.Column="6" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10" Margin="2,0,0,0">
                         <ScrollViewer VerticalScrollBarVisibility="Auto">
                             <StackPanel>
-                                <TextBlock Text="📋 مشخصات" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8"
+                                <TextBlock Text="📋 مشخصات" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8" ToolTip="مشخصات فنی پرونده (پروانه، مساحت، طبقات و…)."
                                            Foreground="{DynamicResource TextBrush}"/>
                                 <TextBlock Text="{Binding DetailSpecs}" TextWrapping="Wrap"
                                            FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
@@ -185,6 +223,6 @@
         </Border>
 
         <!-- Status Bar -->
-        <TextBlock Grid.Row="4" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" Margin="0,5,0,0"/>
+        <TextBlock Grid.Row="5" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" Margin="0,5,0,0"/>
     </Grid>
 </UserControl>

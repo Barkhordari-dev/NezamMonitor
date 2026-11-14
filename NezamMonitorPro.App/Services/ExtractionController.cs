@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using NezamMonitorPro.App.ViewModels;
 using System.Threading;
 using System.Windows.Input;
@@ -123,6 +123,27 @@ public sealed class ExtractionController : ViewModelBase
     private int _startFromIndex = 1;
     public int StartFromIndex { get => _startFromIndex; set => SetProperty(ref _startFromIndex, value); }
 
+    private string _userDisplayName = "";
+    /// <summary>Logged-in user's full name (known after an update; empty before).</summary>
+    public string UserDisplayName
+    {
+        get => _userDisplayName;
+        set { if (SetProperty(ref _userDisplayName, value)) OnPropertyChanged(nameof(WelcomeMessage)); }
+    }
+    /// <summary>Personal welcome — empty until the user's name is known.</summary>
+    public string WelcomeMessage => string.IsNullOrWhiteSpace(UserDisplayName)
+        ? "" : $"سلام {UserDisplayName}، خوش آمدی 👋";
+
+    /// <summary>
+    /// نتیجه استخراج از API؛ LoginFailed یعنی ورود ناموفق بود
+    /// (نه اینکه پرونده‌ای نبود) — S-001.
+    /// </summary>
+    public sealed class ExtractionResult
+    {
+        public List<Case> Cases { get; set; } = new();
+        public bool LoginFailed { get; set; }
+    }
+
     public ICommand StartCommand { get; }
     public ICommand StopCommand { get; }
     public ICommand LoadLatestCommand { get; }
@@ -135,7 +156,8 @@ public sealed class ExtractionController : ViewModelBase
 
             // Default output path
             var db = DatabaseService.Instance;
-            _outputPath = db.GetSetting("output_path") ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "outputs");
+            _outputPath = db.GetSetting(SettingKeys.OutputPath) ?? Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "outputs");
+            _userDisplayName = db.GetSetting(SettingKeys.ApiUserName) ?? "";
         }
 
     public void AppendLog(string message)
@@ -159,29 +181,37 @@ public sealed class ExtractionController : ViewModelBase
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
                 var settings = db.LoadSettings();
-                if (settings.TryGetValue("username", out var u)) username = u;
-                if (settings.TryGetValue("password", out var p)) password = p;
+                if (string.IsNullOrEmpty(username) && settings.TryGetValue(SettingKeys.Username, out var u)) username = u;
+                // SEC-006: رمز ذخیره‌شده فقط وقتی خوانده می‌شود که «مرا به خاطر بسپار» روشن باشد.
+                if (string.IsNullOrEmpty(password) && settings.TryGetValue(SettingKeys.RememberMe, out var rm)
+                    && rm == "true" && settings.TryGetValue(SettingKeys.Password, out var p)) password = p;
             }
 
             // Save credentials for next time if RememberMe is checked
             if (RememberMe && !string.IsNullOrEmpty(username) && !string.IsNullOrEmpty(password))
             {
-                db.SaveSetting("username", username);
-                db.SaveSetting("password", password);
-                db.SaveSetting("remember_me", "true");
+                db.SaveSetting(SettingKeys.Username, username);
+                db.SaveSetting(SettingKeys.Password, password);
+                db.SaveSetting(SettingKeys.RememberMe, "true");
+            }
+            else if (!RememberMe)
+            {
+                // SEC-006: وقتی «مرا به خاطر بسپار» خاموش است، رمز ذخیره‌شده پاک می‌شود.
+                try { UpdateViewModel.DeleteSetting(db, SettingKeys.Password); db.SaveSetting(SettingKeys.RememberMe, "false"); } catch { }
             }
 
             AppendLog("شروع استخراج API...");
             SetFriendly(UpdateStage.Connecting, "در حال اتصال به سرور...");
 
             var startTime = DateTime.Now;
-            var cases = await ExtractViaApiAsync(username, password, db);
+            var result = await ExtractViaApiAsync(username, password, db);
+            var cases = result.Cases;
 
             // Download report files
             if (cases.Count > 0 && ExtractReportFiles)
             {
-                AppendLog("دانلود فایلهای گزارشها...");
-                SetFriendly(UpdateStage.Downloading, "در حال دریافت فایلهای پیوست...",
+                AppendLog("دانلود فایل‌های گزارش‌ها...");
+                SetFriendly(UpdateStage.Downloading, "در حال دریافت فایل‌های پیوست...",
                     0, cases.Count);
                 await DownloadReportFilesAsync(cases, username, password);
             }
@@ -192,7 +222,7 @@ public sealed class ExtractionController : ViewModelBase
             if (cases.Count > 0)
             {
                 AppendLog("ذخیره در دیتابیس...");
-                StatusMessage = "ذخیره اسنپشات...";
+                StatusMessage = "ذخیره اسنپ‌شات...";
                 SetFriendly(UpdateStage.Saving, "در حال ذخیره‌سازی اطلاعات...",
                     cases.Count, cases.Count);
                 // Run DB save on background thread to avoid UI freeze
@@ -202,12 +232,15 @@ public sealed class ExtractionController : ViewModelBase
                     db.SaveSnapshot(snapshotId, cases);
                     db.FinalizeSnapshot(snapshotId, cases.Count);
                     db.SetActiveSnapshot(snapshotId);
+                    // Hidden menu: permanent overrides win over the fresh server values.
+                    // ARCH-003: دسترسی مستقیم به اتصال مشترک زیر قفل اتصال انجام می‌شود.
+                    try { lock (db.SyncRoot) { HiddenOverrideApplier.ApplyAll(db.Connection); } } catch { }
                 });
                 AppendLog($"ذخیره شد ✓ — {cases.Count} پرونده فعال شد");
             }
-            else
+            else if (!result.LoginFailed)
             {
-                AppendLog("پروندهای استخراج نشد");
+                AppendLog("پرونده‌ای استخراج نشد");
             }
 
             StatusMessage = $"تکمیل — {cases.Count} پرونده";
@@ -215,6 +248,9 @@ public sealed class ExtractionController : ViewModelBase
                 SetFriendly(UpdateStage.Success, "عملیات با موفقیت انجام شد.",
                     cases.Count, cases.Count,
                     $"{cases.Count} پرونده در {elapsed.TotalSeconds:F0} ثانیه دریافت و ذخیره شد");
+            else if (result.LoginFailed)
+                // S-001: پیام «ورود ناموفق بود» دیگر با «اطلاعاتی برای دریافت یافت نشد» بازنویسی نمی‌شود.
+                SetFriendly(UpdateStage.Error, "ورود ناموفق بود. اطلاعات حساب را بررسی کنید.");
             else
                 SetFriendly(UpdateStage.Error, "اطلاعاتی برای دریافت یافت نشد.");
         }
@@ -228,7 +264,7 @@ public sealed class ExtractionController : ViewModelBase
         {
             AppendLog($"خطا: {ex.Message}");
             StatusMessage = "خطا";
-            SetFriendly(UpdateStage.Error, "خطایی رخ داد. لطفاً دوباره تلاش کنید.");
+            SetFriendly(UpdateStage.Error, "خطایی رخ داد. لطفا دوباره تلاش کنید.");
         }
         finally
         {
@@ -245,7 +281,7 @@ public sealed class ExtractionController : ViewModelBase
     /// Returns list of Cases with specs, engineers, fees populated.
     /// Reports NOT included (no API endpoint found).
     /// </summary>
-    private async Task<List<Case>> ExtractViaApiAsync(string username, string password, NezamDatabase db)
+    private async Task<ExtractionResult> ExtractViaApiAsync(string username, string password, NezamDatabase db)
     {
         var cases = new List<Case>();
 
@@ -260,15 +296,20 @@ public sealed class ExtractionController : ViewModelBase
             {
                 AppendLog("خطا: ورود API ناموفق");
                 SetFriendly(UpdateStage.Error, "ورود ناموفق بود. اطلاعات حساب را بررسی کنید.");
-                return cases;
+                return new ExtractionResult { LoginFailed = true };
             }
             AppendLog($"ورود API موفق ✓ (userId={api.UserId})");
 
-            // Save token for next launch
-            db.SaveSetting("api_token", api.Token);
+            // The user's name becomes known here — save it for the welcome
+            // message and for matching the user's own server reports.
+            if (!string.IsNullOrWhiteSpace(api.UserFullName))
+            {
+                db.SaveSetting(SettingKeys.ApiUserName, api.UserFullName);
+                UserDisplayName = api.UserFullName;
+            }
 
             // Get all cases
-            StatusMessage = "دریافت لیست پروندهها...";
+            StatusMessage = "دریافت لیست پرونده‌ها...";
             SetFriendly(UpdateStage.Receiving, "در حال دریافت اطلاعات پروژه‌ها...");
             var apiCases = await api.GetCasesRawAsync();
             AppendLog($"{apiCases.Count} پرونده دریافت شد");
@@ -367,7 +408,7 @@ public sealed class ExtractionController : ViewModelBase
             AppendLog($"خطای API: {ex.Message}");
         }
 
-        return cases;
+        return new ExtractionResult { Cases = cases };
     }
 
     private void StopExtraction()
@@ -393,9 +434,6 @@ public sealed class ExtractionController : ViewModelBase
             var loginResp = await http.SendAsync(loginReq);
             var token = System.Text.Json.JsonDocument.Parse(await loginResp.Content.ReadAsStringAsync()).RootElement.GetProperty("token").GetString()!;
             http.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(token);
-
-            // Save token for next launch (so we don't need to login again)
-            DatabaseService.Instance.SaveSetting("api_token", token);
 
             var userResp = await http.GetAsync("http://service.yazdnezam.ir:8033/panel/api/user");
             var userJson = System.Text.Json.JsonDocument.Parse(await userResp.Content.ReadAsStringAsync());
@@ -476,6 +514,11 @@ public sealed class ExtractionController : ViewModelBase
                                     if (remoteSize == localSize)
                                     {
                                         skippedFiles++;
+                                        // V2: file already on disk — keep the server-side image
+                                        // name on the in-memory report row (the DB save runs
+                                        // after this download pass).
+                                        if (reportNum >= 1 && reportNum <= c.Reports.Count && string.IsNullOrEmpty(c.Reports[reportNum - 1].ImageName))
+                                            c.Reports[reportNum - 1] = c.Reports[reportNum - 1] with { ImageName = imageName };
                                         continue;
                                     }
                                 }
@@ -489,6 +532,10 @@ public sealed class ExtractionController : ViewModelBase
                             var bytes = await resp.Content.ReadAsByteArrayAsync();
                             await File.WriteAllBytesAsync(filePath, bytes);
                             totalFiles++;
+                            // V2: keep the server-side image name on the in-memory
+                            // report row (the DB save runs after this download pass).
+                            if (reportNum >= 1 && reportNum <= c.Reports.Count && string.IsNullOrEmpty(c.Reports[reportNum - 1].ImageName))
+                                c.Reports[reportNum - 1] = c.Reports[reportNum - 1] with { ImageName = imageName };
                         }
                     }
                     catch { }
@@ -496,18 +543,18 @@ public sealed class ExtractionController : ViewModelBase
 
                 if (caseNum % 10 == 0 || caseNum == cases.Count)
                 {
-                    AppendLog($"  فایلها: {caseNum}/{cases.Count} (دانلود: {totalFiles} | رد شده: {skippedFiles})");
-                    SetFriendly(UpdateStage.Downloading, "در حال دریافت فایلهای پیوست...",
+                    AppendLog($"  فایل‌ها: {caseNum}/{cases.Count} (دانلود: {totalFiles} | رد شده: {skippedFiles})");
+                    SetFriendly(UpdateStage.Downloading, "در حال دریافت فایل‌های پیوست...",
                         caseNum, cases.Count,
                         $"{totalFiles} فایل دریافت شد");
                 }
             }
 
-            AppendLog($"دانلود فایلها: {totalFiles} فایل دانلود شد + {skippedFiles} فایل رد شده (حجم یکسان) از {cases.Count} پرونده");
+            AppendLog($"دانلود فایل‌ها: {totalFiles} فایل دانلود شد + {skippedFiles} فایل رد شده (حجم یکسان) از {cases.Count} پرونده");
         }
         catch (Exception ex)
         {
-            AppendLog($"خطای دانلود فایلها: {ex.Message}");
+            AppendLog($"خطای دانلود فایل‌ها: {ex.Message}");
         }
     }
 
@@ -519,13 +566,13 @@ public sealed class ExtractionController : ViewModelBase
             var snapshotId = db.GetLastValidSnapshotId();
             if (snapshotId == 0)
             {
-                AppendLog("هنوز دادهای ذخیره نشده");
-                StatusMessage = "دادهای موجود نیست";
+                AppendLog("هنوز داده‌ای ذخیره نشده");
+                StatusMessage = "داده‌ای موجود نیست";
                 SetFriendly(UpdateStage.Idle, "هنوز داده‌ای ذخیره نشده است.");
                 return;
             }
             var cases = db.LoadCases(snapshotId);
-            AppendLog($"آخرین اسنپشات: {cases.Count} پرونده بارگذاری شد");
+            AppendLog($"آخرین اسنپ‌شات: {cases.Count} پرونده بارگذاری شد");
             StatusMessage = $"{cases.Count} پرونده بارگذاری شد";
             SetFriendly(UpdateStage.Success, "آخرین اطلاعات بارگذاری شد.",
                 cases.Count, cases.Count, $"{cases.Count} پرونده");

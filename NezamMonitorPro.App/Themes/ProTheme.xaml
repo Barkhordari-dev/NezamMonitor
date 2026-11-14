@@ -10,15 +10,17 @@
          ══════════════════════════════════════════════════════════════ -->
 
     <!-- ─── Typography ─── -->
-    <sys:Double x:Key="FontSize">13.5</sys:Double>
-    <sys:Double x:Key="HeadingFontSize">22</sys:Double>
+    <!-- پیش‌فرض‌ها با ThemeFonts یکی‌اند (T-020): اگر اینجا عوض شود،
+         ThemeManager.ApplyTheme همان‌جا با مقدار تم بازنویسی‌شان می‌کند. -->
+    <sys:Double x:Key="FontSize">14</sys:Double>
+    <sys:Double x:Key="HeadingFontSize">20</sys:Double>
     <sys:Double x:Key="SubHeadingFontSize">17</sys:Double>
     <sys:Double x:Key="ButtonFontSize">13</sys:Double>
     <sys:Double x:Key="InputFontSize">13</sys:Double>
-    <sys:Double x:Key="LabelFontSize">12</sys:Double>
+    <sys:Double x:Key="LabelFontSize">13</sys:Double>
     <sys:Double x:Key="LogFontSize">11</sys:Double>
-    <sys:Double x:Key="SidebarFontSize">15</sys:Double>
-    <sys:Double x:Key="CaptionFontSize">11</sys:Double>
+    <sys:Double x:Key="SidebarFontSize">14</sys:Double>
+    <sys:Double x:Key="CaptionFontSize">11.5</sys:Double>
     <sys:Double x:Key="DisplayFontSize">30</sys:Double>
     <!-- Font chain: first family is tried first, the rest are fallbacks
          (WPF FontFamily IS a comma-separated fallback list; "Tahoma, Bold"
@@ -36,6 +38,32 @@
     <CornerRadius x:Key="RadiusMedium">8</CornerRadius>
     <CornerRadius x:Key="RadiusLarge">12</CornerRadius>
     <CornerRadius x:Key="RadiusXLarge">18</CornerRadius>
+    <!-- T-014: دو توکن تازه تا گوشه‌های ۹ تا ۱۶ هم به توکن بخورند -->
+    <CornerRadius x:Key="RadiusIcon">10</CornerRadius>
+    <CornerRadius x:Key="RadiusBadge">14</CornerRadius>
+
+    <!-- ══════════════════════════════════════════════════════════════
+         BUTTON STYLE TOKENS — the button look the user picks in Settings
+         ("حالت دکمه‌ها"). The button templates below read these with
+         DynamicResource, so switching the style updates every button
+         live. ButtonStyleManager (Services) sets them and persists the
+         choice as theme_ButtonStyle. Defaults = Classic.
+         ══════════════════════════════════════════════════════════════ -->
+    <CornerRadius x:Key="ButtonCornerRadius">8</CornerRadius>
+    <SolidColorBrush x:Key="ButtonOverlayBrush" Color="#00000000"/>
+    <SolidColorBrush x:Key="ButtonFrameBrush" Color="#00000000"/>
+    <Thickness x:Key="ButtonFrameThickness">0</Thickness>
+    <x:Null x:Key="ButtonShadowEffect"/>
+
+    <!-- Latin font for file paths: B Nazanin renders path text (Latin
+         letters + digits) mixed with Persian, so paths get Segoe UI and
+         run left-to-right. -->
+    <FontFamily x:Key="PathFontFamily">Segoe UI</FontFamily>
+    <Style x:Key="PathTextBlockStyle" TargetType="TextBlock">
+        <Setter Property="FontFamily" Value="{StaticResource PathFontFamily}"/>
+        <Setter Property="FlowDirection" Value="LeftToRight"/>
+        <Setter Property="TextAlignment" Value="Left"/>
+    </Style>
 
     <!-- ─── Spacing ─── -->
     <sys:Double x:Key="SpaceXS">4</sys:Double>
@@ -131,7 +159,8 @@
         <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
         <Setter Property="FontSize" Value="{DynamicResource ButtonFontSize}"/>
         <Setter Property="FontWeight" Value="SemiBold"/>
-        <Setter Property="MinHeight" Value="38"/>
+        <!-- T-005: ارتفاع از تم می‌آید (ThemeManager: ButtonHeight) -->
+        <Setter Property="MinHeight" Value="{DynamicResource ButtonHeight}"/>
         <Setter Property="MinWidth" Value="96"/>
         <Setter Property="Padding" Value="20,8"/>
         <Setter Property="TextBlock.TextWrapping" Value="Wrap"/>
@@ -155,14 +184,35 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="bd"
                             Background="{TemplateBinding Background}"
-                            CornerRadius="{StaticResource RadiusMedium}"
-                            Padding="{TemplateBinding Padding}"
+                            BorderBrush="{DynamicResource ButtonFrameBrush}"
+                            BorderThickness="{DynamicResource ButtonFrameThickness}"
+                            CornerRadius="{DynamicResource ButtonCornerRadius}"
+                            Effect="{DynamicResource ButtonShadowEffect}"
                             SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                          RecognizesAccessKey="True"/>
+                        <Border x:Name="overlay" Background="{DynamicResource ButtonOverlayBrush}"
+                                CornerRadius="{DynamicResource ButtonCornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
                     </Border>
                     <ControlTemplate.Triggers>
+                        <!-- T-017: بازخورد هاور/فشرده‌شدن — روی لایه داخلی اعمال
+                             می‌شود تا رنگ خود دکمه (مثلا آبی دکمه آیکون) سر جایش
+                             بماند و فقط یک سایه ملایم رویش بیاید -->
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="overlay" Property="Background" Value="{DynamicResource HoverOverlayBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsPressed" Value="True">
+                            <Setter TargetName="overlay" Property="Background" Value="{DynamicResource HoverOverlayBrush}"/>
+                            <Setter TargetName="bd" Property="Opacity" Value="0.8"/>
+                        </Trigger>
+                        <!-- A11Y-002: نشانگر فوکوس — حاشیه ۲ پیکسلی با رنگ اصلی تم -->
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="bd" Property="BorderThickness" Value="2"/>
+                        </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonDisabledBrush}"/>
                         </Trigger>
@@ -184,11 +234,18 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="bd" Background="{TemplateBinding Background}"
-                            CornerRadius="{StaticResource RadiusMedium}" Padding="{TemplateBinding Padding}"
+                            BorderBrush="{DynamicResource ButtonFrameBrush}"
+                            BorderThickness="{DynamicResource ButtonFrameThickness}"
+                            CornerRadius="{DynamicResource ButtonCornerRadius}"
+                            Effect="{DynamicResource ButtonShadowEffect}"
                             SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
-                                          VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
-                                          RecognizesAccessKey="True"/>
+                        <Border Background="{DynamicResource ButtonOverlayBrush}"
+                                CornerRadius="{DynamicResource ButtonCornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}"
+                                              VerticalAlignment="{TemplateBinding VerticalContentAlignment}"
+                                              RecognizesAccessKey="True"/>
+                        </Border>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
@@ -196,6 +253,11 @@
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBrush}"/>
+                        </Trigger>
+                        <!-- A11Y-002: نشانگر فوکوس — حاشیه ۲ پیکسلی با رنگ اصلی تم -->
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="bd" Property="BorderThickness" Value="2"/>
                         </Trigger>
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonDisabledBrush}"/>
@@ -230,13 +292,23 @@
                 <ControlTemplate TargetType="Button">
                     <Border x:Name="bd" Background="{TemplateBinding Background}"
                             BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
-                            CornerRadius="{StaticResource RadiusMedium}" Padding="{TemplateBinding Padding}"
+                            CornerRadius="{DynamicResource ButtonCornerRadius}"
+                            Effect="{DynamicResource ButtonShadowEffect}"
                             SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <Border Background="{DynamicResource ButtonOverlayBrush}"
+                                CornerRadius="{DynamicResource ButtonCornerRadius}"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
                             <Setter TargetName="bd" Property="Background" Value="{DynamicResource HoverOverlayBrush}"/>
+                        </Trigger>
+                        <!-- A11Y-002: نشانگر فوکوس — حاشیه ۲ پیکسلی با رنگ اصلی تم -->
+                        <Trigger Property="IsFocused" Value="True">
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource PrimaryBrush}"/>
+                            <Setter TargetName="bd" Property="BorderThickness" Value="2"/>
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>
@@ -303,15 +375,59 @@
         </Setter>
     </Style>
 
+    <!-- Tab headers: the default WPF TabItem rounds only the TOP corners,
+         which looks like a button with two rounded and two sharp sides.
+         Ours is rounded on all four corners, like every other button. -->
+    <Style x:Key="ProTabItem" TargetType="TabItem">
+        <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
+        <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
+        <Setter Property="FontWeight" Value="SemiBold"/>
+        <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+        <Setter Property="Cursor" Value="Hand"/>
+        <Setter Property="Padding" Value="16,8"/>
+        <Setter Property="Margin" Value="0,0,6,0"/>
+        <Setter Property="Template">
+            <Setter.Value>
+                <ControlTemplate TargetType="TabItem">
+                    <Border x:Name="bd" Background="{DynamicResource PanelBrush}"
+                            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
+                            CornerRadius="{StaticResource RadiusMedium}"
+                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+                        <ContentPresenter ContentSource="Header"
+                                          HorizontalAlignment="Center" VerticalAlignment="Center"
+                                          RecognizesAccessKey="True"/>
+                    </Border>
+                    <ControlTemplate.Triggers>
+                        <Trigger Property="IsMouseOver" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource HoverOverlayBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsSelected" Value="True">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPrimaryBrush}"/>
+                            <Setter TargetName="bd" Property="BorderBrush" Value="{DynamicResource ButtonPrimaryBrush}"/>
+                            <Setter Property="Foreground" Value="{DynamicResource OnPrimaryBrush}"/>
+                        </Trigger>
+                        <Trigger Property="IsEnabled" Value="False">
+                            <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonDisabledBrush}"/>
+                        </Trigger>
+                    </ControlTemplate.Triggers>
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+    <Style TargetType="TabItem" BasedOn="{StaticResource ProTabItem}"/>
+
     <!-- ══════════════════════════════════════════════════════════════
          INPUTS
          ══════════════════════════════════════════════════════════════ -->
     <Style x:Key="ProTextBox" TargetType="TextBox">
         <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
         <Setter Property="FontSize" Value="{DynamicResource InputFontSize}"/>
-        <Setter Property="MinHeight" Value="36"/>
-        <!-- Horizontal padding plus a small vertical padding: grows with font size -->
-        <Setter Property="Padding" Value="12,4"/>
+        <!-- T-005: ارتفاع از تم می‌آید (ThemeManager: InputHeight) -->
+        <Setter Property="MinHeight" Value="{DynamicResource InputHeight}"/>
+        <!-- Horizontal padding only: B Nazanin needs a ~26px line at 13pt,
+             and any vertical padding eats the room the line needs inside a
+             38px box, so the text was trimmed top and bottom. -->
+        <Setter Property="Padding" Value="12,0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
@@ -331,6 +447,7 @@
                                               Content="{Binding (local:Watermark.Text), RelativeSource={RelativeSource TemplatedParent}}"
                                               ContentTemplate="{TemplateBinding Tag}"
                                               Visibility="Collapsed"
+                                              VerticalAlignment="Center"
                                               Margin="{TemplateBinding Padding}"/>
                             <ScrollViewer x:Name="PART_ContentHost" Margin="{TemplateBinding Padding}"
                                           Focusable="False"
@@ -359,12 +476,13 @@
     <Style x:Key="ProComboBox" TargetType="ComboBox">
         <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
         <Setter Property="FontSize" Value="{DynamicResource InputFontSize}"/>
-        <Setter Property="MinHeight" Value="36"/>
+        <!-- T-005: ارتفاع از تم می‌آید (ThemeManager: InputHeight) -->
+        <Setter Property="MinHeight" Value="{DynamicResource InputHeight}"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
-        <Setter Property="Padding" Value="12,4"/>
+        <Setter Property="Padding" Value="12,0"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ComboBox">
@@ -484,8 +602,9 @@
     <Style x:Key="ProPasswordBox" TargetType="PasswordBox">
         <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
         <Setter Property="FontSize" Value="{DynamicResource InputFontSize}"/>
-        <Setter Property="MinHeight" Value="36"/>
-        <Setter Property="Padding" Value="12,4"/>
+        <!-- T-005: ارتفاع از تم می‌آید (ThemeManager: InputHeight) -->
+        <Setter Property="MinHeight" Value="{DynamicResource InputHeight}"/>
+        <Setter Property="Padding" Value="12,0"/>
         <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
         <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource InputBorderBrush}"/>
@@ -514,6 +633,13 @@
         </Setter>
     </Style>
 
+    <!-- Path TextBox: ProTextBox look, but Latin font + LTR (paths). -->
+    <Style x:Key="PathTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource ProTextBox}">
+        <Setter Property="FontFamily" Value="{StaticResource PathFontFamily}"/>
+        <Setter Property="FlowDirection" Value="LeftToRight"/>
+        <Setter Property="TextAlignment" Value="Left"/>
+    </Style>
+
     <!-- Shared DataGrid cell/header styles.
          GridCellEllipsis: right-aligned text, clipped text shows '...' and the
          full text in a tooltip (bound to the cell's own Text).
@@ -527,6 +653,11 @@
     </Style>
     <Style x:Key="GridCellEllipsisCenter" TargetType="TextBlock" BasedOn="{StaticResource GridCellEllipsis}">
         <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
+    </Style>
+    <Style x:Key="GridCellPath" TargetType="TextBlock" BasedOn="{StaticResource GridCellEllipsis}">
+        <Setter Property="FontFamily" Value="{StaticResource PathFontFamily}"/>
+        <Setter Property="FlowDirection" Value="LeftToRight"/>
+        <Setter Property="TextAlignment" Value="Left"/>
     </Style>
     <Style x:Key="GridHeaderCenter" TargetType="DataGridColumnHeader">
         <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
@@ -552,6 +683,14 @@
         <Setter Property="services:SelectAllHeaderBehavior.EnableSelectAll" Value="True"/>
         <Setter Property="services:DataGridColumnAlignment.EnableHeaderMenu" Value="True"/>
         <Setter Property="VirtualizingPanel.VirtualizationMode" Value="Recycling"/>
+        <!-- Tables must always be able to scroll horizontally: the app
+             never set this anywhere, so on a small monitor a wide table
+             showed no horizontal scrollbar at all. Stated here so every
+             DataGrid gets it (the implicit style in App.xaml applies this
+             to all grids), and repeated on each grid in the views. -->
+        <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto"/>
+        <Setter Property="ScrollViewer.CanContentScroll" Value="True"/>
         <Setter Property="Background" Value="{DynamicResource SurfaceBrush}"/>
         <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
         <Setter Property="BorderThickness" Value="1"/>
@@ -588,6 +727,17 @@
                         <Setter.Value>
                             <ControlTemplate TargetType="DataGridColumnHeader">
                                 <Grid>
+                                    <Grid.Resources>
+                                        <!-- Headers are plain strings: without
+                                             trimming, a long header in a narrow
+                                             column is cut off mid-word instead
+                                             of ending in '…'. Applies to the
+                                             auto-generated header text and to
+                                             custom header TextBlocks alike. -->
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="TextTrimming" Value="CharacterEllipsis"/>
+                                        </Style>
+                                    </Grid.Resources>
                                     <Border x:Name="bd" Background="{TemplateBinding Background}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}">
@@ -728,14 +878,25 @@
             <Setter.Value>
                 <ControlTemplate TargetType="ScrollBar">
                     <Grid Background="Transparent">
-                        <Track x:Name="PART_Track" IsDirectionReversed="True">
+                        <!-- Orientation is bound to the ScrollBar itself
+                             (the old trigger-only set left the Track vertical
+                             until the trigger ran); the trigger below only
+                             flips the direction and the page commands. -->
+                        <Track x:Name="PART_Track" Orientation="{TemplateBinding Orientation}" IsDirectionReversed="True">
                             <Track.Thumb>
-                                <Thumb>
+                                <!-- The minimums live on the Thumb itself (the
+                                     Border inside only stretches to fill it):
+                                     a vertical bar needs a tall-enough thumb,
+                                     a horizontal bar a wide-enough one. The
+                                     trigger below swaps them, so a horizontal
+                                     thumb never asks for 24px of height in a
+                                     14px bar (which made the bar's row in the
+                                     DataGrid template 24px tall for nothing). -->
+                                <Thumb x:Name="ThumbPart" MinWidth="10" MinHeight="24">
                                     <Thumb.Template>
                                         <ControlTemplate TargetType="Thumb">
                                             <Border Background="{DynamicResource TextSecondaryBrush}" Opacity="0.85" CornerRadius="4"
-                                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
-                                                    MinWidth="8" MinHeight="24"/>
+                                                    HorizontalAlignment="Stretch" VerticalAlignment="Stretch"/>
                                         </ControlTemplate>
                                     </Thumb.Template>
                                 </Thumb>
@@ -749,12 +910,16 @@
                         </Track>
                     </Grid>
                     <ControlTemplate.Triggers>
-                        <!-- Horizontal scrollbar: the Track must run
-                             horizontally and the page buttons must page
-                             left/right, otherwise the thumb spans the whole
-                             bar and dragging it does nothing. -->
+                        <!-- Horizontal scrollbar: the direction must not be
+                             reversed and the page buttons must page left/right,
+                             otherwise the thumb is mirrored (dragging right
+                             scrolls left) and paging goes the wrong way.
+                             (The Track's Orientation itself comes from the
+                             TemplateBinding above.) -->
                         <Trigger Property="Orientation" Value="Horizontal">
-                            <Setter TargetName="PART_Track" Property="Orientation" Value="Horizontal"/>
+                            <Setter TargetName="PART_Track" Property="IsDirectionReversed" Value="False"/>
+                            <Setter TargetName="ThumbPart" Property="MinWidth" Value="24"/>
+                            <Setter TargetName="ThumbPart" Property="MinHeight" Value="10"/>
                             <Setter TargetName="PART_IncreaseRepeatButton" Property="Command" Value="ScrollBar.PageRightCommand"/>
                             <Setter TargetName="PART_DecreaseRepeatButton" Property="Command" Value="ScrollBar.PageLeftCommand"/>
                         </Trigger>
@@ -764,7 +929,7 @@
         </Setter>
         <Style.Triggers>
             <Trigger Property="Orientation" Value="Horizontal">
-                <Setter Property="Height" Value="12"/>
+                <Setter Property="Height" Value="14"/>
                 <Setter Property="Width" Value="Auto"/>
             </Trigger>
         </Style.Triggers>
@@ -809,6 +974,8 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Cursor" Value="Hand"/>
         <Setter Property="Padding" Value="4"/>
+        <!-- TTP-003: یک Tooltip برای همه دکمه‌های چشم رمز -->
+        <Setter Property="ToolTip" Value="نمایش یا پنهان کردن رمزی که نوشته‌ای."/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="ToggleButton">

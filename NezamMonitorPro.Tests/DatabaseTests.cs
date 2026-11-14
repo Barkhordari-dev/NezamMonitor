@@ -1,4 +1,4 @@
-using NezamMonitorPro.Core.Data;
+﻿using NezamMonitorPro.Core.Data;
 using NezamMonitorPro.Core.Models;
 using Xunit;
 
@@ -67,8 +67,8 @@ public class DatabaseTests : IDisposable
     [Fact]
     public void Settings_RoundTrips()
     {
-        _db.SaveSetting("username", "31-4-0-04883");
+        _db.SaveSetting(SettingKeys.Username, "31-4-0-04883");
         var settings = _db.LoadSettings();
-        Assert.Equal("31-4-0-04883", settings["username"]);
+        Assert.Equal("31-4-0-04883", settings[SettingKeys.Username]);
     }
 }

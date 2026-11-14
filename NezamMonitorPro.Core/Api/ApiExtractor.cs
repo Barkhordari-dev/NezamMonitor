@@ -32,6 +32,7 @@ public static class ApiExtractor
             OwnerZip = S(api, "own_zip"),
             OwnerTel = S(api, "own_tel"),
             OwnerBirthLoc = S(api, "own_birth_loc"),
+            ApiDbId = S(api, "db_id"),
             Specification = MapSpecification(api),
         };
     }
@@ -83,6 +84,12 @@ public static class ApiExtractor
             var docNum = S(f, "sanad_num");
             var docDate = S(f, "sanad_date");
 
+            // A numeric confirmation-document number (78-85) means the fee is
+            // confirmed on the server, even when payed is not "ok" (Q13: mapped
+            // at extraction, so the stored status, the fee total and the exports
+            // all agree; the raw document number itself is not kept).
+            var isConfirmedDoc = int.TryParse(docNum.Trim(), out var docNo) && docNo >= 78 && docNo <= 85;
+
             return new Fee(
                 S(f, "mas_title"),                           // Discipline
                 "",                                           // ServiceType
@@ -90,8 +97,8 @@ public static class ApiExtractor
                 docDate,                                      // StartDate (doc date)
                 paymentDate,                                  // EndDate (payment date)
                 $"{amount} ریال",                             // Amount
-                payed == "yes" ? "پرداخت شده" : payed == "ok" ? "تایید شده" : "پرداخت نشده", // PayStatus
-                docNum,                                       // ConfirmStatus (doc num)
+                payed == "yes" ? "پرداخت شده" : payed == "ok" || isConfirmedDoc ? "تایید شده" : "پرداخت نشده", // PayStatus
+                isConfirmedDoc ? "تایید شده" : docNum,        // ConfirmStatus (doc num)
                 S(f, "dbm_p_type")                            // AmountType
             );
         }).ToList();
@@ -114,7 +121,8 @@ public static class ApiExtractor
                 S(r, "br_bazdid_date"),                      // VisitDate
                 S(r, "br_exec_ceil"),                        // CeilingCount
                 S(r, "br_andicator"),                        // Indicator
-                hasFile                                      // HasFile
+                hasFile,                                      // HasFile
+                S(r, "image_name")                            // ImageName
             );
         }).ToList();
     }

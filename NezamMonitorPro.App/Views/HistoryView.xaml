@@ -38,7 +38,7 @@
             <TextBlock Text="تاریخچه و بایگانی" FontSize="19" FontWeight="Bold"
                        Foreground="{DynamicResource TextBrush}"
                        TextAlignment="Center" HorizontalAlignment="Center"/>
-            <TextBlock Text="اسنپ‌شات‌های پایگاه‌دادهٔ فعال + بایگانی پایگاه‌داده‌های نسخه‌های قبلی (فقط‌خواندنی)"
+            <TextBlock Text="اسنپ‌شات‌های پایگاه‌داده فعال + بایگانی پایگاه‌داده‌های نسخه‌های قبلی (فقط‌خواندنی)"
                        FontSize="11.5" Foreground="{DynamicResource TextSecondaryBrush}"
                        Margin="0,4,0,0" TextAlignment="Center" HorizontalAlignment="Center"/>
         </StackPanel>
@@ -57,7 +57,7 @@
                         <ColumnDefinition Width="*"/>
                         <ColumnDefinition Width="Auto"/>
                     </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="اسنپ‌شات‌های پایگاه‌دادهٔ فعال"
+                    <TextBlock Grid.Column="0" Text="اسنپ‌شات‌های پایگاه‌داده فعال" ToolTip="نسخه‌هایی که از پایگاه داده فعلی گرفته شده؛ هر بروزرسانی یکی می‌سازه."
                                FontSize="{DynamicResource FontSize}" FontWeight="Bold"
                                Foreground="{DynamicResource TextBrush}" VerticalAlignment="Center"
                                TextAlignment="Center" HorizontalAlignment="Center"/>
@@ -66,7 +66,7 @@
                         <TextBlock Text="برای ادغام، حداقل دو مورد را تیک بزنید"
                                    FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"
                                    VerticalAlignment="Center" Margin="0,0,10,0"/>
-                        <Button Content="ادغام انتخاب‌شده‌ها" Click="Merge_Click"
+                        <Button Content="ادغام انتخاب‌شده‌ها" Click="Merge_Click" ToolTip="دو یا چند اسنپ‌شات تیک‌خورده در هم ادغام می‌شن."
                                 Style="{StaticResource SmallAction}"/>
                     </StackPanel>
                 </Grid>
@@ -120,10 +120,11 @@
                                                VerticalAlignment="Center" TextAlignment="Center"
                                                TextTrimming="CharacterEllipsis" Margin="4,0"/>
 
-                                    <Button Grid.Column="3" Tag="{Binding Id}" Click="SetActive_Click"
+                                    <Button Grid.Column="3" Tag="{Binding Id}" Click="SetActive_Click" ToolTip="این اسنپ‌شات، پایگاه‌داده فعال می‌شه."
                                             Content="فعال‌سازی" Style="{StaticResource SmallGhost}"
                                             Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                    <Button Grid.Column="4" Tag="{Binding Id}" Click="Delete_Click"
+                                    <Button Grid.Column="4" Tag="{Binding Id}" Click="Delete_Click" ToolTip="{Binding DeleteToolTip}"
+                                            IsEnabled="{Binding CanDelete}"
                                             Content="حذف" Style="{StaticResource SmallAction}"
                                             Background="{DynamicResource ErrorBrush}"
                                             VerticalAlignment="Center"/>
@@ -157,10 +158,10 @@
                     </Border>
 
                     <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                        <TextBlock Text="بایگانی پایگاه‌داده‌های نسخه‌های قبلی" FontSize="13.5"
+                        <TextBlock Text="بایگانی پایگاه‌داده‌های نسخه‌های قبلی" FontSize="13.5" ToolTip="فایل‌های قدیمی فقط کپی و فقط‌خواندنی بررسی می‌شن؛ پایگاه‌داده فعلی با داده‌های جدید پر نمی‌شه."
                                    FontWeight="Bold" Foreground="{DynamicResource TextBrush}"
                                    TextAlignment="Center" HorizontalAlignment="Center"/>
-                        <TextBlock Text="فایل قدیمی فقط کپی و فقط‌خواندنی بررسی می‌شود؛ پایگاه‌دادهٔ فعلی با داده‌های جدید تکمیل می‌شود."
+                        <TextBlock Text="فایل قدیمی فقط کپی و فقط‌خواندنی بررسی می‌شود؛ پایگاه‌داده فعلی با داده‌های جدید تکمیل می‌شود."
                                    FontSize="10.5" Foreground="{DynamicResource TextSecondaryBrush}"
                                    Margin="0,3,0,0" TextWrapping="Wrap"
                                    TextAlignment="Center" HorizontalAlignment="Center"/>
@@ -168,9 +169,9 @@
 
                     <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Center"
                                 VerticalAlignment="Center" Margin="12,0,0,0">
-                        <Button Content="جستجوی خودکار" Click="ScanLegacy_Click"
+                        <Button Content="جستجوی خودکار" Click="ScanLegacy_Click" ToolTip="پیدا کردن خودکار پایگاه‌داده‌های قدیمی در پوشه‌ها."
                                 Style="{StaticResource SmallGhost}" Margin="0,0,8,0"/>
-                        <Button Content="افزودن فایل…" Click="AddLegacy_Click"
+                        <Button Content="افزودن فایل…" Click="AddLegacy_Click" ToolTip="انتخاب دستی یک فایل پایگاه‌داده قدیمی."
                                 Style="{StaticResource SmallAction}" MinWidth="120"/>
                     </StackPanel>
                 </Grid>
@@ -210,10 +211,10 @@
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal"
                                                     VerticalAlignment="Center" Margin="8,0,0,0">
-                                            <Button Tag="{Binding Path=Path}" Click="ImportLegacy_Click"
+                                            <Button Tag="{Binding Path=Path}" Click="ImportLegacy_Click" ToolTip="وارد کردن کامل داده‌های یک فایل قدیمی به پایگاه‌داده فعلی."
                                                     Content="ایمپورت کامل" Style="{StaticResource SmallAction}"
                                                     MinWidth="120" Margin="0,0,6,0"/>
-                                            <Button Tag="{Binding Path=Path}" Click="AttachDetected_Click"
+                                            <Button Tag="{Binding Path=Path}" Click="AttachDetected_Click" ToolTip="فرستادن پایگاه‌داده قدیمی به بایگانی."
                                                     Content="بایگانی" Style="{StaticResource SmallGhost}"
                                                     MinWidth="80"/>
                                         </StackPanel>
@@ -257,7 +258,7 @@
 
                                         <StackPanel Grid.Column="1" Orientation="Horizontal"
                                                     VerticalAlignment="Center" Margin="8,0,0,0">
-                                            <Button Tag="{Binding Path=Path}" Click="ImportLegacy_Click"
+                                            <Button Tag="{Binding Path=Path}" Click="ImportLegacy_Click" ToolTip="وارد کردن کامل داده‌های یک فایل قدیمی به پایگاه‌داده فعلی."
                                                     Content="ایمپورت کامل" Style="{StaticResource SmallAction}"
                                                     MinWidth="120" Margin="0,0,6,0"/>
                                             <Button Tag="{Binding Path=Path}" Click="RemoveLegacy_Click"

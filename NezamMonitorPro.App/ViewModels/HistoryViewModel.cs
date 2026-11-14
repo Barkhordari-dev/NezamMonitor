@@ -1,5 +1,6 @@
 using System.Collections.ObjectModel;
 using System.IO;
+using System.Windows;
 using System.Windows.Input;
 using NezamMonitorPro.App.Services;
 using NezamMonitorPro.Core;
@@ -25,16 +26,9 @@ public sealed class HistoryViewModel : ViewModelBase
     public long ActiveSnapshotId { get => _activeSnapshotId; set => SetProperty(ref _activeSnapshotId, value); }
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string LegacyStatus { get => _legacyStatus; set => SetProperty(ref _legacyStatus, value); }
-    public ICommand SetActiveCommand { get; }
-    public ICommand DeleteCommand { get; }
-    public ICommand MergeCommand { get; }
-
     public HistoryViewModel(NezamDatabase db)
     {
         _db = db;
-        SetActiveCommand = new RelayCommand(() => { });
-        DeleteCommand = new RelayCommand(() => { });
-        MergeCommand = new RelayCommand(() => { });
 
         // هر بخش مستقل و محافظت‌شده است تا خطای یک بخش، کل صفحه را از کار نیندازد
         SafeLoadSnapshots();
@@ -60,7 +54,6 @@ public sealed class HistoryViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.LoadSnapshots", ex);
             StatusMessage = "خواندن اسنپ‌شات‌ها ناموفق بود: " + ex.Message;
         }
     }
@@ -86,16 +79,24 @@ public sealed class HistoryViewModel : ViewModelBase
 
     public void SetActive(long snapshotId)
     {
+        var snap = Snapshots.FirstOrDefault(s => s.Id == snapshotId);
+        if (snap == null) return;
+
+        // فعال‌سازی اسنپ‌شات، پایگاه‌داده فعال کل برنامه را عوض می‌کند؛ پس حتما تایید می‌خواهد.
+        var confirm = MessageBox.Show(
+            $"این اسنپ‌شات، پایگاه‌داده فعال کل برنامه می‌شود و همه صفحه‌ها از این به بعد با پرونده‌های آن کار می‌کنند.\n\nتاریخ: {snap.CreatedAt}\nتعداد پرونده: {snap.CaseCount}\n\nمطمینی؟",
+            "تایید فعال‌سازی", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes) return;
+
         try
         {
             _db.SetActiveSnapshot(snapshotId);
             ActiveSnapshotId = snapshotId;
             foreach (var s in Snapshots) s.IsActive = s.Id == snapshotId;
-            StatusMessage = $"اسنپ‌شات #{snapshotId} به عنوان فعال انتخاب شد";
+            StatusMessage = $"✅ اسنپ‌شات شماره {snapshotId} فعال شد؛ از حالا همه صفحه‌ها با پرونده‌های این اسنپ‌شات کار می‌کنند.";
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.SetActive", ex);
             StatusMessage = "انتخاب اسنپ‌شات فعال ناموفق بود: " + ex.Message;
         }
     }
@@ -116,7 +117,6 @@ public sealed class HistoryViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.DeleteSnapshot", ex);
             StatusMessage = "حذف اسنپ‌شات ناموفق بود: " + ex.Message;
         }
     }
@@ -142,7 +142,6 @@ public sealed class HistoryViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.MergeSnapshots", ex);
             StatusMessage = "ادغام ناموفق بود: " + ex.Message;
             return StatusMessage;
         }
@@ -158,7 +157,6 @@ public sealed class HistoryViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.RefreshLegacy", ex);
             LegacyStatus = "خواندن بایگانی ناموفق بود: " + ex.Message;
         }
     }
@@ -170,8 +168,8 @@ public sealed class HistoryViewModel : ViewModelBase
             LegacyDatabases.Add(item);
 
         LegacyStatus = LegacyDatabases.Count == 0
-            ? "هنوز پایگاه‌دادهٔ نسخهٔ قبلی افزوده نشده است."
-            : $"{LegacyDatabases.Count} پایگاه‌دادهٔ بایگانی‌شده";
+            ? "هنوز پایگاه‌داده نسخه قبلی افزوده نشده است."
+            : $"{LegacyDatabases.Count} پایگاه‌داده بایگانی‌شده";
     }
 
     private void SafeScanCandidates()
@@ -180,9 +178,8 @@ public sealed class HistoryViewModel : ViewModelBase
         {
             ScanCandidates();
         }
-        catch (Exception ex)
+        catch
         {
-            Log("HistoryViewModel.ScanCandidates", ex);
         }
     }
 
@@ -194,7 +191,7 @@ public sealed class HistoryViewModel : ViewModelBase
             DetectedDatabases.Add(item);
 
         if (DetectedDatabases.Count > 0)
-            LegacyStatus = $"{DetectedDatabases.Count} پایگاه‌دادهٔ قدیمی کنار برنامه پیدا شد.";
+            LegacyStatus = $"{DetectedDatabases.Count} پایگاه‌داده قدیمی کنار برنامه پیدا شد.";
     }
 
     /// <summary>افزودن یک مورد پیداشده (مسیر فایل) به بایگانی؛ فایل اصلی دست‌نخورده می‌ماند.</summary>
@@ -205,7 +202,7 @@ public sealed class HistoryViewModel : ViewModelBase
         return status;
     }
 
-    /// <summary>افزودن یک کپی از پایگاه‌دادهٔ قدیمی به بایگانی؛ پایگاه‌دادهٔ فعال دست‌نخورده می‌ماند.</summary>
+    /// <summary>افزودن یک کپی از پایگاه‌داده قدیمی به بایگانی؛ پایگاه‌داده فعال دست‌نخورده می‌ماند.</summary>
     public string AttachLegacy(string sourcePath)
     {
         try
@@ -219,14 +216,13 @@ public sealed class HistoryViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.AttachLegacy", ex);
             LegacyStatus = "افزودن ناموفق: " + ex.Message;
             return LegacyStatus;
         }
     }
 
     /// <summary>
-    /// ایمپورت داده‌های یک پایگاه‌دادهٔ نسخهٔ قبلی داخل پایگاه‌دادهٔ رمزنگاری‌شدهٔ فعلی.
+    /// ایمپورت داده‌های یک پایگاه‌داده نسخه قبلی داخل پایگاه‌داده رمزنگاری‌شده فعلی.
     /// فایل قدیمی فقط‌خواندنی است و تغییر نمی‌کند؛ داده‌ها در یک اسنپ‌شات جدید ذخیره می‌شوند.
     /// اجرا به صورت Async جهت جلوگیری از قفل شدن UI انجام می‌شود.
     /// </summary>
@@ -234,7 +230,7 @@ public sealed class HistoryViewModel : ViewModelBase
     {
         try
         {
-            LegacyStatus = "در حال ایمپورت داده‌ها... لطفاً شکیبا باشید.";
+            LegacyStatus = "در حال ایمپورت داده‌ها... لطفا شکیبا باشید.";
             var result = await Task.Run(() => LegacyDatabaseImporter.Import(_db, sourcePath));
             SafeLoadSnapshots();
             LegacyStatus = result.Message;
@@ -242,7 +238,6 @@ public sealed class HistoryViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.ImportLegacy", ex);
             LegacyStatus = "ایمپورت ناموفق بود: " + ex.Message;
             return LegacyStatus;
         }
@@ -262,22 +257,10 @@ public sealed class HistoryViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            Log("HistoryViewModel.RemoveLegacy", ex);
             LegacyStatus = "حذف از بایگانی ناموفق بود: " + ex.Message;
         }
     }
 
-    private static void Log(string where, Exception ex)
-    {
-        try
-        {
-            var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
-                      ?? AppDomain.CurrentDomain.BaseDirectory;
-            File.AppendAllText(Path.Combine(dir, "startup.log"),
-                $"[{DateTime.Now}] {where}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n");
-        }
-        catch { }
-    }
 }
 
 public sealed class SnapshotItem : ViewModelBase
@@ -287,7 +270,15 @@ public sealed class SnapshotItem : ViewModelBase
     public string Status { get; set; } = "";
     public int CaseCount { get; set; }
     private bool _isActive;
-    public bool IsActive { get => _isActive; set { SetProperty(ref _isActive, value); OnPropertyChanged(nameof(DisplayText)); } }
+    public bool IsActive { get => _isActive; set { SetProperty(ref _isActive, value); OnPropertyChanged(nameof(DisplayText)); OnPropertyChanged(nameof(CanDelete)); OnPropertyChanged(nameof(DeleteToolTip)); } }
+
+    /// <summary>اسنپ‌شات فعال را نمی‌شود حذف کرد.</summary>
+    public bool CanDelete => !IsActive;
+
+    /// <summary>توضیح دکمه حذف؛ برای اسنپ‌شات فعال دلیل غیرفعال بودنش را می‌گوید.</summary>
+    public string DeleteToolTip => IsActive
+        ? "اسنپ‌شات فعال را نمی‌شود حذف کرد؛ اول یک اسنپ‌شات دیگر را فعال کن."
+        : "حذف این اسنپ‌شات (با تایید).";
     private bool _isSelectedForMerge;
     public bool IsSelectedForMerge { get => _isSelectedForMerge; set => SetProperty(ref _isSelectedForMerge, value); }
     // All digits in this column must be English (Latin) digits, even when the

@@ -6,8 +6,8 @@ namespace NezamMonitorPro.Core.Reports;
 /// <summary>
 /// تشخیص هوشمند «مرحله» و «رشته» از نام فایل قالب Word.
 /// مثال‌هایی که باید یکی تشخیص داده شوند:
-///   «مکانیک مرحله اول.docx»  ≡  «1.docx» (داخل پوشهٔ مکانیک)  ≡  «مرحله ۱ مکانیک.docx»
-///   «معماری-مرحله-2.docx»    ≡  «2.docx» (داخل پوشهٔ معماری)
+///   «مکانیک مرحله اول.docx»  ≡  «1.docx» (داخل پوشه مکانیک)  ≡  «مرحله ۱ مکانیک.docx»
+///   «معماری-مرحله-2.docx»    ≡  «2.docx» (داخل پوشه معماری)
 /// </summary>
 public static class TemplateNameParser
 {
@@ -31,7 +31,7 @@ public static class TemplateNameParser
         ("زلزله",       new[] { "زلزله", "earthquake", "seismic" })
     };
 
-    /// <summary>نتیجهٔ تشخیص یک فایل قالب.</summary>
+    /// <summary>نتیجه تشخیص یک فایل قالب.</summary>
     public sealed record ParsedTemplate(string Path, string FileName, int Stage, string Discipline);
 
     /// <summary>نام فایل/پوشه را برای مقایسه نرمال می‌کند (اعداد فارسی → لاتین، حذف نیم‌فاصله).</summary>
@@ -60,7 +60,7 @@ public static class TemplateNameParser
         return Regex.Replace(result, @"\s+", " ").Trim();
     }
 
-    /// <summary>تشخیص شمارهٔ مرحله (۰ = ناشناخته).</summary>
+    /// <summary>تشخیص شماره مرحله (۰ = ناشناخته).</summary>
     public static int DetectStage(string? nameOrPath)
     {
         var text = Normalize(nameOrPath);
@@ -78,7 +78,7 @@ public static class TemplateNameParser
         var m = Regex.Match(text, @"(?:مرحله|stage|step)\s*(\d{1,2})", RegexOptions.IgnoreCase);
         if (m.Success && TryStage(m.Groups[1].Value, out stage)) return stage;
 
-        // ۳) نام فایل صرفاً عددی: «1.docx» یا «۳.docx»
+        // ۳) نام فایل صرفا عددی: «1.docx» یا «۳.docx»
         m = Regex.Match(text, @"^(\d{1,2})$");
         if (m.Success && TryStage(m.Groups[1].Value, out stage)) return stage;
 
@@ -102,7 +102,7 @@ public static class TemplateNameParser
         return true;
     }
 
-    /// <summary>تشخیص رشتهٔ مهندسی (خالی = عمومی).</summary>
+    /// <summary>تشخیص رشته مهندسی (خالی = عمومی).</summary>
     public static string DetectDiscipline(string? nameOrPath)
     {
         var text = Normalize(nameOrPath);
@@ -121,8 +121,8 @@ public static class TemplateNameParser
     }
 
     /// <summary>
-    /// یک مسیر قالب را تحلیل می‌کند. اگر نام فایل مرحله نداشت، از نام پوشهٔ والد هم استفاده می‌شود
-    /// (مثلاً پوشهٔ «مکانیک/1.docx» → مکانیک، مرحلهٔ ۱).
+    /// یک مسیر قالب را تحلیل می‌کند. اگر نام فایل مرحله نداشت، از نام پوشه والد هم استفاده می‌شود
+    /// (مثلا پوشه «مکانیک/1.docx» → مکانیک، مرحله ۱).
     /// </summary>
     public static ParsedTemplate Parse(string path)
     {

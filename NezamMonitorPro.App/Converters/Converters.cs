@@ -55,7 +55,7 @@ public sealed class StringToVisibilityConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Binding.DoNothing;
     }
 }
 
@@ -73,7 +73,7 @@ public sealed class BoolToArrowConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Binding.DoNothing;
     }
 }
 
@@ -109,7 +109,7 @@ public sealed class TabToVisibilityConverter : IValueConverter
         return Visibility.Collapsed;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
 /// <summary>
@@ -125,7 +125,7 @@ public sealed class TabBgConverter : IValueConverter
         return Application.Current?.TryFindResource(active ? "PrimaryBrush" : "PanelBrush") ?? Brushes.LightGray;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
 /// <summary>
@@ -139,7 +139,7 @@ public sealed class TabFgConverter : IValueConverter
         return Application.Current?.TryFindResource(active ? "OnPrimaryBrush" : "TextBrush") ?? Brushes.Black;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
 /// <summary>
@@ -157,7 +157,7 @@ public sealed class ReportCountConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        throw new NotImplementedException();
+        return Binding.DoNothing;
     }
 }
 
@@ -165,21 +165,29 @@ public sealed class ReportCountConverter : IValueConverter
 // Dashboard Converters
 // ═══════════════════════════════════════════════════════
 
-/// <summary>Converts status level string to brush for left-side indicator bar.</summary>
+/// <summary>Converts status level string to brush for left-side indicator bar.
+/// T-011: رنگ‌ها از براش‌های تم می‌آیند (نه هگز سخت‌کدشده) تا در تم تیره هم درست باشند.</summary>
 public sealed class LevelToBrushConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
         return value?.ToString() switch
         {
-            "critical" => "#E74C3C",
-            "warning" => "#E67E22",
-            "urgent" => "#F39C12",
-            "normal" => "#3498DB",
-            _ => "#BDC3C7"
+            "critical" => ThemeBrush("ErrorBrush", "#E74C3C"),
+            "warning" => ThemeBrush("WarningBrush", "#E67E22"),
+            "urgent" => ThemeBrush("WarningBrush", "#F39C12"),
+            "normal" => ThemeBrush("InfoBrush", "#3498DB"),
+            _ => ThemeBrush("TextSecondaryBrush", "#BDC3C7")
         };
     }
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
+
+    /// <summary>براش تم؛ اگر برنامه هنوز بالا نیامده باشد، همان رنگ قبلی به‌صورت هگز.</summary>
+    internal static object ThemeBrush(string key, string fallbackHex)
+    {
+        if (Application.Current?.TryFindResource(key) is Brush b) return b;
+        return fallbackHex;
+    }
 }
 
 /// <summary>Converts status level string to background brush for status badge.</summary>
@@ -189,12 +197,12 @@ public sealed class LevelToBgBrushConverter : IValueConverter
     {
         return value?.ToString() switch
         {
-            "urgent" => "#E74C3C",
-            "normal" => "#3498DB",
-            _ => "#3498DB"
+            "urgent" => LevelToBrushConverter.ThemeBrush("ErrorBrush", "#E74C3C"),
+            "normal" => LevelToBrushConverter.ThemeBrush("InfoBrush", "#3498DB"),
+            _ => LevelToBrushConverter.ThemeBrush("InfoBrush", "#3498DB")
         };
     }
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
 /// <summary>Converts int: 0 → Gray, else → default (Black).</summary>
@@ -202,10 +210,10 @@ public sealed class ZeroToGrayConverter : IValueConverter
 {
     public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        if (value is int i && i == 0) return "#27AE60";
-        return "#E74C3C";
+        if (value is int i && i == 0) return LevelToBrushConverter.ThemeBrush("SuccessBrush", "#27AE60");
+        return LevelToBrushConverter.ThemeBrush("ErrorBrush", "#E74C3C");
     }
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
 /// <summary>Converts int: 0 → Collapsed, else → Visible.</summary>
@@ -216,7 +224,7 @@ public sealed class ZeroToVisibleConverter : IValueConverter
         if (value is int i && i == 0) return Visibility.Collapsed;
         return Visibility.Visible;
     }
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
 /// <summary>Converts int: >0 → Visible (badge), 0 → Collapsed.</summary>
@@ -227,7 +235,7 @@ public sealed class CountToBadgeVisibilityConverter : IValueConverter
         if (value is int i && i > 0) return Visibility.Visible;
         return Visibility.Collapsed;
     }
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }
 
 /// <summary>
@@ -292,5 +300,5 @@ public sealed class CurrencyStringConverter : IValueConverter
         return string.IsNullOrEmpty(s) ? "0" : s;
     }
 
-    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => throw new NotImplementedException();
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => Binding.DoNothing;
 }

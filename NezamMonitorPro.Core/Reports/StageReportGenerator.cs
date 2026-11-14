@@ -1,4 +1,3 @@
-using System.Text.RegularExpressions;
 using DocumentFormat.OpenXml;
 using DocumentFormat.OpenXml.Packaging;
 using DocumentFormat.OpenXml.Wordprocessing;
@@ -167,8 +166,8 @@ public class StageReportGenerator
     }
 
     /// <summary>
-    /// افزودن مسیر دیگر برای جستجوی قالب‌ها؛ مثلاً پوشهٔ «templates» نسخهٔ قبلی برنامه
-    /// یا پوشهٔ قالب‌های دانلودی. مسیرهای ناموجود بی‌صدا نادیده گرفته می‌شوند.
+    /// افزودن مسیر دیگر برای جستجوی قالب‌ها؛ مثلا پوشه «templates» نسخه قبلی برنامه
+    /// یا پوشه قالب‌های دانلودی. مسیرهای ناموجود بی‌صدا نادیده گرفته می‌شوند.
     /// </summary>
     public void AddTemplateDirectory(string? dir)
     {
@@ -183,12 +182,45 @@ public class StageReportGenerator
         catch { }
     }
 
+    private string? _signedTemplateDir;
+
+    /// <summary>When true, FindTemplate looks in the signed folder first (P1).</summary>
+    public bool UseSignedTemplates { get; set; }
+
+    /// <summary>Folder holding the signed (stamped) templates. Not part of
+    /// the normal search list — only consulted when UseSignedTemplates is on.</summary>
+    public void SetSignedTemplateDirectory(string? dir)
+    {
+        _signedTemplateDir = null;
+        if (string.IsNullOrWhiteSpace(dir)) return;
+        try
+        {
+            var full = Path.GetFullPath(dir);
+            if (Directory.Exists(full)) _signedTemplateDir = full;
+        }
+        catch { }
+    }
+
+    public string? SignedTemplateDirectory => _signedTemplateDir;
+
+    /// <summary>True when the template file lives under the signed folder.</summary>
+    public bool IsSignedTemplate(string? path)
+    {
+        if (string.IsNullOrEmpty(path) || string.IsNullOrEmpty(_signedTemplateDir)) return false;
+        try
+        {
+            var full = Path.GetFullPath(path);
+            return full.StartsWith(_signedTemplateDir + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase);
+        }
+        catch { return false; }
+    }
+
     public IReadOnlyList<string> TemplateDirectories => _templateDirs;
 
-    /// <summary>همهٔ فایل‌های docx در همهٔ مسیرهای قالب (بدون فایل‌های موقت Word).</summary>
-    private IEnumerable<string> EnumerateTemplateFiles()
+    /// <summary>همه فایل‌های docx در مسیرهای داده‌شده (بدون فایل‌های موقت Word).</summary>
+    private static IEnumerable<string> EnumerateTemplateFiles(IEnumerable<string> dirs)
     {
-        foreach (var dir in _templateDirs.ToList())
+        foreach (var dir in dirs.ToList())
         {
             string[] files;
             try { files = Directory.GetFiles(dir, "*.docx", SearchOption.AllDirectories); }
@@ -225,7 +257,7 @@ public class StageReportGenerator
         try
         {
             // Find template - use override if provided, otherwise auto-detect
-            // (رشتهٔ پرونده از ناظرین/حق‌الزحمهٔ همان پرونده گرفته می‌شود و به‌عنوان اولویت تطبیق قالب استفاده می‌شود)
+            // (رشته پرونده از ناظرین/حق‌الزحمه همان پرونده گرفته می‌شود و به‌عنوان اولویت تطبیق قالب استفاده می‌شود)
             var disciplineHint = caseData.Engineers?
                                      .FirstOrDefault(e => !string.IsNullOrWhiteSpace(e.Discipline))?.Discipline
                                  ?? caseData.Fees?.FirstOrDefault()?.Discipline;
@@ -312,7 +344,7 @@ public class StageReportGenerator
     {
         var templates = new List<TemplateInfo>();
 
-        foreach (var file in EnumerateTemplateFiles())
+        foreach (var file in EnumerateTemplateFiles(_templateDirs))
         {
             var parsed = TemplateNameParser.Parse(file);
             templates.Add(new TemplateInfo
@@ -342,15 +374,25 @@ public class StageReportGenerator
 
     /// <summary>
     /// یافتن قالب مرحله با تطبیق هوشمند نام فایل/پوشه:
-    /// «مکانیک مرحله اول.docx» ≡ «1.docx» (در پوشهٔ مکانیک) ≡ «مرحله ۱ - مکانیک.docx».
-    /// هیچ‌گاه قالب مرحلهٔ دیگری به‌جای این مرحله برگردانده نمی‌شود.
+    /// «مکانیک مرحله اول.docx» ≡ «1.docx» (در پوشه مکانیک) ≡ «مرحله ۱ - مکانیک.docx».
+    /// هیچ‌گاه قالب مرحله دیگری به‌جای این مرحله برگردانده نمی‌شود.
     /// </summary>
     private string? FindTemplate(int stage, string? discipline = null)
     {
         if (stage <= 0) return null;
+        // P1: a signed template for this stage wins when signed generation is on.
+        if (UseSignedTemplates && !string.IsNullOrEmpty(_signedTemplateDir))
+        {
+            var signed = FindTemplateIn(stage, discipline, new[] { _signedTemplateDir });
+            if (signed != null) return signed;
+        }
         if (_templateDirs.Count == 0) return null;
+        return FindTemplateIn(stage, discipline, _templateDirs);
+    }
 
-        var candidates = EnumerateTemplateFiles()
+    private static string? FindTemplateIn(int stage, string? discipline, IEnumerable<string> dirs)
+    {
+        var candidates = EnumerateTemplateFiles(dirs)
             .Select(TemplateNameParser.Parse)
             .Where(c => c.Stage == stage)
             .ToList();
@@ -359,7 +401,7 @@ public class StageReportGenerator
 
         var wanted = TemplateNameParser.DetectDiscipline(discipline);
 
-        // ۱) دقیقاً همان رشته
+        // ۱) دقیقا همان رشته
         if (wanted.Length > 0)
         {
             var exact = candidates.Where(c => c.Discipline == wanted).ToList();
@@ -370,13 +412,13 @@ public class StageReportGenerator
         var generic = candidates.Where(c => c.Discipline.Length == 0).ToList();
         if (generic.Count > 0) return PickBest(generic, wanted);
 
-        // ۳) هر قالبی که مرحلهٔ درست دارد
+        // ۳) هر قالبی که مرحله درست دارد
         return PickBest(candidates, wanted);
     }
 
     /// <summary>
     /// انتخاب بهترین گزینه بین چند قالب هم‌مرحله: نام عددی خالص («1.docx») دقیق‌ترین است،
-    /// بعد نامی که شمارهٔ مرحله در آن صریح آمده، بعد کوتاه‌ترین مسیر.
+    /// بعد نامی که شماره مرحله در آن صریح آمده، بعد کوتاه‌ترین مسیر.
     /// </summary>
     private static string PickBest(List<TemplateNameParser.ParsedTemplate> list, string wantedDiscipline)
     {
@@ -455,7 +497,7 @@ public class StageReportGenerator
             // Text values — pass through as-is (already Persian text)
             ["«مالک»"] = caseData.Owner,
             ["«همراه»"] = caseData.OwnerMobile,
-            ["«مسئولیت»"] = caseData.Responsibility,
+            ["«مسولیت»"] = caseData.Responsibility,
             ["«نوع_کاربری»"] = spec?.UsageType ?? "",
             ["«گروه_ساختمانی»"] = spec?.BuildingGroup ?? "",
             ["«نوع_سازه»"] = spec?.StructureType ?? "",
@@ -503,48 +545,131 @@ public class StageReportGenerator
     }
 
     /// <summary>
-    /// Replace variables in a paragraph, handling split runs by merging text first.
+    /// Replace variables in a paragraph, span-aware: a placeholder is replaced
+    /// only inside the run(s) it spans; every other run is left byte-identical.
+    /// Mirrors the Android implementation (3.8.1, ReportGeneratorScreen.kt):
+    /// runs are never added or removed, only runs whose text changed are written
+    /// back, and runs that received replacement text get the B Nazanin font.
     /// </summary>
     private static void ReplaceInParagraph(Paragraph para, Dictionary<string, string> replacements)
     {
         var runs = para.Descendants<Run>().ToList();
         if (runs.Count == 0) return;
 
-        // Concatenate all run texts
-        var fullText = string.Concat(runs.Select(r => r.InnerText));
+        // The text of each run, from its &lt;w:t&gt; elements only (a run can also
+        // hold breaks/tabs/drawings, which are not text and must not shift offsets).
+        var originalTexts = runs.Select(r => string.Concat(r.Elements<Text>().Select(t => t.Text ?? ""))).ToList();
+        var runTexts = originalTexts.ToList();
+        // Which runs received replacement text (their font becomes B Nazanin).
+        var touched = new bool[runs.Count];
+        var changed = false;
 
-        // Normalize: collapse multiple spaces between « and » to single space
-        // This handles Word adding extra spaces inside placeholders
-        var normalized = Regex.Replace(fullText, @"«\s+", "«");
-        normalized = Regex.Replace(normalized, @"\s+»", "»");
-
-        // Check if any variable exists (check both original and normalized)
-        bool hasVariable = replacements.Keys.Any(k => fullText.Contains(k) || normalized.Contains(k));
-        if (!hasVariable) return;
-
-        // Replace in normalized text
         foreach (var (key, value) in replacements)
         {
-            // Also try with normalized key
-            var normKey = Regex.Replace(key, @"«\s+", "«");
-            normKey = Regex.Replace(normKey, @"\s+»", "»");
-            
-            normalized = normalized.Replace(normKey, value);
+            // Variants Word can produce: the key itself, the key with a space
+            // before the closing guillemet, and the key with a space after the
+            // opening guillemet. (Android tries the first two; the third keeps
+            // the coverage the old normalization had.)
+            foreach (var needle in new[] { key, key.Replace("»", " »"), key.Replace("«", "« ") })
+            {
+                if (string.IsNullOrEmpty(needle)) continue;
+                // All non-overlapping occurrences in the current text, then apply
+                // them right-to-left so earlier offsets stay valid.
+                var full = string.Concat(runTexts);
+                var occurrences = new List<int>();
+                var idx = full.IndexOf(needle, StringComparison.Ordinal);
+                while (idx >= 0)
+                {
+                    occurrences.Add(idx);
+                    idx = full.IndexOf(needle, idx + needle.Length, StringComparison.Ordinal);
+                }
+                for (var o = occurrences.Count - 1; o >= 0; o--)
+                {
+                    var occ = occurrences[o];
+                    var occEnd = occ + needle.Length;
+                    var pos = 0;
+                    for (var i = 0; i < runTexts.Count; i++)
+                    {
+                        var runStart = pos;
+                        var runEnd = pos + runTexts[i].Length;
+                        pos = runEnd;
+                        if (runEnd <= occ || runStart >= occEnd) continue;
+                        if (runStart <= occ && occ < runEnd)
+                        {
+                            // The run the placeholder starts in: it keeps the
+                            // replacement text (plus whatever of this run lies
+                            // after the placeholder, when it ends inside it).
+                            var relStart = occ - runStart;
+                            var relEnd = Math.Min(occEnd - runStart, runTexts[i].Length);
+                            runTexts[i] = runTexts[i].Substring(0, relStart) + value + runTexts[i].Substring(relEnd);
+                            touched[i] = true;
+                        }
+                        else if (runStart >= occ && runEnd <= occEnd)
+                        {
+                            // A run fully inside the placeholder span: emptied.
+                            runTexts[i] = "";
+                        }
+                        else
+                        {
+                            // A run the placeholder ends in: drop its covered prefix.
+                            runTexts[i] = runTexts[i].Substring(occEnd - runStart);
+                        }
+                    }
+                    changed = true;
+                }
+            }
         }
 
-        // Put all text in the first run, clear the rest
-        var firstRun = runs[0];
-        var textEl = firstRun.GetFirstChild<Text>();
-        if (textEl != null)
-            textEl.Text = normalized;
-        else
-            firstRun.AppendChild(new Text(fullText));
+        if (!changed) return;
 
-        for (int i = 1; i < runs.Count; i++)
+        // Write back only the runs whose text changed; untouched runs are never
+        // written, so their properties cannot change.
+        for (var i = 0; i < runs.Count; i++)
         {
-            var t = runs[i].GetFirstChild<Text>();
-            if (t != null) t.Text = "";
+            if (runTexts[i] != originalTexts[i])
+            {
+                SetRunText(runs[i], runTexts[i]);
+                if (touched[i]) SetRunFontBNazanin(runs[i]);
+            }
         }
+    }
+
+    /// <summary>
+    /// Replace a run's text, keeping its properties: the first &lt;w:t&gt; gets the
+    /// new text and any extra &lt;w:t&gt; elements are removed (a run with several
+    /// text elements would otherwise keep stale text after the first one).
+    /// Breaks/tabs/drawings in the run are untouched (only &lt;w:t&gt; is edited).
+    /// </summary>
+    private static void SetRunText(Run run, string text)
+    {
+        var textElements = run.Elements<Text>().ToList();
+        if (textElements.Count == 0) return;
+        textElements[0].Text = text;
+        if (text.Length > 0 && (char.IsWhiteSpace(text[0]) || char.IsWhiteSpace(text[text.Length - 1])))
+            textElements[0].Space = SpaceProcessingModeValues.Preserve;
+        for (var i = 1; i < textElements.Count; i++)
+            textElements[i].Remove();
+    }
+
+    /// <summary>
+    /// Set a run's font to B Nazanin (ascii + hAnsi + cs, unconditionally).
+    /// </summary>
+    private static void SetRunFontBNazanin(Run run)
+    {
+        var rPr = run.RunProperties ?? run.PrependChild(new RunProperties());
+        var rFonts = rPr.GetFirstChild<RunFonts>();
+        if (rFonts == null)
+        {
+            rFonts = new RunFonts();
+            // rFonts precedes b/i/color/sz in CT_RPr: insert after rStyle if
+            // there is one, otherwise at the front.
+            var rStyle = rPr.GetFirstChild<RunStyle>();
+            if (rStyle != null) rPr.InsertAfter(rFonts, rStyle);
+            else rPr.PrependChild(rFonts);
+        }
+        rFonts.Ascii = "B Nazanin";
+        rFonts.HighAnsi = "B Nazanin";
+        rFonts.ComplexScript = "B Nazanin";
     }
 }
 

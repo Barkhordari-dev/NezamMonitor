@@ -1,0 +1,87 @@
+<Window x:Class="NezamMonitorPro.App.Views.FirstRunGuideWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="راهنمای شروع"
+        Width="560" Height="560"
+        WindowStartupLocation="CenterOwner"
+        FlowDirection="RightToLeft"
+        Background="{DynamicResource BackgroundBrush}"
+        FontFamily="{DynamicResource FontFamily}"
+        ResizeMode="NoResize" ShowInTaskbar="False">
+    <Border Margin="16" Background="{DynamicResource CardBrush}" CornerRadius="{DynamicResource RadiusMedium}"
+            BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" Padding="22">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <StackPanel Grid.Row="0" Margin="0,0,0,14">
+                <TextBlock Text="👋 خوش آمدی!" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold"
+                           Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center"/>
+                <TextBlock Text="چهار قدم ساده تا اولین گزارشت:" FontSize="{DynamicResource FontSize}"
+                           Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Center" Margin="0,6,0,0"/>
+            </StackPanel>
+
+            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                <StackPanel>
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,10" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔑" FontSize="22" VerticalAlignment="Top" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="۱ — وارد سامانه شو" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="از منوی «به‌روزرسانی»، نام کاربری و رمز سامانه نظام مهندسی را بزن. رمزت همین‌جا روی سیستم خودت می‌ماند." FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,10" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="🔄" FontSize="22" VerticalAlignment="Top" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="۲ — پرونده‌ها را به‌روز کن" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="دکمه «به‌روزرسانی» را بزن تا پرونده‌ها، ناظرین، حق‌الزحمه و گزارش‌ها از سامانه گرفته شوند." FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,10" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📝" FontSize="22" VerticalAlignment="Top" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="۳ — گزارش بساز" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="از منوی «تولید گزارش»، پرونده‌ها را اسکن کن، ردیف‌هایت را تیک بزن و «تولید گزارش» را بزن. اگر بخواهی PDF هم همراهش ساخته می‌شود." FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,10" Margin="0,0,0,8">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="📤" FontSize="22" VerticalAlignment="Top" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="۴ — خروجی بگیر" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="از «خروجی اکسل» جدول پرونده‌ها را اکسل بگیر و از «خروجی اندروید» فایل داده برای گوشی بساز." FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    <Border Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="14,10">
+                        <StackPanel Orientation="Horizontal">
+                            <TextBlock Text="💡" FontSize="22" VerticalAlignment="Top" Margin="0,0,12,0"/>
+                            <StackPanel>
+                                <TextBlock Text="نکته" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
+                                <TextBlock Text="روی هر دکمه یا کارت که موست را نگه داری، یک راهنمای کوتاه نشان داده می‌شود. کلید F5 هم صفحه جاری را تازه می‌کند." FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,4,0,0"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </ScrollViewer>
+
+            <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,16,0,0">
+                <Button Content="👍 _فهمیدم" Click="Understood_Click" MinWidth="120" Margin="0,0,8,0" TabIndex="1"
+                        Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" FontWeight="Bold"
+                        ToolTip="راهنما بسته می‌شود و دیگر نشان داده نمی‌شود."/>
+                <Button Content="دیگر نشان _نده" Click="DoNotShow_Click" MinWidth="120" TabIndex="2"
+                        Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" FontWeight="Bold"
+                        ToolTip="این راهنما دیگر نشان داده نمی‌شود."/>
+            </StackPanel>
+        </Grid>
+    </Border>
+</Window>

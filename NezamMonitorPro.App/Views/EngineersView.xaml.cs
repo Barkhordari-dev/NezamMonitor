@@ -1,8 +1,9 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using NezamMonitorPro.App.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NezamMonitorPro.App.Views;
 
@@ -11,7 +12,8 @@ public partial class EngineersView : UserControl
     public EngineersView()
     {
         InitializeComponent();
-        DataContext = new EngineersViewModel(Services.DatabaseService.Instance);
+        // ARCH-001: ViewModel از کانتینر DI گرفته می‌شود.
+        DataContext = App.Services.GetRequiredService<EngineersViewModel>();
     }
 
     private void EngineersGrid_MouseRightButtonUp(object sender, MouseButtonEventArgs e)

@@ -3,10 +3,18 @@ using NezamMonitorPro.Core.Api;
 using NezamMonitorPro.Core.Data;
 using NezamMonitorPro.Core.Models;
 
-if (args.Length < 2) { Console.WriteLine("Usage: dotnet run -- <user> <pass>"); return; }
+if (args.Length < 1) { Console.WriteLine("Usage: dotnet run -- <user>"); Console.WriteLine("Password is read from the NEZAM_BENCH_PASSWORD environment variable."); return; }
 
 var username = args[0];
-var password = args[1];
+// ARCH-007: the password used to come from the command line (visible in
+// shell history and the process list). It now comes from the environment.
+var password = Environment.GetEnvironmentVariable("NEZAM_BENCH_PASSWORD");
+if (string.IsNullOrEmpty(password))
+{
+    Console.WriteLine("ERROR: NEZAM_BENCH_PASSWORD environment variable is not set.");
+    Console.WriteLine("Set it before running, e.g.: $env:NEZAM_BENCH_PASSWORD='...' (PowerShell)");
+    return;
+}
 
 Console.WriteLine("=== FULL API EXTRACTION → DATABASE ===");
 Console.WriteLine($"Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}");

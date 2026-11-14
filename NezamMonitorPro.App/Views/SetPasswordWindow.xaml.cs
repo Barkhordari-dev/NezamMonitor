@@ -40,6 +40,7 @@ public partial class SetPasswordWindow : Window
         catch { }
 
         PasswordBox.Focus();
+        UpdateCapsWarning();
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -49,18 +50,14 @@ public partial class SetPasswordWindow : Window
 
         if (string.IsNullOrEmpty(pwd))
         {
-            ErrorText.Text = "لطفاً رمز عبور را وارد کنید.";
+            ErrorText.Text = "لطفا رمز عبور را وارد کنید.";
             PasswordBox.Focus();
             return;
         }
 
-        if (pwd.Length < 8)
-        {
-            ErrorText.Text = "رمز عبور باید حداقل ۸ کاراکتر باشد.";
-            PasswordBox.Focus();
-            return;
-        }
-
+        // هیچ قانون طول یا ترکیبی اعمال نمی‌شود — فقط خالی نبودن و
+        // یکسان بودن رمز و تکرارش بررسی می‌شود. نشانگر قدرت و متن
+        // راهنما فقط پیشنهاد می‌دهند، نه اجبار.
         if (!string.Equals(pwd, confirm, StringComparison.Ordinal))
         {
             ErrorText.Text = "رمز عبور و تکرار آن یکسان نیستند.";
@@ -176,7 +173,31 @@ public partial class SetPasswordWindow : Window
         catch { }
     }
 
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e) { }
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        // A11Y-003: Esc همه‌جا پنجره را می‌بندد (نه فقط وقتی فوکوس روی کادر رمز است).
+        if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            CancelButton_Click(sender, e);
+            return;
+        }
+        UpdateCapsWarning();
+    }
+
+    private void Window_PreviewKeyUp(object sender, KeyEventArgs e) => UpdateCapsWarning();
+
+    /// <summary>S-027: هشدار Caps Lock، مثل پنجره رمز برنامه.</summary>
+    private void UpdateCapsWarning()
+    {
+        try
+        {
+            CapsWarning.Visibility = Keyboard.IsKeyToggled(Key.CapsLock)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+        catch { }
+    }
 
     private void UpdateStrength()
     {

@@ -47,25 +47,27 @@ public static class BuiltInThemes
         PersianName = "دخترانه",
         Colors = new ThemeColors
         {
-            Primary = "#FFE91E63",
+            // A11Y-007a: صورتی اصلی کمی تیره‌تر شد (#E91E63 → #D81B60) تا
+            // متن سفید رویش از ۴٫۳:۱ به حدود ۴٫۹:۱ برسد و خوانا شود.
+            Primary = "#FFD81B60",
             Secondary = "#FF9C27B0",
             Accent = "#FFFFC107",
             Background = "#FFFFF0F5",
             Surface = "#FFFFE4E1",
             Panel = "#FFFFD1DC",
             Card = "#FFFFFFFF",
-            ButtonPrimary = "#FFE91E63",
+            ButtonPrimary = "#FFD81B60",
             ButtonPrimaryHover = "#FFC2185B",
             ButtonPrimaryPressed = "#FFAD1457",
             ButtonDisabled = "#FFF3B9CE",
             InputBackground = "#FFFFFFFF",
             InputBorder = "#FFF48FB1",
             Text = "#FF4A2E4D",
-            TextSecondary = "#FF7D5A65",
+            TextSecondary = "#FF6E4A55",
             Border = "#FFF8BBD0",
             Success = "#FF009688",
             Warning = "#FFFF9800",
-            Error = "#FFE53935",
+            Error = "#FFD32F2F",
             Info = "#FFAB47BC",
             Sidebar = "#FFC71585",
             SidebarText = "#FFFFFFFF",
@@ -81,7 +83,7 @@ public static class BuiltInThemes
             BorderRadius = 12,
             ControlSpacing = 10,
             ButtonHeight = 40,
-            InputHeight = 34,
+            InputHeight = 38,
             SidebarWidth = 264,
         },
     };
@@ -127,7 +129,7 @@ public static class BuiltInThemes
             BorderRadius = 6,
             ControlSpacing = 10,
             ButtonHeight = 42,
-            InputHeight = 34,
+            InputHeight = 38,
             SidebarWidth = 264,
         },
     };
@@ -173,7 +175,7 @@ public static class BuiltInThemes
             BorderRadius = 10,
             ControlSpacing = 10,
             ButtonHeight = 40,
-            InputHeight = 34,
+            InputHeight = 38,
             SidebarWidth = 264,
         },
     };
@@ -218,7 +220,7 @@ public static class BuiltInThemes
             BorderRadius = 10,
             ControlSpacing = 10,
             ButtonHeight = 40,
-            InputHeight = 34,
+            InputHeight = 38,
             SidebarWidth = 264,
         },
     };
@@ -254,6 +256,9 @@ public static class BuiltInThemes
             SidebarActive = "#FF1D4ED8",
             SidebarActiveSoft = "#1A2A405E",
             LogBackground = "#FF2C3E50",
+            SidebarHover = "#14FFFFFF",
+            HoverOverlay = "#0F94A3B8",
+            ShadowColor = "#40000000",
         },
     };
 
@@ -288,6 +293,9 @@ public static class BuiltInThemes
             SidebarActive = "#FF00695C",
             SidebarActiveSoft = "#1A003865",
             LogBackground = "#FF002850",
+            SidebarHover = "#14FFFFFF",
+            HoverOverlay = "#0F94A3B8",
+            ShadowColor = "#40000000",
         },
     };
 

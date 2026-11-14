@@ -1,7 +1,9 @@
 <UserControl x:Class="NezamMonitorPro.App.Views.UpdateView" FlowDirection="{DynamicResource MainWindowFlowDirection}"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:srv="clr-namespace:NezamMonitorPro.App.Services">
+             xmlns:srv="clr-namespace:NezamMonitorPro.App.Services"
+             xmlns:api="clr-namespace:NezamMonitorPro.Core.Api;assembly=NezamMonitorPro.Core"
+             PreviewKeyDown="UpdateView_PreviewKeyDown" PreviewKeyUp="UpdateView_PreviewKeyUp">
     <UserControl.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -383,7 +385,7 @@
                                    Margin="0,4,0,0" TextWrapping="Wrap"/>
 
                         <!-- Progress bar (thick, rounded) -->
-                        <Grid x:Name="ProgressRow" Margin="0,12,0,0" Visibility="Collapsed">
+                        <Grid x:Name="ProgressRow" Margin="0,12,0,0" Visibility="Collapsed" ToolTip="استخراج در چه مرحله‌ای هست و چند پرونده از چند تا انجام شده.">
                             <Grid.RowDefinitions>
                                 <RowDefinition Height="Auto"/>
                                 <RowDefinition Height="Auto"/>
@@ -420,7 +422,9 @@
             </Border>
 
             <!-- ════════════ 1. Login ════════════ -->
-            <Border Style="{StaticResource SoftCard}">
+            <!-- S-003: هنگام اجرا، کل کارت ورود قفل می‌شود (نه فقط دکمه‌ها). -->
+            <Border x:Name="LoginCard" Style="{StaticResource SoftCard}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, Source={x:Static srv:ExtractionController.Instance}}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1A2563EB" Margin="0,0,10,0">
@@ -428,7 +432,7 @@
                                        Foreground="{DynamicResource PrimaryTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="اطلاعات ورود به سامانه" Style="{StaticResource CardTitle}"/>
+                        <TextBlock Text="اطلاعات ورود به سامانه" Style="{StaticResource CardTitle}" ToolTip="نام کاربری و رمز عبورت در سامانه نظام مهندسی؛ بدون این، داده‌ای گرفته نمی‌شه."/>
                     </StackPanel>
 
                     <Grid>
@@ -440,7 +444,7 @@
 
                         <StackPanel Grid.Column="0">
                             <TextBlock Text="نام کاربری" Style="{StaticResource FieldLabel}" HorizontalAlignment="Center"/>
-                            <TextBox x:Name="UsernameBox" Style="{StaticResource SoftTextBox}"
+                            <TextBox x:Name="UsernameBox" Style="{StaticResource SoftTextBox}" ToolTip="شماره عضویتت در سامانه."
                                      FlowDirection="LeftToRight"
                                      Text="{Binding Username, UpdateSourceTrigger=PropertyChanged}"/>
                         </StackPanel>
@@ -448,7 +452,7 @@
                         <StackPanel Grid.Column="2">
                             <TextBlock Text="رمز عبور" Style="{StaticResource FieldLabel}" HorizontalAlignment="Center"/>
                             <Grid>
-                                <PasswordBox x:Name="PasswordBox" Style="{StaticResource SoftPasswordBox}"
+                                <PasswordBox x:Name="PasswordBox" Style="{StaticResource SoftPasswordBox}" ToolTip="رمز ورودت به سامانه؛ با چشم کنارش می‌تونی ببینیش."
                                              FlowDirection="LeftToRight"
                                              PasswordChanged="PasswordBox_PasswordChanged"/>
                                 <TextBox x:Name="VisiblePasswordBox" Style="{StaticResource SoftTextBox}"
@@ -456,18 +460,30 @@
                                          Padding="12,0,38,0" TextChanged="VisiblePasswordBox_TextChanged"
                                          Visibility="Collapsed"/>
                                 <ToggleButton x:Name="ShowPasswordToggle" Width="30" Height="30" HorizontalAlignment="Right"
-                                              Style="{StaticResource EyeButtonStyle}" Click="TogglePassword_Click"/>
+                                              Style="{StaticResource EyeButtonStyle}" Click="TogglePassword_Click"
+                                              ToolTip="نمایش یا پنهان کردن رمزی که نوشته‌ای."/>
                             </Grid>
+                            <!-- S-027: هشدار Caps Lock، مثل پنجره رمز برنامه. -->
+                            <TextBlock x:Name="CapsWarning" Text="⚠ قفل Caps Lock روشن است؛ رمز را با حروف درست بنویس."
+                                       Foreground="{DynamicResource WarningTextBrush}" FontSize="12"
+                                       Margin="0,6,0,0" Visibility="Collapsed" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Grid>
 
-                    <CheckBox Content="ذخیره اطلاعات ورود" Style="{StaticResource SoftCheckBox}"
+                    <!-- SEC-002: اتصال به سامانه رمزنگاری نشده است (HTTP). -->
+                    <TextBlock Text="{x:Static api:NezamApiClient.InsecureConnectionWarning}"
+                               Foreground="{DynamicResource WarningTextBrush}" FontSize="12"
+                               TextWrapping="Wrap" Margin="0,14,0,0"/>
+
+                    <CheckBox Content="ذخیره اطلاعات ورود" Style="{StaticResource SoftCheckBox}" ToolTip="اگه تیک بخوره، دفعه بعد نام کاربری و رمز رو دوباره نمی‌خواد."
                               IsChecked="{Binding RememberMe}" Margin="0,16,0,0"/>
                 </StackPanel>
             </Border>
 
             <!-- ════════════ 2. Extraction options ════════════ -->
-            <Border Style="{StaticResource SoftCard}">
+            <!-- S-003: هنگام اجرا، کل کارت گزینه‌ها قفل می‌شود (نه فقط دکمه‌ها). -->
+            <Border x:Name="OptionsCard" Style="{StaticResource SoftCard}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, Source={x:Static srv:ExtractionController.Instance}}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1AF59E0B" Margin="0,0,10,0">
@@ -487,40 +503,58 @@
 
                         <StackPanel Grid.Column="0" Margin="0,0,14,0">
                             <TextBlock Text="شروع از پرونده شماره" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource SoftTextBox}" Width="110"
+                            <TextBox x:Name="StartFromBox" Style="{StaticResource SoftTextBox}" Width="110" ToolTip="از کدام پرونده شروع شه؛ ۱ یعنی از اولین پرونده."
                                      Text="{Binding StartFromIndex, UpdateSourceTrigger=PropertyChanged, Source={x:Static srv:ExtractionController.Instance}}"/>
                         </StackPanel>
 
                         <StackPanel Grid.Column="1" Margin="0,0,14,0">
                             <TextBlock Text="تعداد" Style="{StaticResource FieldLabel}"/>
-                            <TextBox Style="{StaticResource SoftTextBox}" Width="110"
+                            <TextBox x:Name="MaxCasesBox" Style="{StaticResource SoftTextBox}" Width="110" ToolTip="چند پرونده گرفته شه؛ صفر یعنی همه پرونده‌ها."
                                      Text="{Binding MaxCases, UpdateSourceTrigger=PropertyChanged, Source={x:Static srv:ExtractionController.Instance}}"/>
                         </StackPanel>
 
-                        <TextBlock Grid.Column="2" Text="مقدار صفر یعنی همه پرونده‌ها"
-                                   FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
-                                   VerticalAlignment="Bottom" Margin="0,0,0,10"/>
+                        <!-- S-008: راهنمای عددها، همیشه جلوی چشم. -->
+                        <StackPanel Grid.Column="2" VerticalAlignment="Bottom" Margin="0,0,0,10">
+                            <TextBlock Text="شروع: ۱ یعنی از اولین پرونده" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                            <TextBlock Text="تعداد: ۰ یعنی همه پرونده‌ها" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                        </StackPanel>
                     </Grid>
 
-                    <CheckBox Content="فقط پرونده‌های ناقص (بدون مشخصات / گزارش / ناظرین / حق‌الزحمه)"
+                    <CheckBox Content="فقط پرونده‌های ناقص (بدون مشخصات / گزارش / ناظرین / حق‌الزحمه)" ToolTip="فقط پرونده‌هایی گرفته می‌شن که مشخصات، گزارش، ناظر یا حق‌الزحمه‌شان ناقص هست."
                               Style="{StaticResource SoftCheckBox}"
                               IsChecked="{Binding FilterIncompleteOnly, Source={x:Static srv:ExtractionController.Instance}}"
                               Margin="0,18,0,0"/>
+
+                    <!-- S-009: چه چیزهایی گرفته بشن (قبلا فقط در کنترلر بود، در صفحه نبود). -->
+                    <StackPanel Orientation="Horizontal" Margin="0,18,0,0">
+                        <TextBlock Text="گرفتن چی‌ها" Style="{StaticResource FieldLabel}" Margin="0,0,14,0" VerticalAlignment="Center"/>
+                        <CheckBox Content="مهندسین" Style="{StaticResource SoftCheckBox}" Margin="0,0,18,0"
+                                  ToolTip="مهندسین ناظر هر پرونده هم گرفته بشن."
+                                  IsChecked="{Binding ExtractEngineers, Source={x:Static srv:ExtractionController.Instance}}"/>
+                        <CheckBox Content="حق‌الزحمه" Style="{StaticResource SoftCheckBox}" Margin="0,0,18,0"
+                                  ToolTip="حق‌الزحمه هر پرونده هم گرفته بشه."
+                                  IsChecked="{Binding ExtractFees, Source={x:Static srv:ExtractionController.Instance}}"/>
+                        <CheckBox Content="گزارش‌ها" Style="{StaticResource SoftCheckBox}"
+                                  ToolTip="گزارش‌های هر پرونده هم گرفته بشن."
+                                  IsChecked="{Binding ExtractReports, Source={x:Static srv:ExtractionController.Instance}}"/>
+                    </StackPanel>
 
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0"
                                 Visibility="{Binding ExtractSpecifications, Converter={StaticResource BoolToVisConverter}, Source={x:Static srv:ExtractionController.Instance}}">
                         <TextBlock Text="حالت مشخصات" Style="{StaticResource FieldLabel}" Margin="0,0,14,0"
                                    VerticalAlignment="Center"/>
-                        <RadioButton Content="فقط ناقص" Style="{StaticResource SoftRadio}" GroupName="SpecMode"
+                        <RadioButton Content="فقط ناقص" Style="{StaticResource SoftRadio}" GroupName="SpecMode" ToolTip="فقط ناقص یعنی پرونده‌های کامل دست نمی‌خورن؛ بازنویسی کامل یعنی همه از اول گرفته می‌شن."
                                      IsChecked="{Binding UpdateAllSpecifications, Converter={StaticResource InverseBoolConverter}, Source={x:Static srv:ExtractionController.Instance}}"/>
-                        <RadioButton Content="بازنویسی کامل" Style="{StaticResource SoftRadio}" GroupName="SpecMode"
+                        <RadioButton Content="بازنویسی کامل" Style="{StaticResource SoftRadio}" GroupName="SpecMode" ToolTip="همه پرونده‌ها از اول گرفته می‌شن؛ پرونده‌های کامل هم بازنویسی می‌شن."
                                      IsChecked="{Binding UpdateAllSpecifications, Source={x:Static srv:ExtractionController.Instance}}"/>
                     </StackPanel>
                 </StackPanel>
             </Border>
 
             <!-- ════════════ 3. File options ════════════ -->
-            <Border Style="{StaticResource SoftCard}">
+            <!-- S-003: هنگام اجرا، کل کارت فایل قفل می‌شود (نه فقط دکمه‌ها). -->
+            <Border x:Name="FileCard" Style="{StaticResource SoftCard}"
+                    IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}, Source={x:Static srv:ExtractionController.Instance}}">
                 <StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
                         <Border Width="34" Height="34" CornerRadius="10" Background="#1A7C3AED" Margin="0,0,10,0">
@@ -537,17 +571,18 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
-                        <TextBox x:Name="OutputPathBox" Grid.Column="0" Style="{StaticResource SoftTextBox}"
+                        <TextBox x:Name="OutputPathBox" Grid.Column="0" Style="{StaticResource SoftTextBox}" ToolTip="پوشه‌ای که فایل‌های گزارش و پیوست‌ها در آن ذخیره می‌شن."
+                                 FontFamily="{StaticResource PathFontFamily}" FlowDirection="LeftToRight" TextAlignment="Left"
                                  Text="{Binding OutputPath, UpdateSourceTrigger=PropertyChanged, Source={x:Static srv:ExtractionController.Instance}}"/>
                         <Button Grid.Column="1" Content="انتخاب پوشه" Style="{StaticResource OutlineAction}"
                                 Click="BtnBrowseOutput_Click" Margin="10,0,0,0" MinWidth="120"/>
                     </Grid>
 
-                    <CheckBox Content="دریافت فایل‌های پیوست گزارش" Style="{StaticResource SoftCheckBox}"
+                    <CheckBox Content="دریافت فایل‌های پیوست گزارش" Style="{StaticResource SoftCheckBox}" ToolTip="تصویر گزارش‌های سامانه هم دانلود و کنار پرونده ذخیره می‌شه."
                               IsChecked="{Binding ExtractReportFiles, Source={x:Static srv:ExtractionController.Instance}}"
                               Margin="0,18,0,0"/>
 
-                    <CheckBox Content="رد کردن فایل‌های موجود با حجم یکسان (سریع‌تر)"
+                    <CheckBox Content="رد کردن فایل‌های موجود با حجم یکسان (سریع‌تر)" ToolTip="فایلی که قبلا با همان حجم دانلود شده، دوباره دانلود نمی‌شه؛ سریع‌تر تمام می‌شه."
                               Style="{StaticResource SoftCheckBox}"
                               IsChecked="{Binding SkipExistingReportFiles, Source={x:Static srv:ExtractionController.Instance}}"/>
                 </StackPanel>
@@ -556,7 +591,7 @@
             <!-- ════════════ 4. Action buttons ════════════ -->
             <Border Style="{StaticResource SoftCard}">
                 <WrapPanel HorizontalAlignment="Right" Orientation="Horizontal">
-                    <Button x:Name="BtnStart" Style="{StaticResource PrimaryAction}" Click="BtnStart_Click"
+                    <Button x:Name="BtnStart" Style="{StaticResource PrimaryAction}" Click="BtnStart_Click" ToolTip="شروع گرفتن داده‌ها از سامانه."
                             Margin="0,0,10,0">
                         <StackPanel Orientation="Horizontal">
                             <!-- icon on the right of the label (RTL convention) -->
@@ -566,7 +601,7 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="BtnStop" Style="{StaticResource OutlineAction}" Click="BtnStop_Click"
+                    <Button x:Name="BtnStop" Style="{StaticResource OutlineAction}" Click="BtnStop_Click" ToolTip="توقف استخراج در میانه کار."
                             Margin="0,0,10,0" MinWidth="120">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE769;" FontFamily="{DynamicResource IconFontFamily}" FontSize="{DynamicResource FontSize}"
@@ -575,11 +610,11 @@
                         </StackPanel>
                     </Button>
 
-                    <Button x:Name="BtnLoad" Style="{StaticResource SecondaryAction}" Click="BtnLoad_Click" MinWidth="150">
+                    <Button x:Name="BtnLoad" Style="{StaticResource SecondaryAction}" Click="BtnLoad_Click" MinWidth="150" ToolTip="نمایش آخرین داده‌هایی که قبلا گرفته شده، بدون اتصال به سامانه.">
                         <StackPanel Orientation="Horizontal">
                             <TextBlock Text="&#xE8E5;" FontFamily="{DynamicResource IconFontFamily}" FontSize="{DynamicResource FontSize}"
                                        Foreground="White" VerticalAlignment="Center" Margin="0,0,8,0"/>
-                            <TextBlock Text="بارگذاری آخرین" VerticalAlignment="Center" Foreground="White"/>
+                            <TextBlock Text="نمایش آخرین داده‌های ذخیره‌شده" VerticalAlignment="Center" Foreground="White"/>
                         </StackPanel>
                     </Button>
                 </WrapPanel>

@@ -1,8 +1,11 @@
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NezamMonitorPro.Security.Extensions;
 using NezamMonitorPro.Security.Services;
 using NezamMonitorPro.Security.Db;
+using NezamMonitorPro.App.Services;
+using NezamMonitorPro.App.ViewModels;
 using NezamMonitorPro.App.Views;
+using NezamMonitorPro.Core.Data;
 using System;
 using System.Globalization;
 using System.IO;
@@ -12,10 +15,13 @@ using System.Windows.Threading;
 namespace NezamMonitorPro.App;
 public partial class App : Application
 {
-    private IServiceProvider? _serviceProvider;
+    private static IServiceProvider? _serviceProvider;
     private DatabaseEncryptionService? _dbEncryptionService;
     private EncryptedSqliteConnection? _encryptedConnection;
     public EncryptedSqliteConnection? DatabaseConnection => _encryptedConnection;
+
+    /// <summary>کانتینر DI برنامه — Viewها ViewModel خود را از اینجا می‌گیرند.</summary>
+    public static IServiceProvider Services => _serviceProvider ?? throw new InvalidOperationException("Services not initialized.");
 
     private static Services.NavigationService? _nav;
     public static Services.NavigationService Navigation => _nav ?? throw new InvalidOperationException("Navigation not initialized.");
@@ -33,6 +39,7 @@ public partial class App : Application
         InitializeComponent();
         var services = new ServiceCollection();
         services.AddNezamSecurity(appDataDirectory: GetAppDirectory());
+        RegisterViewModels(services);
         _serviceProvider = services.BuildServiceProvider();
         _dbEncryptionService = _serviceProvider.GetRequiredService<DatabaseEncryptionService>();
 
@@ -41,6 +48,55 @@ public partial class App : Application
         Resources["TextFlowDirection"] = FlowDirection.RightToLeft;
         Resources["TableFlowDirection"] = FlowDirection.RightToLeft;
         Resources["MenuFlowDirection"] = FlowDirection.RightToLeft;
+    }
+
+    /// <summary>
+    /// ARCH-001: دیتابیس و همه ViewModelها در کانتینر DI ثبت می‌شوند تا Viewها
+    /// به‌جای ساختن دستی، آن‌ها را با App.Services.GetRequiredService&lt;T&gt;() بگیرند.
+    /// NezamDatabase همان نمونه DatabaseService.Instance است.
+    /// SnapshotViewerViewModel ثبت نمی‌شود چون شناسه اسنپ‌شات را موقع ساختن
+    /// می‌خواهد (پارامتر زمان اجرا) و ChangesViewModel خودش آن را می‌سازد.
+    /// </summary>
+    private static void RegisterViewModels(IServiceCollection services)
+    {
+        services.AddSingleton<NezamDatabase>(_ => DatabaseService.Instance);
+        services.AddSingleton<ThemeManager>(sp => new ThemeManager(sp.GetRequiredService<NezamDatabase>()));
+        services.AddTransient<MainViewModel>();
+        services.AddTransient<AndroidExportViewModel>();
+        services.AddTransient<CasesViewModel>();
+        services.AddTransient<ChangesViewModel>();
+        services.AddTransient<DashboardViewModel>();
+        services.AddTransient<EngineersViewModel>();
+        services.AddTransient<ExcelExportViewModel>();
+        services.AddTransient<FeesViewModel>();
+        services.AddTransient<FollowUpViewModel>();
+        services.AddTransient<GeneratorViewModel>();
+        services.AddTransient<HiddenSettingsViewModel>();
+        services.AddTransient<HistoryViewModel>();
+        services.AddTransient<ReportsViewModel>();
+        services.AddTransient<UpdateViewModel>();
+        services.AddTransient<SettingsViewModel>(sp => new SettingsViewModel(
+            sp.GetRequiredService<ThemeManager>(), DatabaseService.DatabasePath));
+    }
+
+    /// <summary>
+    /// برنامه را از اول اجرا می‌کند و نسخه فعلی را می‌بندد.
+    /// (بعد از پاکسازی کامل اطلاعات و تغییر رمز استفاده می‌شود.)
+    /// </summary>
+    public static void Restart()
+    {
+        try
+        {
+            var path = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
+            if (!string.IsNullOrEmpty(path))
+                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                {
+                    FileName = path,
+                    UseShellExecute = true
+                });
+        }
+        catch { }
+        Application.Current?.Shutdown();
     }
 
     /// <summary>
@@ -73,39 +129,22 @@ public partial class App : Application
             base.OnStartup(e);
             _nav = new Services.NavigationService();
 
-            // Log file path next to executable
-            // مهم: لاگ باید «افزودنی» باشد تا شواهد کرش بعد از اجرای مجدد برنامه پاک نشود.
-            string logPath = Path.Combine(GetAppDirectory(), "startup.log");
-            try
-            {
-                var logInfo = new FileInfo(logPath);
-                if (logInfo.Exists && logInfo.Length > 2 * 1024 * 1024) File.Delete(logPath);
-#if DEBUG
-                File.AppendAllText(logPath,
-                    $"\n===== SESSION {DateTime.Now:yyyy-MM-dd HH:mm:ss} =====\n[{DateTime.Now}] OnStartup begin\n");
-#endif
-            }
-            catch { }
-
             // Global exception handlers
+            // (نسخه‌های قدیمی یک فایل startup.log کنار برنامه می‌ساختند؛
+            // دیگر ساخته نمی‌شود و اگر از قبل مانده باشد، همین‌جا پاک می‌شود.)
+            try { File.Delete(Path.Combine(GetAppDirectory(), "startup.log")); } catch { }
             DispatcherUnhandledException += (s, args) =>
             {
-#if DEBUG
-                try { File.AppendAllText(logPath, $"[{DateTime.Now}] Dispatcher exception: {args.Exception}\n"); } catch { }
-#endif
+                // ERR-001: خطا دیگر بی‌صدا بلعیده نمی‌شود؛ در لاگ خطا نوشته و
+                // یک پیام ساده به کاربر نشان داده می‌شود.
+                try { ErrorLog.Write(args.Exception, "DispatcherUnhandledException"); } catch { }
+                MessageBox.Show("یه مشکلی پیش اومد. جزییاتش توی لاگ خطا ذخیره شد.",
+                    "خطا", MessageBoxButton.OK, MessageBoxImage.Warning);
                 args.Handled = true;
-            };
-            AppDomain.CurrentDomain.UnhandledException += (s, args) =>
-            {
-#if DEBUG
-                try { File.AppendAllText(logPath, $"[{DateTime.Now}] AppDomain exception: {args.ExceptionObject}\n"); } catch { }
-#endif
             };
             TaskScheduler.UnobservedTaskException += (s, args) =>
             {
-#if DEBUG
-                try { File.AppendAllText(logPath, $"[{DateTime.Now}] TaskScheduler exception: {args.Exception}\n"); } catch { }
-#endif
+                try { ErrorLog.Write(args.Exception, "UnobservedTaskException"); } catch { }
                 args.SetObserved();
             };
 
@@ -115,17 +154,10 @@ public partial class App : Application
             }
             catch (Exception ex)
             {
-#if DEBUG
-                try { File.AppendAllText(logPath, $"[{DateTime.Now}] InitializeDatabaseConnection exception: {ex}\n"); } catch { }
-#endif
                 MessageBox.Show($"خطا در پایگاه داده: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
                 Shutdown();
                 return;
             }
-
-#if DEBUG
-            try { File.AppendAllText(logPath, $"[{DateTime.Now}] OnStartup end\n"); } catch { }
-#endif
 
             // ── Headless verification mode: render each view to PNG and exit ──
             // Usage: NezamMonitorPro.exe --render <outDir>
@@ -135,7 +167,7 @@ public partial class App : Application
                 int outIdx = Array.IndexOf(e.Args, "--render");
                 string outDir = (outIdx >= 0 && outIdx + 1 < e.Args.Length) ? e.Args[outIdx + 1] : GetAppDirectory();
                 bool full = e.Args.Contains("--full");
-                Dispatcher.BeginInvoke(new Action(() => RunRenderMode(outDir, logPath, full)));
+                Dispatcher.BeginInvoke(new Action(() => RunRenderMode(outDir, full)));
             }
         }
 
@@ -148,12 +180,11 @@ public partial class App : Application
     {
         try
         {
-            // تا وقتی پنجرهٔ اصلی ساخته نشده، بستن پنجرهٔ ورود نباید برنامه را ببندد
+            // تا وقتی پنجره اصلی ساخته نشده، بستن پنجره ورود نباید برنامه را ببندد
             ShutdownMode = ShutdownMode.OnExplicitShutdown;
 
             var credentialStore = _serviceProvider!.GetRequiredService<CredentialStore>();
             var dbEncryptionService = _serviceProvider!.GetRequiredService<DatabaseEncryptionService>();
-            var logPath = Path.Combine(GetAppDirectory(), "startup.log");
             var dbPath = Path.Combine(GetAppDirectory(), "data", "nezam_monitor.db");
 
             if (!credentialStore.HasPassword())
@@ -175,7 +206,6 @@ public partial class App : Application
                     try
                     {
                         dbEncryptionService.CreateDatabase(setPasswordWindow.Password);
-                        Log(logPath, "initial password created");
                         break;
                     }
                     catch (Exception ex)
@@ -189,6 +219,7 @@ public partial class App : Application
 
             // ── ورود با امکان تلاش دوباره (به‌جای بستن برنامه در صورت رمز اشتباه) ──
             string? lastError = null;
+            var failedAttempts = 0;
             while (true)
             {
                 var passwordWindow = new PasswordWindow(lastError);
@@ -201,28 +232,32 @@ public partial class App : Application
                 var password = passwordWindow.Password;
                 if (string.IsNullOrEmpty(password))
                 {
-                    lastError = "لطفاً رمز عبور را وارد کنید.";
+                    lastError = "لطفا رمز عبور را وارد کنید.";
                     continue;
                 }
 
                 try
                 {
                     _encryptedConnection = dbEncryptionService.Open(password);
-                    Log(logPath, "password verified");
                     break;
                 }
                 catch (UnauthorizedAccessException)
                 {
                     lastError = "رمز عبور اشتباه است. دوباره تلاش کنید.";
-                    Log(logPath, "password rejected");
+                    failedAttempts++;
                 }
                 catch (Microsoft.Data.Sqlite.SqliteException ex)
                 {
                     lastError = "پایگاه داده باز نشد: " + ex.Message;
-                    Log(logPath, "db open failed: " + ex.Message);
+                    failedAttempts++;
                 }
+
+                // SEC-012: بعد از هر تلاش ناموفق، کمی صبر می‌کنیم (۱، ۲، ۴ ثانیه)
+                // تا حدس‌زدن رمز با تکرار سریع ممکن نباشد.
+                var delaySeconds = failedAttempts <= 1 ? 1 : failedAttempts == 2 ? 2 : 4;
+                System.Threading.Thread.Sleep(TimeSpan.FromSeconds(delaySeconds));
             }
-            Services.DatabaseService.Initialize(_encryptedConnection.Connection);
+            NezamMonitorPro.App.Services.DatabaseService.Initialize(_encryptedConnection.Connection);
             Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
             var mainWindow = new MainWindow();
             Application.Current.MainWindow = mainWindow;
@@ -235,13 +270,13 @@ public partial class App : Application
         }
     }
 
-    private void RunRenderMode(string outDir, string logPath, bool full = false)
+    private void RunRenderMode(string outDir, bool full = false)
     {
         try
         {
             Directory.CreateDirectory(outDir);
             var main = MainWindow as MainWindow;
-            if (main is null) { Log(logPath, "render: no MainWindow"); return; }
+            if (main is null) { Log(outDir, "render: no MainWindow"); return; }
 
             var views = new (string Key, string File)[]
             {
@@ -282,13 +317,13 @@ public partial class App : Application
                         fenc.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(frtb));
                         using (var fs = File.Create(Path.Combine(outDir, file + ".png")))
                             fenc.Save(fs);
-                        Log(logPath, $"render OK: {key} -> {file}.png (full {fw}x{fh})");
+                        Log(outDir, $"render OK: {key} -> {file}.png (full {fw}x{fh})");
                         continue;
                     }
 
                     // Render the actual view that is inside the Frame
                     var element = main.CurrentViewElement;
-                    if (element is null) { Log(logPath, $"render: {key} no content"); continue; }
+                    if (element is null) { Log(outDir, $"render: {key} no content"); continue; }
 
                     element.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
                     element.Arrange(new Rect(0, 0, element.DesiredSize.Width, element.DesiredSize.Height));
@@ -305,28 +340,30 @@ public partial class App : Application
                     using (var fs = File.Create(Path.Combine(outDir, file + ".png")))
                         encoder.Save(fs);
 
-                    Log(logPath, $"render OK: {key} -> {file}.png ({w}x{h})");
+                    Log(outDir, $"render OK: {key} -> {file}.png ({w}x{h})");
                 }
                 catch (Exception ex)
                 {
-                    Log(logPath, $"render FAIL {key}: {ex.GetType().Name}: {ex.Message}");
+                    Log(outDir, $"render FAIL {key}: {ex.GetType().Name}: {ex.Message}");
                 }
             }
 
-            Log(logPath, "render: done");
+            Log(outDir, "render: done");
             Shutdown();
         }
         catch (Exception ex)
         {
-            Log(logPath, $"render fatal: {ex}");
+            Log(outDir, $"render fatal: {ex}");
             Shutdown();
         }
     }
 
-    private static void Log(string logPath, string message)
+    // Render-mode diagnostics go to render.log next to the PNGs
+    // (the app no longer produces startup.log at all).
+    private static void Log(string outDir, string message)
     {
 #if DEBUG
-        try { File.AppendAllText(logPath, $"[{DateTime.Now}] {message}\n"); } catch { }
+        try { File.AppendAllText(Path.Combine(outDir, "render.log"), $"[{DateTime.Now}] {message}\n"); } catch { }
 #endif
     }
 

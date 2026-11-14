@@ -1,9 +1,10 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using NezamMonitorPro.App.Services;
 using NezamMonitorPro.App.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NezamMonitorPro.App.Views;
 
@@ -15,7 +16,8 @@ public partial class FollowUpView : UserControl
     public FollowUpView()
     {
         InitializeComponent();
-        DataContext = new FollowUpViewModel(DatabaseService.Instance);
+        // ARCH-001: ViewModel از کانتینر DI گرفته می‌شود.
+        DataContext = App.Services.GetRequiredService<FollowUpViewModel>();
     }
 
     /// <summary>

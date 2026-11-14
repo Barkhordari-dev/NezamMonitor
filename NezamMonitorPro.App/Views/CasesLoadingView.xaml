@@ -7,9 +7,9 @@
     <Grid Background="{DynamicResource BackgroundBrush}">
         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center" Width="400">
             <TextBlock Text="📋" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-            <TextBlock Text="در حال بارگذاری پرونده‌ها…" FontSize="18" FontWeight="Bold"
+            <TextBlock Text="در حال بارگذاری پرونده‌ها…" FontSize="18" FontWeight="Bold" ToolTip="جدول پرونده‌ها در حال آماده‌شدن هست؛ چند لحظه صبر کن."
                        Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-            <TextBlock Text="لطفاً چند لحظه صبر کنید؛ جدول پرونده‌ها در حال آماده‌شدن است."
+            <TextBlock Text="لطفا چند لحظه صبر کنید؛ جدول پرونده‌ها در حال آماده‌شدن است."
                        FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}"
                        HorizontalAlignment="Center" TextAlignment="Center" TextWrapping="Wrap" Margin="0,0,0,20"/>
             <ProgressBar IsIndeterminate="True" Height="8"/>

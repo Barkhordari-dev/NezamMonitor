@@ -14,27 +14,30 @@ namespace NezamMonitorPro.App.ViewModels;
 public sealed class FollowUpViewModel : ViewModelBase
 {
     private readonly NezamDatabase _db;
-    private string _searchText = "";
-    private string _filterOwner = "همه";
-    private string _filterCaseNumber = "همه";
     private bool _groupByRange = false;
 
+    // L-016 / DUP-003: وضعیت فیلتر در سرویس مشترک FilterState است (همان
+    // Cases و Fees). جستجو و فیلترها فقط پیش‌نویس‌اند؛ جدول تا دکمه «اعمال»
+    // فیلتر نمی‌شود. GroupByRange فوری می‌ماند (دسته‌بندی است، نه فیلتر).
+    public Services.FilterState Filters { get; } = new();
+    /// <summary>True وقتی فیلتری انتخاب شده ولی «اعمال» هنوز زده نشده.</summary>
+    public bool HasPendingFilters => Filters.HasPendingChanges;
     public string SearchText
     {
-        get => _searchText;
-        set { if (SetProperty(ref _searchText, value)) ApplyFilters(); }
+        get => Filters.GetDraft("Search", "");
+        set { Filters.SetDraft("Search", value); OnPropertyChanged(nameof(SearchText)); OnPropertyChanged(nameof(HasPendingFilters)); }
     }
 
     public string FilterOwner
     {
-        get => _filterOwner;
-        set { if (SetProperty(ref _filterOwner, value)) ApplyFilters(); }
+        get => Filters.GetDraft("Owner");
+        set { Filters.SetDraft("Owner", value); OnPropertyChanged(nameof(FilterOwner)); OnPropertyChanged(nameof(HasPendingFilters)); }
     }
 
     public string FilterCaseNumber
     {
-        get => _filterCaseNumber;
-        set { if (SetProperty(ref _filterCaseNumber, value)) ApplyFilters(); }
+        get => Filters.GetDraft("CaseNumber");
+        set { Filters.SetDraft("CaseNumber", value); OnPropertyChanged(nameof(FilterCaseNumber)); OnPropertyChanged(nameof(HasPendingFilters)); }
     }
 
     public bool GroupByRange
@@ -48,19 +51,29 @@ public sealed class FollowUpViewModel : ViewModelBase
     public ObservableCollection<string> DistinctCaseNumbers { get; } = new();
 
     public string CountDisplay => $"تعداد: {Items.Count} مورد";
+    public bool HasActiveFilters => Filters.HasActiveFilters;
 
     public ICommand RefreshCommand { get; }
     public ICommand SaveCommand { get; }
     public ICommand GroupByRangeCommand { get; }
     public ICommand ExportVCardCommand { get; }
+    public ICommand ApplyFiltersCommand { get; }
+    public ICommand ClearFiltersCommand { get; }
 
     public FollowUpViewModel(NezamDatabase db)
     {
         _db = db;
+        Filters.PropertyChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasActiveFilters));
+            OnPropertyChanged(nameof(HasPendingFilters));
+        };
         RefreshCommand = new RelayCommand(() => { SaveDirtyItems(); LoadData(); });
         SaveCommand = new RelayCommand(ExecuteSave);
         GroupByRangeCommand = new RelayCommand(() => { GroupByRange = !GroupByRange; });
         ExportVCardCommand = new RelayCommand(() => ExportVCard());
+        ApplyFiltersCommand = new RelayCommand(ApplyFilters);
+        ClearFiltersCommand = new RelayCommand(ClearFilters);
         LoadData();
     }
 
@@ -125,28 +138,34 @@ public sealed class FollowUpViewModel : ViewModelBase
 
     private void ApplyFilters()
     {
+        // فیلتر با مقدارهای اعمال‌شده خوانده می‌شود، نه پیش‌نویس.
+        Filters.Apply();
+        var appliedSearch = Filters.GetApplied("Search", "");
+        var appliedOwner = Filters.GetApplied("Owner");
+        var appliedCaseNumber = Filters.GetApplied("CaseNumber");
+
         Items.Clear();
         var filtered = _allItems.AsEnumerable();
 
         // فیلتر متن
-        if (!string.IsNullOrWhiteSpace(SearchText))
+        if (!string.IsNullOrWhiteSpace(appliedSearch))
         {
-            var normSearch = FilterHelper.Normalize(SearchText);
+            var normSearch = FilterHelper.Normalize(appliedSearch);
             filtered = filtered.Where(i =>
                 FilterHelper.Normalize($"{i.CaseNumber} {i.Owner} {i.Address} {i.OwnerMobile}")
                     .Contains(normSearch, StringComparison.OrdinalIgnoreCase));
         }
 
         // فیلتر مالک
-        if (FilterOwner != "همه")
+        if (appliedOwner != "همه")
         {
-            filtered = filtered.Where(i => FilterHelper.Matches(i.Owner, FilterOwner));
+            filtered = filtered.Where(i => FilterHelper.Matches(i.Owner, appliedOwner));
         }
 
         // فیلتر شماره پرونده
-        if (FilterCaseNumber != "همه")
+        if (appliedCaseNumber != "همه")
         {
-            filtered = filtered.Where(i => FilterHelper.Matches(i.CaseNumber, FilterCaseNumber));
+            filtered = filtered.Where(i => FilterHelper.Matches(i.CaseNumber, appliedCaseNumber));
         }
 
         // دسته‌بندی بر اساس محدوده
@@ -164,6 +183,16 @@ public sealed class FollowUpViewModel : ViewModelBase
             Items.Add(item);
 
         OnPropertyChanged(nameof(CountDisplay));
+        OnPropertyChanged(nameof(HasActiveFilters));
+    }
+
+    private void ClearFilters()
+    {
+        Filters.Clear(("Search", ""), ("Owner", "همه"), ("CaseNumber", "همه"));
+        OnPropertyChanged(nameof(SearchText));
+        OnPropertyChanged(nameof(FilterOwner));
+        OnPropertyChanged(nameof(FilterCaseNumber));
+        ApplyFilters();
     }
 
     /// <summary>
@@ -212,7 +241,9 @@ public sealed class FollowUpViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"❌ خطا در ذخیره: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+            // TXT-010: متن خام استثنا به کاربر نشان داده نمی‌شود؛ جزییات فقط در لاگ.
+            NezamMonitorPro.App.Services.ErrorLog.Write(ex, "FollowUpViewModel.ExecuteSave");
+            MessageBox.Show("ذخیره انجام نشد. دوباره تلاش کن.", "ذخیره", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
@@ -280,7 +311,9 @@ public sealed class FollowUpViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            MessageBox.Show($"❌ خطا: {ex.Message}", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+            // TXT-010: متن خام استثنا به کاربر نشان داده نمی‌شود؛ جزییات فقط در لاگ.
+            NezamMonitorPro.App.Services.ErrorLog.Write(ex, "FollowUpViewModel.ExportVCard");
+            MessageBox.Show("خروجی مخاطبین ساخته نشد. دوباره تلاش کن.", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 }

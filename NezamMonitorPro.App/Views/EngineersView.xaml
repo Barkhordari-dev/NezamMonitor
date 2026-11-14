@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
              xmlns:local="clr-namespace:NezamMonitorPro.App.Converters" x:Class="NezamMonitorPro.App.Views.EngineersView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
@@ -14,86 +14,59 @@
         <TextBlock Grid.Row="0" Text="👷 ناظرین" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
 
         <!-- Filter Panel -->
-        <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,10"
+        <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="0,0,0,10"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <!-- Row 1: Filters -->
-                <Grid Grid.Row="0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Column="0" Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                    <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
-                             Height="34" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}" local:Watermark.Text="جستجو در پروندهها..." />
-
-                    <TextBlock Grid.Column="3" Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                    <ComboBox Grid.Column="4" ItemsSource="{Binding OwnerFilters}"
-                              SelectedItem="{Binding FilterOwner}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"
+            <!-- L-005: یک WrapPanel؛ در عرض باریک گروه‌ها به ردیف بعد می‌روند و جستجو تنگ نمی‌شود. -->
+            <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" ToolTip="جستجو با نام ناظر یا شماره پرونده."
+                             Width="200" MinWidth="180" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="1" local:Watermark.Text="جستجو در پرونده‌ها..." />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding OwnerFilters}" ToolTip="جدول فقط ناظرهایی رو نشون می‌ده که با این فیلترها می‌خونن."
+                              SelectedItem="{Binding FilterOwner}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="2"
                               IsEditable="True" StaysOpenOnEdit="True"/>
-
-                    <TextBlock Grid.Column="6" Text="شماره پرونده:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                    <ComboBox Grid.Column="7" ItemsSource="{Binding CaseNumberFilters}"
-                              SelectedItem="{Binding FilterCaseNumber}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="شماره پرونده:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding CaseNumberFilters}" ToolTip="جدول فقط ناظرهایی رو نشون می‌ده که با این فیلترها می‌خونن."
+                              SelectedItem="{Binding FilterCaseNumber}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="3"
                               IsEditable="True" StaysOpenOnEdit="True"/>
-
-                    <TextBlock Grid.Column="9" Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                    <ComboBox Grid.Column="10" ItemsSource="{Binding DisciplineFilters}"
-                              SelectedItem="{Binding FilterDiscipline}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                </Grid>
-
-                <!-- Row 2: Engineer filter + Clear + Count -->
-                <Grid Grid.Row="1" Margin="0,8,0,0">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="200"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-
-                    <TextBlock Grid.Column="0" Text="ناظر:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding EngineerFilters}"
-                              SelectedItem="{Binding FilterEngineer}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding DisciplineFilters}" ToolTip="جدول فقط ناظرهایی رو نشون می‌ده که با این فیلترها می‌خونن."
+                              SelectedItem="{Binding FilterDiscipline}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="4"/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="ناظر:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding EngineerFilters}" ToolTip="جدول فقط ناظرهایی رو نشون می‌ده که با این فیلترها می‌خونن."
+                              SelectedItem="{Binding FilterEngineer}" Width="200" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="5"
                               IsEditable="True" StaysOpenOnEdit="True"/>
-
-                    <StackPanel Grid.Column="3" Orientation="Horizontal" VerticalAlignment="Center">
-                        <Button Grid.Column="3" Content="🧹 پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}"
-                            Padding="10,0" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
-                            FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold"
-                            Visibility="{Binding HasActiveFilters, Converter={StaticResource BoolToVisConverter}}"/>
-                        <Button Content="📥 کلید ورود اطلاعات مهندسین" Command="{Binding ImportFromExcelCommand}"
-                            Padding="10,0" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}"
-                            FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" Margin="10,0,0,0"/>
-                        <Button Content="📱 خروجی مخاطبین" Command="{Binding ExportVCardCommand}"
-                            Padding="10,0" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"
-                            FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" Margin="10,0,0,0"/>
-                    </StackPanel>
-
-                    <TextBlock Grid.Column="5" Text="{Binding CountDisplay}" VerticalAlignment="Center"
-                               Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold"/>
-                </Grid>
-            </Grid>
+                </StackPanel>
+                <Button Content="🧹 _پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}" ToolTip="همه‌ی فیلترها پاک می‌شه."
+                        Padding="10,0" Height="34" Margin="0,0,10,4" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
+                        FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" TabIndex="6"
+                        Visibility="{Binding HasActiveFilters, Converter={StaticResource BoolToVisConverter}}"/>
+                <Button Content="📥 _کلید ورود اطلاعات مهندسین" Command="{Binding ImportFromExcelCommand}" ToolTip="ورود اطلاعات مهندسین از یک فایل."
+                        Padding="10,0" Height="34" Margin="0,0,10,4" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}"
+                        FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" TabIndex="7"/>
+                <Button Content="📱 _خروجی مخاطبین" Command="{Binding ExportVCardCommand}" ToolTip="ذخیره ناظرین به‌صورت فایل مخاطبین (vCard) برای گوشی."
+                        Padding="10,0" Height="34" Margin="0,0,10,4" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"
+                        FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" TabIndex="8"/>
+                <!-- B-007: دکمه بروزرسانی برای RefreshCommand -->
+                <Button Content="🔄 _به‌روزرسانی" Command="{Binding RefreshCommand}" ToolTip="جدول ناظرین را دوباره از پایگاه داده می‌خواند."
+                        Padding="10,0" Height="34" Margin="0,0,10,4" Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}"
+                        FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" TabIndex="9"/>
+                <TextBlock Text="{Binding CountDisplay}" VerticalAlignment="Center"
+                           Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" Margin="0,0,0,4"/>
+            </WrapPanel>
         </Border>
 
         <!-- DataGrid with Context Menu -->
-        <DataGrid Grid.Row="2" x:Name="EngineersGrid" ItemsSource="{Binding Engineers}" AutoGenerateColumns="False"
+        <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="2" x:Name="EngineersGrid" ItemsSource="{Binding Engineers}" AutoGenerateColumns="False"
                   IsReadOnly="True" AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="Horizontal"
                   HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
                   MouseRightButtonUp="EngineersGrid_MouseRightButtonUp" FlowDirection="{DynamicResource TableFlowDirection}">
@@ -101,11 +74,27 @@
                 <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
                 <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
                 <DataGridTextColumn Header="رشته" Binding="{Binding Discipline}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                <DataGridTextColumn Header="ناظر" Binding="{Binding Name}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                <DataGridTextColumn Header="تلفن" Binding="{Binding Phone}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                <DataGridTextColumn Header="پایه نظارت" Binding="{Binding SupervisionLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                <DataGridTextColumn Header="پایه طراحی" Binding="{Binding DesignLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                <DataGridTextColumn Header="پایه اجرا" Binding="{Binding ExecutionLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Header="ناظر" Binding="{Binding Name}" Width="*" MinWidth="120" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                <DataGridTextColumn Binding="{Binding Phone}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}">
+                <DataGridTextColumn.Header>
+                    <TextBlock Text="تلفن" ToolTip="شماره تماس ناظر."/>
+                </DataGridTextColumn.Header>
+            </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding SupervisionLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}">
+                <DataGridTextColumn.Header>
+                    <TextBlock Text="پایه نظارت" ToolTip="پایه نظام مهندسی ناظر در هر نقش."/>
+                </DataGridTextColumn.Header>
+            </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding DesignLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}">
+                <DataGridTextColumn.Header>
+                    <TextBlock Text="پایه طراحی" ToolTip="پایه نظام مهندسی ناظر در هر نقش."/>
+                </DataGridTextColumn.Header>
+            </DataGridTextColumn>
+                <DataGridTextColumn Binding="{Binding ExecutionLevel}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}">
+                <DataGridTextColumn.Header>
+                    <TextBlock Text="پایه اجرا" ToolTip="پایه نظام مهندسی ناظر در هر نقش."/>
+                </DataGridTextColumn.Header>
+            </DataGridTextColumn>
             </DataGrid.Columns>
         </DataGrid>
 

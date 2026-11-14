@@ -46,7 +46,7 @@ public partial class PasswordWindow : Window
         var pwd = Password;
         if (string.IsNullOrEmpty(pwd))
         {
-            ErrorText.Text = "لطفاً رمز عبور را وارد کنید.";
+            ErrorText.Text = "لطفا رمز عبور را وارد کنید.";
             FocusPassword();
             return;
         }
@@ -113,7 +113,17 @@ public partial class PasswordWindow : Window
             : (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
     }
 
-    private void Window_PreviewKeyDown(object sender, KeyEventArgs e) => UpdateCapsWarning();
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        // A11Y-003: Esc همه‌جا پنجره را می‌بندد (نه فقط وقتی فوکوس روی کادر رمز است).
+        if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            CancelButton_Click(sender, e);
+            return;
+        }
+        UpdateCapsWarning();
+    }
     private void Window_PreviewKeyUp(object sender, KeyEventArgs e) => UpdateCapsWarning();
 
     private void UpdateCapsWarning()

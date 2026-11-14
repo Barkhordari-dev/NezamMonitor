@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -6,6 +6,8 @@ using Microsoft.Win32;
 using ClosedXML.Excel;
 using NezamMonitorPro.App.Services;
 using NezamMonitorPro.App.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
+using NezamMonitorPro.Core.Data;
 
 namespace NezamMonitorPro.App.Views;
 
@@ -18,12 +20,14 @@ public partial class CasesView : UserControl, INavigationAware
     public CasesView()
     {
         InitializeComponent();
-        _vm = new CasesViewModel(DatabaseService.Instance);
+        // ARCH-001: ViewModel از کانتینر DI گرفته می‌شود.
+        _vm = App.Services.GetRequiredService<CasesViewModel>();
         DataContext = _vm;
+        SizeChanged += CasesView_SizeChanged;
 
         Loaded += (_, _) =>
         {
-            var savedRatio = DatabaseService.Instance.GetSetting("cases_splitter_ratio");
+            var savedRatio = DatabaseService.Instance.GetSetting(SettingKeys.CasesSplitterRatio);
             if (!string.IsNullOrEmpty(savedRatio))
             {
                 var parts = savedRatio.Split(':');
@@ -62,13 +66,15 @@ public partial class CasesView : UserControl, INavigationAware
 
     // ── Column layout (order + width) ──────────────────────────────
     // Saved in Settings under "cases_column_order" as
-    //   v2;<escaped header>=<displayIndex>:<width>;<escaped header>=...
+    //   v3;<escaped header>=<displayIndex>:<width>;<escaped header>=...
     // Only columns the user resized by dragging carry a width; the rest
     // have an empty width part and keep their Auto width. Keyed by header
-    // text (headers contain no ';' or '='); the old format (comma-joined
-    // headers, no widths) is ignored so a stale value can never resurrect
-    // the default order, and pre-v2 saves (a width for every column) are
-    // treated as order-only so they cannot freeze Auto columns again.
+    // text (headers contain no ';' or '=').
+    // v3: saves older than v3 (v2, and the pre-v2 format that wrote a
+    // pixel width for EVERY column) are ignored ENTIRELY — order and
+    // widths alike — so every column starts at its XAML Auto width
+    // (content-sized) on first launch of this version instead of
+    // resurrecting a collapsed layout saved by an older version.
     private Dictionary<string, (int DisplayIndex, DataGridLength Width)>? _defaultColumnLayout;
 
     // Headers of columns the user actually dragged wider/narrower. Only
@@ -101,7 +107,11 @@ public partial class CasesView : UserControl, INavigationAware
                 if (_suppressColumnSave) return;
                 // Width changes while restoring/resetting are programmatic
                 // (_suppressColumnSave is true then); anything else is the
-                // user dragging a column border.
+                // user dragging a column border. A drag narrower than 40px
+                // makes the column unreadable, so it is never persisted:
+                // it stays narrow for this session only and comes back Auto
+                // on the next launch instead of freezing collapsed forever.
+                if (col.Width.IsAbsolute && col.Width.Value < 40) return;
                 _userResizedColumns.Add(ColumnKey(col));
                 SaveColumnOrder();
             });
@@ -128,19 +138,18 @@ public partial class CasesView : UserControl, INavigationAware
                         : "";
                     return $"{Uri.EscapeDataString(ColumnKey(c))}={c.DisplayIndex}:{w}";
                 });
-            DatabaseService.Instance.SaveSetting("cases_column_order", "v2;" + string.Join(";", parts));
+            DatabaseService.Instance.SaveSetting(SettingKeys.CasesColumnOrder, "v3;" + string.Join(";", parts));
         }
         catch { }
     }
 
     private void RestoreColumnOrder()
     {
-        var saved = DatabaseService.Instance.GetSetting("cases_column_order");
-        if (string.IsNullOrEmpty(saved) || !saved.Contains(';')) return; // old format: ignore
-        // v2 = widths are saved only for columns the user resized. Older
-        // saves wrote a pixel width for EVERY column, which froze all Auto
-        // columns — for those, restore the order only and leave widths Auto.
-        var isV2 = saved.StartsWith("v2;");
+        var saved = DatabaseService.Instance.GetSetting(SettingKeys.CasesColumnOrder);
+        // v3 only: older saves are ignored entirely (order AND widths),
+        // so a collapsed layout from an older version can never come back
+        // and every column starts at its XAML Auto width.
+        if (string.IsNullOrEmpty(saved) || !saved.StartsWith("v3;")) return;
         var columns = CasesGrid.Columns.ToList();
         _suppressColumnSave = true;
         try
@@ -157,13 +166,15 @@ public partial class CasesView : UserControl, INavigationAware
                 var col = columns.FirstOrDefault(c => ColumnKey(c) == key);
                 if (col == null || !seen.Add(key)) continue;
                 col.DisplayIndex = displayIndex++;
-                // Restore a saved width only for v2 saves (user-resized
-                // columns); the checkbox column keeps its fixed 40.
+                // Restore a saved width only for user-resized columns;
+                // the checkbox column keeps its fixed 40.
                 // No upper limit on restored widths: a column the user dragged
-                // wider than 600px must come back that wide (only the 20px
-                // floor stays, so an accidentally collapsed column is not
-                // restored at zero width).
-                if (isV2 && ColumnKey(col) != "☐" && double.TryParse(rest[1], out double w) && w >= 20)
+                // wider than 600px must come back that wide (only the 40px
+                // floor stays: anything narrower is unreadable, and a saved
+                // width below it means the layout was saved while collapsed
+                // — those columns come back Auto instead, so a collapsed
+                // table heals itself on the next launch).
+                if (ColumnKey(col) != "☐" && double.TryParse(rest[1], out double w) && w >= 40)
                 {
                     col.Width = new DataGridLength(w);
                     _userResizedColumns.Add(ColumnKey(col));
@@ -207,7 +218,7 @@ public partial class CasesView : UserControl, INavigationAware
         finally { _suppressColumnSave = false; }
         try
         {
-            DatabaseService.Instance.SaveSetting("cases_column_order", "");
+            DatabaseService.Instance.SaveSetting(SettingKeys.CasesColumnOrder, "");
             _userResizedColumns.Clear();
             _vm.StatusMessage = "چینش ستون‌ها به حالت پیش‌فرض برگشت ✓";
         }
@@ -221,8 +232,70 @@ public partial class CasesView : UserControl, INavigationAware
         if (tableHeight > 0 && detailHeight > 0)
         {
             var ratio = $"{tableHeight:F1}:{detailHeight:F1}";
-            DatabaseService.Instance.SaveSetting("cases_splitter_ratio", ratio);
+            DatabaseService.Instance.SaveSetting(SettingKeys.CasesSplitterRatio, ratio);
         }
+    }
+
+    /// <summary>
+    /// L-018: پنل جزییات در عرض باریک (کمتر از ۹۰۰) از ۴ ستون کنار هم
+    /// به ۲×۲ تبدیل می‌شود؛ در عرض عادی دوباره ۴ ستونه برمی‌گردد.
+    /// ستون‌های GridSplitter (ستون‌های ۱، ۳، ۵) در حالت ۲×۲ پنهان‌اند.
+    /// </summary>
+    private void CasesView_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        try
+        {
+            bool narrow = ActualWidth < 900;
+            var defs = DetailGrid.ColumnDefinitions;
+            var rows = DetailGrid.RowDefinitions;
+            if (narrow)
+            {
+                if (defs.Count == 7)
+                {
+                    defs.Clear();
+                    defs.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(5) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    rows.Clear();
+                    rows.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                    rows.Add(new RowDefinition { Height = new GridLength(5) });
+                    rows.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                    // ستون ۱ (ناظرین) ردیف ۰ ستون ۰؛ ستون ۲ (حق‌الزحمه) ردیف ۰ ستون ۲؛
+                    // ستون ۳ (گزارش‌ها) ردیف ۲ ستون ۰؛ ستون ۴ (مشخصات) ردیف ۲ ستون ۲.
+                    Grid.SetColumn(DetailGrid.Children[0], 0); Grid.SetRow(DetailGrid.Children[0], 0);
+                    Grid.SetColumn(DetailGrid.Children[2], 2); Grid.SetRow(DetailGrid.Children[2], 0);
+                    Grid.SetColumn(DetailGrid.Children[4], 0); Grid.SetRow(DetailGrid.Children[4], 2);
+                    Grid.SetColumn(DetailGrid.Children[6], 2); Grid.SetRow(DetailGrid.Children[6], 2);
+                    DetailGrid.Children[1].Visibility = Visibility.Collapsed;
+                    DetailGrid.Children[3].Visibility = Visibility.Collapsed;
+                    DetailGrid.Children[5].Visibility = Visibility.Collapsed;
+                }
+            }
+            else
+            {
+                if (defs.Count == 3)
+                {
+                    defs.Clear();
+                    defs.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(5) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(5) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(5) });
+                    defs.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+                    rows.Clear();
+                    rows.Add(new RowDefinition { Height = new GridLength(1, GridUnitType.Star) });
+                    Grid.SetColumn(DetailGrid.Children[0], 0); Grid.SetRow(DetailGrid.Children[0], 0);
+                    Grid.SetColumn(DetailGrid.Children[2], 2); Grid.SetRow(DetailGrid.Children[2], 0);
+                    Grid.SetColumn(DetailGrid.Children[4], 4); Grid.SetRow(DetailGrid.Children[4], 0);
+                    Grid.SetColumn(DetailGrid.Children[6], 6); Grid.SetRow(DetailGrid.Children[6], 0);
+                    DetailGrid.Children[1].Visibility = Visibility.Visible;
+                    DetailGrid.Children[3].Visibility = Visibility.Visible;
+                    DetailGrid.Children[5].Visibility = Visibility.Visible;
+                }
+            }
+        }
+        catch { }
     }
 
     private static T? FindChild<T>(DependencyObject parent) where T : DependencyObject
@@ -357,7 +430,12 @@ public partial class CasesView : UserControl, INavigationAware
             Clipboard.SetText(string.Join(Environment.NewLine, lines));
             _vm.StatusMessage = $"{rows.Count} ردیف کپی شد ✓";
         }
-        catch (Exception ex) { MessageBox.Show($"خطا در کپی: {ex.Message}"); }
+        catch (Exception ex)
+        {
+            // TXT-010: متن خام استثنا به کاربر نشان داده نمی‌شود؛ جزییات فقط در لاگ.
+            NezamMonitorPro.App.Services.ErrorLog.Write(ex, "CasesView.CopySelected_Click");
+            MessageBox.Show("کپی انجام نشد. دوباره تلاش کن.", "کپی", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private static string GetValueForColumn(CaseDisplayItem r, DataGridColumn col)
@@ -398,7 +476,7 @@ public partial class CasesView : UserControl, INavigationAware
             "آدرس" => r.Address,
             "دفتر" => r.Office,
             "تاریخ کسر ظرفیت" => r.CapacityDate,
-            "مسئولیت" => r.Responsibility,
+            "مسولیت" => r.Responsibility,
             _ => ""
         };
     }
@@ -461,7 +539,12 @@ public partial class CasesView : UserControl, INavigationAware
             _vm.StatusMessage = $"خروجی اکسل ذخیره شد: {dlg.FileName}";
             try { System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(dlg.FileName) { UseShellExecute = true }); } catch { }
         }
-        catch (Exception ex) { MessageBox.Show($"خطا در خروجی اکسل: {ex.Message}"); }
+        catch (Exception ex)
+        {
+            // TXT-010: متن خام استثنا به کاربر نشان داده نمی‌شود؛ جزییات فقط در لاگ.
+            NezamMonitorPro.App.Services.ErrorLog.Write(ex, "CasesView.ExportSelected_Click");
+            MessageBox.Show("خروجی اکسل ساخته نشد. دوباره تلاش کن.", "خروجی اکسل", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
     }
 
     private static DataGridCell? FindDataGridCell(DataGrid dg, DependencyObject? hit)

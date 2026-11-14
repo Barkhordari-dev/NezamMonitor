@@ -22,9 +22,7 @@ namespace NezamMonitorPro.Security.Services
             if (string.IsNullOrEmpty(password))
                 throw new ArgumentException("Password cannot be null or empty", nameof(password));
 
-            var logPath = Path.Combine(Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName) ?? AppDomain.CurrentDomain.BaseDirectory, "startup.log");
             bool verified = _credentialStore.VerifyPassword(password);
-            try { File.AppendAllText(logPath, $"[{DateTime.Now}] DatabaseEncryptionService.Open VerifyPassword result: {verified}, passwordLen: {password.Length}\n"); } catch { }
 
             if (!verified)
                 throw new UnauthorizedAccessException("Invalid password.");
@@ -65,7 +63,17 @@ namespace NezamMonitorPro.Security.Services
             using var conn = new EncryptedSqliteConnection(_databasePath, currentPassword);
             conn.Rekey(newPassword);
 
-            _credentialStore.ChangePassword(currentPassword, newPassword);
+            try
+            {
+                _credentialStore.ChangePassword(currentPassword, newPassword);
+            }
+            catch
+            {
+                // ذخیره رمز جدید نشد: کلید دیتابیس را به رمز قدیمی برگردان تا
+                // دیتابیس با رمز جدید قفل نماند؛ بعد خطای اصلی را بالا بده
+                try { conn.Rekey(currentPassword); } catch { /* برگرداندن هم نشد؛ خطای اصلی مهم‌تر است */ }
+                throw;
+            }
         }
 
         private Services.CredentialData LoadCredentials() => _credentialStore.Load();

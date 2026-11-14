@@ -1,7 +1,13 @@
-<UserControl
+﻿<UserControl
              xmlns:local="clr-namespace:NezamMonitorPro.App.Converters" x:Class="NezamMonitorPro.App.Views.FeesView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <UserControl.Resources>
+        <!-- T-024: سلول‌های عددی (مبالغ) با فونت لاتین خوانده می‌شوند. -->
+        <Style x:Key="NumericCell" TargetType="TextBlock" BasedOn="{StaticResource GridCellEllipsis}">
+            <Setter Property="FontFamily" Value="{DynamicResource NumericFontFamily}"/>
+        </Style>
+    </UserControl.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -15,12 +21,12 @@
             <TextBlock Grid.Column="0" Text="💰 حق‌الزحمه" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold"
                        VerticalAlignment="Center" Margin="0,0,16,0"/>
             <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-                <Button Content="💰 حق‌الزحمه" Margin="0,0,6,0"
+                <Button Content="💰 _حق‌الزحمه" Margin="0,0,6,0" ToolTip="همه‌ی ردیف‌های حق‌الزحمه پرونده‌ها با مبلغ، مرحله و وضعیت."
                         FontSize="{DynamicResource FontSize}" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                        Click="TabFee_Click" x:Name="BtnTabFee" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"/>
-                <Button Content="📥 دریافتی"
+                        Click="TabFee_Click" x:Name="BtnTabFee" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" TabIndex="1"/>
+                <Button Content="📥 _دریافتی" ToolTip="واریزی‌هایی که برای حق‌الزحمه‌ها ثبت کرده‌ای."
                         FontSize="{DynamicResource FontSize}" FontWeight="Bold" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                        Click="TabReceipt_Click" x:Name="BtnTabReceipt" Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}"/>
+                        Click="TabReceipt_Click" x:Name="BtnTabReceipt" Background="{DynamicResource PanelBrush}" Foreground="{DynamicResource TextBrush}" TabIndex="2"/>
             </StackPanel>
         </Grid>
         <Grid Grid.Row="1" x:Name="PanelFees">
@@ -37,88 +43,100 @@
                     <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Background="{DynamicResource SuccessBrush}" CornerRadius="8" Padding="10" Margin="0,0,5,0">
+                <!-- L-014: کارت‌ها قابل‌کلیک‌اند؛ با زدن هر کدام، جدول همان وضعیت را نشان می‌دهد. -->
+                <Border x:Name="PaidCard" Grid.Column="0" Background="{DynamicResource SuccessBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="10" Margin="0,0,5,0" Cursor="Hand" Tag="پرداخت شده" MouseLeftButtonUp="SummaryCard_Click" ToolTip="جمع مبالغ در هر وضعیت؛ روی هر کدام بزنی، جدول همان وضعیت رو نشون می‌ده.">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="پرداخت شده" Foreground="{DynamicResource OnSuccessBrush}" FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="پرداخت شده" Foreground="{DynamicResource OnSuccessBrush}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding PaidAmount}" Foreground="{DynamicResource OnSuccessBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding PaidCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnSuccessBrush}" Opacity="0.85" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding PaidCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnSuccessBrush}" Opacity="0.85" FontSize="{DynamicResource CaptionFontSize}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Background="{DynamicResource PrimaryBrush}" CornerRadius="8" Padding="10" Margin="2,0">
+                <Border x:Name="ConfirmedCard" Grid.Column="1" Background="{DynamicResource PrimaryBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="10" Margin="2,0" Cursor="Hand" Tag="تایید شده" MouseLeftButtonUp="SummaryCard_Click" ToolTip="جمع مبالغ در هر وضعیت؛ روی هر کدام بزنی، جدول همان وضعیت رو نشون می‌ده.">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="تایید شده" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="تایید شده" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding ConfirmedAmount}" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding ConfirmedCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnPrimaryBrush}" Opacity="0.85" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding ConfirmedCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnPrimaryBrush}" Opacity="0.85" FontSize="{DynamicResource CaptionFontSize}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="2" Background="{DynamicResource WarningBrush}" CornerRadius="8" Padding="10" Margin="2,0">
+                <Border x:Name="PendingCard" Grid.Column="2" Background="{DynamicResource WarningBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="10" Margin="2,0" Cursor="Hand" Tag="در انتظار" MouseLeftButtonUp="SummaryCard_Click" ToolTip="جمع مبالغ در هر وضعیت؛ روی هر کدام بزنی، جدول همان وضعیت رو نشون می‌ده.">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="در انتظار" Foreground="{DynamicResource OnWarningBrush}" FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="در انتظار" Foreground="{DynamicResource OnWarningBrush}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding PendingAmount}" Foreground="{DynamicResource OnWarningBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding PendingCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnWarningBrush}" Opacity="0.85" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding PendingCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnWarningBrush}" Opacity="0.85" FontSize="{DynamicResource CaptionFontSize}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="3" Background="{DynamicResource AccentBrush}" CornerRadius="8" Padding="10" Margin="5,0,0,0">
+                <Border x:Name="TotalCard" Grid.Column="3" Background="{DynamicResource AccentBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="10" Margin="5,0,0,0" Cursor="Hand" Tag="همه" MouseLeftButtonUp="SummaryCard_Click" ToolTip="جمع مبالغ در هر وضعیت؛ روی هر کدام بزنی، جدول همان وضعیت رو نشون می‌ده.">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="کل" Foreground="{DynamicResource OnAccentBrush}" FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="کل" Foreground="{DynamicResource OnAccentBrush}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding TotalAmount}" Foreground="{DynamicResource OnAccentBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding TotalCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnAccentBrush}" Opacity="0.85" FontSize="11" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding TotalCount, StringFormat='{}{0} مورد'}" Foreground="{DynamicResource OnAccentBrush}" Opacity="0.85" FontSize="{DynamicResource CaptionFontSize}" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </Grid>
-            <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,6"
+            <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="0,0,0,6"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/><ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="150"/>
-                        <ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="150"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}" local:Watermark.Text="جستجو در پروندهها..." />
-                    <TextBlock Grid.Column="3" Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <ComboBox Grid.Column="4" ItemsSource="{Binding OwnerFilters}" SelectedItem="{Binding FilterOwner}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}" IsEditable="True" StaysOpenOnEdit="True"/>
-                    <TextBlock Grid.Column="6" Text="شماره پرونده:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <ComboBox Grid.Column="7" ItemsSource="{Binding CaseNumberFilters}" SelectedItem="{Binding FilterCaseNumber}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}" IsEditable="True" StaysOpenOnEdit="True"/>
-                    <TextBlock Grid.Column="9" Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <ComboBox Grid.Column="10" ItemsSource="{Binding DisciplineFilters}" SelectedItem="{Binding FilterDiscipline}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                </Grid>
+                <!-- L-004: WrapPanel؛ در عرض باریک گروه‌ها به ردیف بعد می‌روند و جستجو تنگ نمی‌شود. -->
+                <WrapPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                        <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Width="220" MinWidth="180" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="3" local:Watermark.Text="جستجو در پرونده‌ها..." ToolTip="جستجو با نام مالک یا شماره پرونده." />
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <ComboBox ItemsSource="{Binding OwnerFilters}" SelectedItem="{Binding FilterOwner}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="4" IsEditable="True" StaysOpenOnEdit="True" ToolTip="جدول فقط ردیف‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="شماره پرونده:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <ComboBox ItemsSource="{Binding CaseNumberFilters}" SelectedItem="{Binding FilterCaseNumber}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="5" IsEditable="True" StaysOpenOnEdit="True" ToolTip="جدول فقط ردیف‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <ComboBox ItemsSource="{Binding DisciplineFilters}" SelectedItem="{Binding FilterDiscipline}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="6" ToolTip="جدول فقط ردیف‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                    </StackPanel>
+                    <!-- B-007: دکمه بروزرسانی برای RefreshCommand -->
+                    <Button Content="🔄 _به‌روزرسانی" Command="{Binding RefreshCommand}" Height="34" Padding="10,0" Margin="0,0,10,4" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" TabIndex="7" ToolTip="جدول حق‌الزحمه را دوباره از پایگاه داده می‌خواند."/>
+                    <TextBlock Text="فیلترهایی که انتخاب کرده‌ای هنوز اعمال نشده‌اند — دکمه «اعمال فیلتر» را بزن."
+                               VerticalAlignment="Center" FontSize="{DynamicResource CaptionFontSize}" Foreground="{DynamicResource WarningTextBrush}"
+                               Margin="0,0,0,4" Visibility="{Binding HasPendingFilters, Converter={StaticResource BoolToVisConverter}}"/>
+                </WrapPanel>
             </Border>
-            <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8"
+            <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="0,0,0,8"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="120"/><ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="120"/>
-                        <ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="80"/><ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="80"/><ColumnDefinition Width="10"/>
-                        <ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <TextBlock Grid.Column="0" Text="وضعیت:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <ComboBox Grid.Column="1" ItemsSource="{Binding StatusFilters}" SelectedItem="{Binding FilterStatus}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                    <TextBlock Grid.Column="3" Text="مرحله:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <ComboBox Grid.Column="4" ItemsSource="{Binding StageFilters}" SelectedItem="{Binding FilterStage}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                    <TextBlock Grid.Column="6" Text="نوع خدمت:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <ComboBox Grid.Column="7" ItemsSource="{Binding ServiceTypeFilters}" SelectedItem="{Binding FilterServiceType}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}" IsEditable="True" StaysOpenOnEdit="True"/>
-                    <TextBlock Grid.Column="9" Text="مبلغ از:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <TextBox Grid.Column="10" Text="{Binding FilterAmountFrom, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                    <TextBlock Grid.Column="12" Text="تا:" VerticalAlignment="Center" FontWeight="Bold" FontSize="12"/>
-                    <TextBox Grid.Column="13" Text="{Binding FilterAmountTo, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                    <Button Grid.Column="15" Content="🧹 پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}"
-                            Padding="10,0" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
-                            FontSize="12" FontWeight="Bold"
+                <!-- WrapPanel: on narrow screens (e.g. 1024x768) the groups flow to
+                     a second line instead of squeezing the combos to slivers or
+                     pushing the buttons off the visible area. -->
+                <WrapPanel Orientation="Horizontal">
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="وضعیت:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <ComboBox ItemsSource="{Binding StatusFilters}" SelectedItem="{Binding FilterStatus}" Width="130" FontSize="{DynamicResource InputFontSize}" TabIndex="8" ToolTip="جدول فقط ردیف‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="مرحله:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <ComboBox ItemsSource="{Binding StageFilters}" SelectedItem="{Binding FilterStage}" Width="130" FontSize="{DynamicResource InputFontSize}" TabIndex="9" ToolTip="جدول فقط ردیف‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="نوع خدمت:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <ComboBox ItemsSource="{Binding ServiceTypeFilters}" SelectedItem="{Binding FilterServiceType}" Width="130" FontSize="{DynamicResource InputFontSize}" TabIndex="10" IsEditable="True" StaysOpenOnEdit="True" ToolTip="جدول فقط ردیف‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="مبلغ از:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding FilterAmountFrom, UpdateSourceTrigger=PropertyChanged}" Width="80" VerticalContentAlignment="Center" FontSize="{DynamicResource InputFontSize}" TabIndex="11" ToolTip="فقط حق‌الزحمه‌هایی با مبلغ در این بازه دیده می‌شن."/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                        <TextBlock Text="تا:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                        <TextBox Text="{Binding FilterAmountTo, UpdateSourceTrigger=PropertyChanged}" Width="80" VerticalContentAlignment="Center" FontSize="{DynamicResource InputFontSize}" TabIndex="12" ToolTip="فقط حق‌الزحمه‌هایی با مبلغ در این بازه دیده می‌شن."/>
+                    </StackPanel>
+                    <Button Content="✔ _اعمال فیلتر" Command="{Binding ApplyFiltersCommand}" ToolTip="فیلترهای انتخاب‌شده روی جدول اعمال می‌شه."
+                            Height="34" Padding="10,0" Margin="0,0,10,4" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"
+                            FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" TabIndex="13"/>
+                    <Button Content="🧹 _پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}" ToolTip="همه‌ی فیلترها پاک می‌شه."
+                            Height="34" Padding="10,0" Margin="0,0,10,4" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
+                            FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" TabIndex="14"
                             Visibility="{Binding HasActiveFilters, Converter={StaticResource BoolToVisConverter}}"/>
-                    <TextBlock Grid.Column="17" Text="{Binding CountDisplay}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold"/>
-                </Grid>
+                    <TextBlock Text="{Binding CountDisplay}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" FontWeight="Bold" Margin="0,0,0,4"/>
+                </WrapPanel>
             </Border>
-            <DataGrid Grid.Row="3" x:Name="FeesGrid" ItemsSource="{Binding Fees}" AutoGenerateColumns="False"
+            <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="3" x:Name="FeesGrid" ItemsSource="{Binding Fees}" AutoGenerateColumns="False"
                       AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="Horizontal"
                       HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
                       CanUserSortColumns="True" FontSize="{DynamicResource FontSize}"
@@ -131,15 +149,35 @@
                     <DataGridTextColumn Header="رشته" Binding="{Binding Discipline}" SortMemberPath="Discipline" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                     <DataGridTextColumn Header="نوع خدمت" Binding="{Binding ServiceType}" SortMemberPath="ServiceType" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                     <DataGridTextColumn Header="مرحله" Binding="{Binding Stage}" SortMemberPath="Stage" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn Header="مبلغ" Binding="{Binding AmountDisplay}" SortMemberPath="AmountValue" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn Header="وضعیت" Binding="{Binding PayStatus}" SortMemberPath="PayStatus" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn Header="تایید" Binding="{Binding ConfirmStatus}" SortMemberPath="ConfirmStatus" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn Header="شروع" Binding="{Binding StartDate}" SortMemberPath="StartDate" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn Header="پایان" Binding="{Binding EndDate}" SortMemberPath="EndDate" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn Binding="{Binding AmountDisplay}" SortMemberPath="AmountValue" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource NumericCell}">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="مبلغ" ToolTip="مبلغ حق‌الزحمه این ردیف."/>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding PayStatus}" SortMemberPath="PayStatus" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="وضعیت" ToolTip="وضعیت پرداخت (پرداخت شده، تایید شده، در انتظار)."/>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding ConfirmStatus}" SortMemberPath="ConfirmStatus" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="تایید" ToolTip="تایید سامانه برای این حق‌الزحمه."/>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding StartDate}" SortMemberPath="StartDate" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="شروع" ToolTip="تاریخ شروع و پایان مهلت این حق‌الزحمه."/>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
+                    <DataGridTextColumn Binding="{Binding EndDate}" SortMemberPath="EndDate" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}">
+                    <DataGridTextColumn.Header>
+                        <TextBlock Text="پایان" ToolTip="تاریخ شروع و پایان مهلت این حق‌الزحمه."/>
+                    </DataGridTextColumn.Header>
+                </DataGridTextColumn>
                     <DataGridTextColumn Header="توضیحات" Binding="{Binding Description}" SortMemberPath="Description" Width="*" MinWidth="120" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                 </DataGrid.Columns>
             </DataGrid>
-            <Border Grid.Row="4" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="10" Margin="0,5,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <Border Grid.Row="4" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10" Margin="0,5,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1" ToolTip="چند ردیف تیک خورده و جمع مبلغشون چقدر هست.">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="انتخاب شده:" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" Margin="0,0,10,0" FontSize="{DynamicResource FontSize}"/>
                     <TextBlock Text="{Binding SelectedCount}" Foreground="{DynamicResource SuccessTextBrush}" FontWeight="Bold" Margin="0,0,5,0" FontSize="{DynamicResource FontSize}"/>
@@ -147,7 +185,7 @@
                     <TextBlock Text="{Binding SelectedAmount}" Foreground="{DynamicResource WarningTextBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}"/>
                 </StackPanel>
             </Border>
-            <TextBlock Grid.Row="5" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,5,0,0"/>
+            <TextBlock Grid.Row="5" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" Margin="0,5,0,0"/>
         </Grid>
         <Grid Grid.Row="1" x:Name="PanelReceipts" Visibility="Collapsed">
             <Grid.RowDefinitions>
@@ -158,57 +196,47 @@
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
-            <Border Grid.Row="0" Background="{DynamicResource CardBrush}" CornerRadius="8" Padding="10" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Button Grid.Column="0" Content="➕ افزودن" Command="{Binding AddReceiptCommand}" Padding="12,0" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,0"/>
-                    <Button Grid.Column="1" Content="✏️ ویرایش" Padding="12,0" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,0" Click="ReceiptEdit_Click"/>
-                    <Button Grid.Column="2" Content="🗑 حذف" Padding="12,0" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,0" Click="ReceiptDelete_Click"/>
-                    <Button Grid.Column="3" Content="🔄 بروزرسانی" Command="{Binding UpdateReceiptsCommand}" Padding="12,0" Background="{DynamicResource WarningBrush}" Foreground="{DynamicResource OnWarningBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,0" ToolTip="حق‌الزحمه‌های تغییرکرده را محاسبه و ردیف‌های متاثر را سبز می‌کند"/>
-                    <Button Grid.Column="4" Content="📤 خروجی اکسل" Command="{Binding ExportReceiptsCommand}" Padding="12,0" Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource SidebarTextBrush}" FontSize="{DynamicResource FontSize}" Margin="0,0,6,0"/>
-                    <Button Grid.Column="5" Content="📥 ورودی اکسل" Command="{Binding ImportReceiptsCommand}" Padding="12,0" Background="#7D3C98" Foreground="White" FontSize="{DynamicResource FontSize}" Margin="0,0,6,0"/>
-                    <Button Grid.Column="6" Content="🔄 بارگذاری" Command="{Binding RefreshReceiptsCommand}" Padding="12,0" Background="{DynamicResource TextSecondaryBrush}" Foreground="{DynamicResource OnSecondaryBrush}" FontSize="{DynamicResource FontSize}"/>
-                    <StackPanel Grid.Column="7" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10,0,0,0">
+            <Border Grid.Row="0" Background="{DynamicResource CardBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="10" Margin="0,0,0,10" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <!-- L-006: WrapPanel؛ در عرض باریک دکمه‌ها به ردیف بعد می‌روند و سرریز نمی‌شوند. -->
+                <WrapPanel Orientation="Horizontal">
+                    <Button Content="➕ _افزودن" Command="{Binding AddReceiptCommand}" Padding="12,0" Background="{DynamicResource SuccessBrush}" Foreground="{DynamicResource OnSuccessBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,4" ToolTip="ثبت یک حق‌الزحمه دستی تازه." TabIndex="15"/>
+                    <Button Content="✏️ _ویرایش" Padding="12,0" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,4" Click="ReceiptEdit_Click" ToolTip="ویرایش ردیف انتخاب‌شده." TabIndex="16"/>
+                    <Button Content="🗑 _حذف" Padding="12,0" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,4" Click="ReceiptDelete_Click" ToolTip="حذف ردیف انتخاب‌شده (با تایید)." TabIndex="17"/>
+                    <Button Content="🔄 به‌رو_زرسانی" Command="{Binding UpdateReceiptsCommand}" Padding="12,0" Background="{DynamicResource WarningBrush}" Foreground="{DynamicResource OnWarningBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,4" ToolTip="حق‌الزحمه‌های تغییرکرده را محاسبه و ردیف‌های متاثر را سبز می‌کند" TabIndex="18"/>
+                    <Button Content="📤 _خروجی اکسل" Command="{Binding ExportReceiptsCommand}" Padding="12,0" Background="{DynamicResource SidebarBrush}" Foreground="{DynamicResource SidebarTextBrush}" FontSize="{DynamicResource FontSize}" Margin="0,0,6,4" ToolTip="ردیف‌های انتخاب‌شده رو به اکسل خروجی می‌ده." TabIndex="19"/>
+                    <Button Content="📥 _ورودی اکسل" Command="{Binding ImportReceiptsCommand}" Padding="12,0" Background="{DynamicResource AccentBrush}" Foreground="{DynamicResource OnAccentBrush}" FontSize="{DynamicResource FontSize}" Margin="0,0,6,4" ToolTip="حق‌الزحمه‌ها رو از یک فایل اکسل وارد می‌کنه." TabIndex="20"/>
+                    <Button Content="🔄 _بارگذاری" Command="{Binding RefreshReceiptsCommand}" Padding="12,0" Background="{DynamicResource TextSecondaryBrush}" Foreground="{DynamicResource OnSecondaryBrush}" FontSize="{DynamicResource FontSize}" Margin="0,0,6,4" ToolTip="جدول حق‌الزحمه رو دوباره از پایگاه داده می‌خونه." TabIndex="21"/>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="4,0,0,4">
                         <TextBlock Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,6,0"/>
-                        <TextBox Text="{Binding ReceiptSearch, UpdateSourceTrigger=PropertyChanged}" Width="180" Height="34" VerticalContentAlignment="Center" Padding="6,0" FontSize="{DynamicResource FontSize}" local:Watermark.Text="جستجو در رسیدها..." />
+                        <TextBox Text="{Binding ReceiptSearch, UpdateSourceTrigger=PropertyChanged}" Width="180" VerticalContentAlignment="Center" Padding="6,0" FontSize="{DynamicResource FontSize}" TabIndex="22" local:Watermark.Text="جستجو در رسیدها..." />
                     </StackPanel>
-                    <TextBlock Grid.Column="8" Text="{Binding ReceiptStatus}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="10,0,0,0"/>
-                </Grid>
+                    <TextBlock Text="{Binding ReceiptStatus}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="10,0,0,4"/>
+                </WrapPanel>
             </Border>
             <Grid Grid.Row="1" Margin="0,0,0,10">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
-                <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}" CornerRadius="8" Padding="12" Margin="0,0,5,0">
+                <Border Grid.Column="0" Background="{DynamicResource SidebarBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="0,0,5,0" ToolTip="در تب دریافتی: چقدر واریز شده، چقدر حق‌الزحمه مرتبط هست و اختلافشان.">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="جمع واریزی" Foreground="{DynamicResource SidebarTextBrush}" FontSize="12" HorizontalAlignment="Center"/>
+                        <TextBlock Text="جمع واریزی" Foreground="{DynamicResource SidebarTextBrush}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
                         <TextBlock Text="{Binding ReceiptTotalAmount}" Foreground="{DynamicResource SidebarTextBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="1" Background="#2E86C1" CornerRadius="8" Padding="12" Margin="5,0">
+                <Border Grid.Column="1" Background="{DynamicResource PrimaryBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="5,0" ToolTip="در تب دریافتی: چقدر واریز شده، چقدر حق‌الزحمه مرتبط هست و اختلافشان.">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="جمع حق‌الزحمه مرتبط" Foreground="White" FontSize="12" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding ReceiptTotalFeeSum}" Foreground="White" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="جمع حق‌الزحمه مرتبط" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding ReceiptTotalFeeSum}" Foreground="{DynamicResource OnPrimaryBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
-                <Border Grid.Column="2" Background="#117A65" CornerRadius="8" Padding="12" Margin="5,0,0,0">
+                <Border Grid.Column="2" Background="{DynamicResource SuccessBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="5,0,0,0" ToolTip="در تب دریافتی: چقدر واریز شده، چقدر حق‌الزحمه مرتبط هست و اختلافشان.">
                     <StackPanel HorizontalAlignment="Center">
-                        <TextBlock Text="جمع اختلاف" Foreground="White" FontSize="12" HorizontalAlignment="Center"/>
-                        <TextBlock Text="{Binding ReceiptTotalDiff}" Foreground="White" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="جمع اختلاف" Foreground="{DynamicResource OnSuccessBrush}" FontSize="{DynamicResource LabelFontSize}" HorizontalAlignment="Center"/>
+                        <TextBlock Text="{Binding ReceiptTotalDiff}" Foreground="{DynamicResource OnSuccessBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold" HorizontalAlignment="Center"/>
                     </StackPanel>
                 </Border>
             </Grid>
-            <DataGrid Grid.Row="2" x:Name="ReceiptsGrid" ItemsSource="{Binding Receipts}" AutoGenerateColumns="False"
+            <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="2" x:Name="ReceiptsGrid" ItemsSource="{Binding Receipts}" AutoGenerateColumns="False"
                       IsReadOnly="False" SelectionMode="Single" SelectionUnit="FullRow"
                       AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="Horizontal"
                       HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
@@ -230,7 +258,7 @@
                     <DataGridTextColumn Header="نوع" Binding="{Binding TypeDisplay}" SortMemberPath="IsAdvance" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
-                                <Setter Property="FontFamily" Value="B Nazanin"/>
+                                <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
                                 <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
                                 <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                                 <Style.Triggers>
@@ -244,14 +272,14 @@
                         </DataGridTextColumn.ElementStyle>
                     </DataGridTextColumn>
                     <DataGridTextColumn Header="تاریخ واریز" Binding="{Binding ReceiptDate}" SortMemberPath="ReceiptDate" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn Header="مبلغ واریز" Binding="{Binding AmountDisplay}" SortMemberPath="Amount" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn Header="مبلغ واریز" Binding="{Binding AmountDisplay}" SortMemberPath="Amount" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource NumericCell}"/>
                     <DataGridTextColumn Header="تاریخ‌های مرتبط (آغاز)" Binding="{Binding RelatedDisplay}" SortMemberPath="RelatedDisplay" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                    <DataGridTextColumn Header="جمع حق‌الزحمه" Binding="{Binding FeeSumDisplay}" SortMemberPath="FeeSum" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                    <DataGridTextColumn Header="جمع حق‌الزحمه" Binding="{Binding FeeSumDisplay}" SortMemberPath="FeeSum" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource NumericCell}"/>
                     <DataGridTextColumn Header="اختلاف" Binding="{Binding DifferenceDisplay}" SortMemberPath="Difference" Width="Auto" IsReadOnly="True" HeaderStyle="{StaticResource GridHeaderCenter}">
                         <DataGridTextColumn.ElementStyle>
                             <Style TargetType="TextBlock">
-                                <Setter Property="FontFamily" Value="B Nazanin"/>
-                                <Setter Property="FontSize" Value="14"/>
+                                <Setter Property="FontFamily" Value="{DynamicResource NumericFontFamily}"/>
+                                <Setter Property="FontSize" Value="{DynamicResource FontSize}"/>
                                 <Setter Property="TextAlignment" Value="{DynamicResource TableTextAlignment}"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding IsNegative}" Value="True">
@@ -265,7 +293,7 @@
                     <DataGridTextColumn Header="تغییرات" Binding="{Binding Changes}" SortMemberPath="Changes" Width="Auto" IsReadOnly="True" ElementStyle="{StaticResource GridCellEllipsis}"/>
                 </DataGrid.Columns>
             </DataGrid>
-            <Border Grid.Row="3" Background="{DynamicResource PanelBrush}" CornerRadius="6" Padding="10" Margin="0,5,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+            <Border Grid.Row="3" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusSmall}" Padding="10" Margin="0,5,0,0" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
                 <StackPanel Orientation="Horizontal">
                     <TextBlock Text="انتخاب شده:" Foreground="{DynamicResource TextBrush}" FontWeight="Bold" Margin="0,0,10,0" FontSize="{DynamicResource FontSize}"/>
                     <TextBlock Text="{Binding ReceiptSelectedCount}" Foreground="{DynamicResource SuccessTextBrush}" FontWeight="Bold" Margin="0,0,5,0" FontSize="{DynamicResource FontSize}"/>
@@ -277,7 +305,7 @@
                     <TextBlock Text="{Binding ReceiptSelectedDiff}" Foreground="{DynamicResource ErrorTextBrush}" FontWeight="Bold" FontSize="{DynamicResource FontSize}"/>
                 </StackPanel>
             </Border>
-            <TextBlock Grid.Row="4" Text="💡 نکته: ردیف سبز = بعد از آخرین بروزرسانی تغییر کرده | اختلاف منفی = قرمز | کلیک روی هر ردیف = انتخاب | دابل‌کلیک = ویرایش" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,6,0,0"/>
+            <TextBlock Grid.Row="4" Text="💡 نکته: ردیف سبز = بعد از آخرین بروزرسانی تغییر کرده | اختلاف منفی = قرمز | کلیک روی هر ردیف = انتخاب | دابل‌کلیک = ویرایش" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" Margin="0,6,0,0" ToolTip="راهنمای رنگ‌ها: سبز یعنی بعد از آخرین بروزرسانی تغییر کرده، اختلاف منفی قرمز هست."/>
             <TextBlock Grid.Row="5" Text="{Binding ReceiptStatus}" Foreground="{DynamicResource SuccessTextBrush}" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,4,0,0"/>
         </Grid>
     </Grid>

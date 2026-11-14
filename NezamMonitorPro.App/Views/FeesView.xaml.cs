@@ -1,8 +1,9 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using NezamMonitorPro.App.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NezamMonitorPro.App.Views;
 
@@ -11,12 +12,26 @@ public partial class FeesView : UserControl
     public FeesView()
     {
         InitializeComponent();
-        DataContext = new FeesViewModel(Services.DatabaseService.Instance);
+        // ARCH-001: ViewModel از کانتینر DI گرفته می‌شود.
+        DataContext = App.Services.GetRequiredService<FeesViewModel>();
         UpdateTabUI(0);
     }
 
     private void TabFee_Click(object sender, RoutedEventArgs e) => UpdateTabUI(0);
     private void TabReceipt_Click(object sender, RoutedEventArgs e) => UpdateTabUI(1);
+
+    /// <summary>
+    /// L-014: کلیک روی کارت جمع، جدول را روی همان وضعیت فیلتر می‌کند
+    /// (فیلتر پیش‌نویس + اعمال). «کل» همه ردیف‌ها را نشان می‌دهد.
+    /// </summary>
+    private void SummaryCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not Border card || card.Tag is not string status) return;
+        if (DataContext is not FeesViewModel vm) return;
+        vm.FilterStatus = status;
+        vm.ApplyFiltersCommand.Execute(null);
+        if (PanelFees.Visibility != Visibility.Visible) UpdateTabUI(0);
+    }
 
     private void UpdateTabUI(int tab)
     {

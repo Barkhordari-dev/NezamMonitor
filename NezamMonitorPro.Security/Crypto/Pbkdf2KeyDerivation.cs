@@ -27,8 +27,9 @@ namespace NezamMonitorPro.Security.Crypto
             if (keyLength < 16)
                 throw new ArgumentException("Key length should be at least 16 bytes", nameof(keyLength));
 
-            using var pbkdf2 = new Rfc2898DeriveBytes(password, salt, iterations, HashAlgorithmName.SHA256);
-            return pbkdf2.GetBytes(keyLength);
+            // .NET 10: the Rfc2898DeriveBytes constructors are obsolete (SYSLIB0060);
+            // the static Pbkdf2 method derives the identical key.
+            return Rfc2898DeriveBytes.Pbkdf2(password, salt, iterations, HashAlgorithmName.SHA256, keyLength);
         }
 
         /// <summary>

@@ -1,7 +1,15 @@
+﻿using System;
+using System.Diagnostics;
+using System.Net.Http;
+using System.Text.Json;
+using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using Microsoft.Win32;
-using NezamMonitorPro.Core.Theme;
+using NezamMonitorPro.App.Services;
+using NezamMonitorPro.App.Views;
 using NezamMonitorPro.Core.Backup;
+using NezamMonitorPro.Core.Theme;
 
 namespace NezamMonitorPro.App.ViewModels;
 
@@ -12,6 +20,7 @@ public sealed class SettingsViewModel : ViewModelBase
     private AppTheme _theme;
     private string _statusMessage = "";
     private string _selectedThemeName = "Light";
+    private string _selectedButtonStyle = "کلاسیک";
     private string _selectedLayoutName = "Light";
 
     private string _primaryHex = "#FF3498DB";
@@ -58,7 +67,35 @@ public sealed class SettingsViewModel : ViewModelBase
     private string _tableAlignmentDisplay = "وسط";
 
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
+
+    private string _statusKind = "info";
+    /// <summary>رنگ پیام وضعیت (S-012): info (معمولی)، ok (سبز)، error (قرمز).</summary>
+    public string StatusKind { get => _statusKind; set => SetProperty(ref _statusKind, value); }
+
+    /// <summary>پیام وضعیت را با رنگ مناسبش می‌گذارد (سبز برای موفقیت، قرمز برای خطا).</summary>
+    private void SetStatus(string message, string kind = "info")
+    {
+        StatusMessage = message;
+        StatusKind = kind;
+    }
+
+    private string _updateCheckMessage = "";
+    /// <summary>نتیجه «بررسی به‌روزرسانی» که کنار دکمه‌اش در کارت درباره نشان داده می‌شود.</summary>
+    public string UpdateCheckMessage { get => _updateCheckMessage; set => SetProperty(ref _updateCheckMessage, value); }
+
+    /// <summary>App version shown on the About card: the assembly version
+    /// when the build stamps one, otherwise the known release version.</summary>
+    public string AppVersion { get; } = GetAppVersion();
+
+    private static string GetAppVersion()
+    {
+        var v = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+        if (v == null || (v.Major == 1 && v.Minor == 0 && v.Build == 0 && v.Revision == 0)) return "3.0.1";
+        return v.ToString(3);
+    }
     public string SelectedThemeName { get => _selectedThemeName; set => SetProperty(ref _selectedThemeName, value); }
+    /// <summary>Button look display name (Persian), mapped to a ButtonStyleManager key on apply.</summary>
+    public string SelectedButtonStyle { get => _selectedButtonStyle; set => SetProperty(ref _selectedButtonStyle, value); }
     public string SelectedLayoutName { get => _selectedLayoutName; set => SetProperty(ref _selectedLayoutName, value); }
 
     public string PrimaryHex { get => _primaryHex; set => SetProperty(ref _primaryHex, value); }
@@ -107,6 +144,7 @@ public sealed class SettingsViewModel : ViewModelBase
 
     // Theme names are shown in English, as the user asked.
     public List<string> ThemeNames { get; } = BuiltInThemes.ThemeNameMap.Keys.ToList();
+    public List<string> ButtonStyleNames { get; } = Services.ButtonStyleManager.Presets.Select(p => p.DisplayName).ToList();
     public List<string> LayoutNames { get; } = new() { "Light", "Professional", "ProDark" };
     public List<string> TableAlignmentOptions { get; } = new() { "وسط", "راست", "چپ" };
     public List<string> FontFamilies { get; } = new() { "Vazir", "B Nazanin", "Tahoma", "Segoe UI", "Arial" };
@@ -114,15 +152,15 @@ public sealed class SettingsViewModel : ViewModelBase
     public List<string> Directions { get; } = new() { "Horizontal", "Vertical" };
     public List<string> FlowDirections { get; } = new() { "RightToLeft", "LeftToRight" };
 
-    public ICommand ApplyThemeCommand { get; }
-    public ICommand ApplyColorsCommand { get; }
-    public ICommand ApplyFontsCommand { get; }
-    public ICommand ApplyDimensionsCommand { get; }
-    public ICommand ApplyTableAlignmentCommand { get; }
     public ICommand ResetCommand { get; }
     public ICommand FactoryResetCommand { get; }
     public ICommand ImportAndroidCommand { get; }
     public ICommand ChangePasswordCommand { get; }
+    public ICommand BackupCommand { get; }
+    public ICommand RestoreCommand { get; }
+    public ICommand ViewErrorLogCommand { get; }
+    public ICommand ClearErrorLogCommand { get; }
+    public ICommand CheckUpdateCommand { get; }
 
     public SettingsViewModel(Services.ThemeManager themeManager, string dbPath = "")
     {
@@ -131,17 +169,29 @@ public sealed class SettingsViewModel : ViewModelBase
         _theme = themeManager.LoadTheme();
         themeManager.ApplyTheme(_theme);
 
-        ApplyThemeCommand = new RelayCommand(ApplyTheme);
-        ApplyColorsCommand = new RelayCommand(ApplyColors);
-        ApplyFontsCommand = new RelayCommand(ApplyFonts);
-        ApplyDimensionsCommand = new RelayCommand(ApplyDimensions);
-        ApplyTableAlignmentCommand = new RelayCommand(ApplyTableAlignment);
+        // S-011: دکمه‌های «اعمال» حذف شدند؛ اعمال مستقیم با SelectionChanged
+        // در SettingsView.xaml.cs صدا زده می‌شود (ApplyTheme و بقیه public شدند).
+        // S-015: ApplyColors/ApplyDimensions حذف شدند (رنگ‌ها از تم می‌آیند).
         ResetCommand = new RelayCommand(ResetToDefault);
         FactoryResetCommand = new RelayCommand(ExecuteFactoryReset);
         ImportAndroidCommand = new RelayCommand(ExecuteImportAndroid);
         ChangePasswordCommand = new RelayCommand(ExecuteChangePassword);
+        BackupCommand = new RelayCommand(ExecuteBackup);
+        RestoreCommand = new RelayCommand(ExecuteRestore);
+        ViewErrorLogCommand = new RelayCommand(ViewErrorLog);
+        ClearErrorLogCommand = new RelayCommand(ClearErrorLog);
+        CheckUpdateCommand = new AsyncRelayCommand(CheckForUpdateAsync);
 
         LoadThemeToUI(_theme);
+        SelectedButtonStyle = Services.ButtonStyleManager.Find(Services.ButtonStyleManager.Load(Services.DatabaseService.Instance)).DisplayName;
+    }
+
+    public void ApplyButtonStyle()
+    {
+        var preset = Services.ButtonStyleManager.Presets.FirstOrDefault(p => p.DisplayName == SelectedButtonStyle)
+            ?? Services.ButtonStyleManager.Presets[0];
+        Services.ButtonStyleManager.Apply(preset.Key, Services.DatabaseService.Instance);
+        SetStatus($"حالت دکمه‌ها «{preset.DisplayName}» اعمال شد ✓", "ok");
     }
 
     private void LoadThemeToUI(AppTheme theme)
@@ -190,7 +240,7 @@ public sealed class SettingsViewModel : ViewModelBase
         };
     }
 
-    private void ApplyTheme()
+    public void ApplyTheme()
     {
         var builtIn = BuiltInThemes.GetAllThemes().FirstOrDefault(t => t.Name == SelectedThemeName);
         if (builtIn == null) return;
@@ -203,35 +253,18 @@ public sealed class SettingsViewModel : ViewModelBase
         LoadThemeToUI(_theme);
         _themeManager.SaveTheme(_theme);
         _themeManager.ApplyTheme(_theme);
-        StatusMessage = $"\u062a\u0645 \u00ab{SelectedThemeName}\u00bb \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
+        SetStatus($"تم «{SelectedThemeName}» اعمال شد ✓", "ok");
     }
 
-    private void ApplyColors()
+    public void ApplyFonts()
     {
-        _theme.Colors.Primary = NormalizeHex(PrimaryHex);
-        _theme.Colors.Secondary = NormalizeHex(SecondaryHex);
-        _theme.Colors.Accent = NormalizeHex(AccentHex);
-        _theme.Colors.Background = NormalizeHex(BackgroundHex);
-        _theme.Colors.Surface = NormalizeHex(SurfaceHex);
-        _theme.Colors.Text = NormalizeHex(TextHex);
-        _theme.Colors.TextSecondary = NormalizeHex(TextSecondaryHex);
-        _theme.Colors.Error = NormalizeHex(ErrorHex);
-        _theme.Colors.Success = NormalizeHex(SuccessHex);
-        _theme.Colors.Warning = NormalizeHex(WarningHex);
-        _theme.Colors.Info = NormalizeHex(InfoHex);
-        _theme.Colors.Sidebar = NormalizeHex(SidebarHex);
-        _theme.Colors.SidebarText = NormalizeHex(SidebarTextHex);
-        _theme.Colors.LogBackground = NormalizeHex(LogBgHex);
-        _theme.Colors.SidebarActive = _theme.Colors.Primary;
-        _theme.Colors.ButtonPrimary = _theme.Colors.Primary;
-        _theme.Name = "Custom";
-        _themeManager.SaveTheme(_theme);
-        _themeManager.ApplyTheme(_theme);
-        StatusMessage = "\u0631\u0646\u06af\u200c\u0647\u0627 \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
-    }
-
-    private void ApplyFonts()
-    {
+        // S-013: اندازه فونت فقط بین ۱۰ تا ۲۴ پوینت قبول است.
+        if (!IsFontSizeOk(FontSize) || !IsFontSizeOk(SidebarFontSize) || !IsFontSizeOk(HeadingFontSize)
+            || !IsFontSizeOk(ButtonFontSize) || !IsFontSizeOk(InputFontSize))
+        {
+            SetStatus("اندازه فونت باید بین ۱۰ تا ۲۴ پوینت باشد.", "error");
+            return;
+        }
         _theme.Fonts.FontFamily = FontFamily;
         _theme.Fonts.HeadingFontFamily = FontFamily;
         _theme.Fonts.GeneralFontSize = FontSize;
@@ -242,10 +275,12 @@ public sealed class SettingsViewModel : ViewModelBase
         _theme.Fonts.LabelFontSize = InputFontSize;
         _themeManager.SaveTheme(_theme);
         _themeManager.ApplyTheme(_theme);
-        StatusMessage = "\u0641\u0648\u0646\u062a\u200c\u0647\u0627 \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
+        SetStatus("فونت‌ها اعمال شد ✓", "ok");
     }
 
-    private void ApplyTableAlignment()
+    private static bool IsFontSizeOk(double value) => value >= 10 && value <= 24;
+
+    public void ApplyTableAlignment()
     {
         var value = TableAlignmentDisplay switch
         {
@@ -254,22 +289,7 @@ public sealed class SettingsViewModel : ViewModelBase
             _ => "Center",
         };
         _themeManager.SaveTableAlignment(value);
-        StatusMessage = "تراز متن جدول‌ها اعمال شد ✓";
-    }
-
-    private void ApplyDimensions()
-    {
-        _theme.Dimensions.WindowWidth = WindowWidth;
-        _theme.Dimensions.WindowHeight = WindowHeight;
-        _theme.Dimensions.ButtonWidth = ButtonWidth;
-        _theme.Dimensions.ButtonHeight = ButtonHeight;
-        _theme.Dimensions.InputHeight = InputHeight;
-        _theme.Dimensions.BorderRadius = BorderRadius;
-        _theme.Dimensions.ControlSpacing = ControlSpacing;
-        _theme.Dimensions.SidebarWidth = SidebarWidth;
-        _themeManager.SaveTheme(_theme);
-        _themeManager.ApplyTheme(_theme);
-        StatusMessage = "\u0627\u0646\u062f\u0627\u0632\u0647\u200c\u0647\u0627 \u0627\u0639\u0645\u0627\u0644 \u0634\u062f \u2713";
+        SetStatus("تراز متن جدول‌ها اعمال شد ✓", "ok");
     }
 
 
@@ -277,50 +297,39 @@ public sealed class SettingsViewModel : ViewModelBase
     private void ResetToDefault()
     {
         var result = System.Windows.MessageBox.Show(
-            "\u0622\u06cc\u0627 \u0627\u0632 \u0628\u0627\u0632\u06af\u0631\u062f\u0627\u0646\u06cc \u062a\u0646\u0638\u06cc\u0645\u0627\u062a \u0631\u0627\u0628\u0637 \u06a9\u0627\u0631\u0628\u0631\u06cc \u0628\u0647 \u062d\u0627\u0644\u062a \u0627\u0648\u0644\u06cc\u0647 \u0627\u0637\u0645\u06cc\u0646\u0627\u0646 \u062f\u0627\u0631\u06cc\u062f\u061f",
-            "\u062a\u0623\u06cc\u06cc\u062f \u0628\u0627\u0632\u06af\u0631\u062f\u0627\u0646\u06cc",
+            "آیا از بازگردانی تنظیمات رابط کاربری به حالت اولیه اطمینان دارید؟",
+            "تایید",
             System.Windows.MessageBoxButton.YesNo,
             System.Windows.MessageBoxImage.Question);
 
         if (result != System.Windows.MessageBoxResult.Yes)
         {
-            StatusMessage = "\u0627\u0644\u063a\u0627 \u0634\u062f.";
+            SetStatus("لغو شد.");
             return;
         }
 
         _theme = _themeManager.ResetToDefault();
         LoadThemeToUI(_theme);
         _themeManager.ApplyTheme(_theme);
-        StatusMessage = "\u062a\u0646\u0638\u06cc\u0645\u0627\u062a \u0628\u0647 \u062d\u0627\u0644\u062a \u0627\u0648\u0644\u06cc\u0647 \u0628\u0627\u0632\u06af\u0631\u062f\u0627\u0646\u06cc \u0634\u062f \u2713";
+        SetStatus("تنظیمات به حالت اولیه بازگردانی شد ✓", "ok");
     }
-
-    private static string NormalizeHex(string hex)
-    {
-        if (string.IsNullOrEmpty(hex)) return "#FF808080";
-        hex = hex.Trim();
-        if (!hex.StartsWith("#")) hex = "#" + hex;
-        if (hex.Length == 7) hex = "#FF" + hex[1..];
-        return hex.ToUpperInvariant();
-    }
-
-
 
     private void ExecuteFactoryReset()
     {
         var result1 = System.Windows.MessageBox.Show(
             "⚠️ این عملیات تمام اطلاعات برنامه را پاک می‌کند.\n" +
             "اطلاعات استخراج‌شده، تنظیمات، ویرایش‌ها، تاریخچه و اطلاعات ورود حذف خواهند شد.\n\n" +
-            "قابل بازگشت نیست مگر اینکه Backup داشته باشید.\n\n" +
-            "آیا مطمئن هستید؟",
-            "⚠️ بازگشت به تنظیمات اولیه",
+            "قابل بازگشت نیست مگر اینکه پشتیبان داشته باشید.\n\n" +
+            "آیا مطمین هستید؟",
+            "پاکسازی کامل اطلاعات",
             System.Windows.MessageBoxButton.YesNo,
             System.Windows.MessageBoxImage.Warning);
         if (result1 != System.Windows.MessageBoxResult.Yes) return;
 
         // Double confirm
         var result2 = System.Windows.MessageBox.Show(
-            "آیا واقعاً می‌خواهید تمام اطلاعات را پاک کنید؟\nاین غیرقابل بازگشت است!",
-            "تأیید نهایی",
+            "آیا واقعا می‌خواهید تمام اطلاعات را پاک کنید؟\nاین غیرقابل بازگشت است!",
+            "تایید",
             System.Windows.MessageBoxButton.YesNo,
             System.Windows.MessageBoxImage.Stop);
         if (result2 != System.Windows.MessageBoxResult.Yes) return;
@@ -336,21 +345,18 @@ public sealed class SettingsViewModel : ViewModelBase
             _themeManager.ResetToDefault();
             _themeManager.ApplyTheme();
 
-            // Refresh the grid so the user immediately sees the empty state
-            // instead of the stale numbers that were loaded before the wipe.
-            try
-            {
-                var main = System.Windows.Application.Current?.MainWindow as MainWindow;
-                main?.NavigateTo("dashboard");
-            }
-            catch { /* navigation is cosmetic — never block the reset on it */ }
-
-            StatusMessage = $"✅ پاکسازی کامل انجام شد — {cleared.Count} جدول خالی شد. " +
-                          "قالبهای Word و فهرست مهندسین حفظ شدند. برنامه را مجدداً راهاندازی کنید.";
+            // S-014: پیام با واقعیت می‌خواند و برنامه واقعا از اول باز می‌شود.
+            System.Windows.MessageBox.Show(
+                $"✅ پاکسازی کامل انجام شد — {cleared.Count} جدول خالی شد. " +
+                "قالب‌های Word و فهرست مهندسین حفظ شدند. برنامه دوباره باز می‌شود.",
+                "پاکسازی کامل اطلاعات",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            App.Restart();
         }
         catch (Exception ex)
         {
-            StatusMessage = $"❌ خطا در پاکسازی: {ex.Message}";
+            SetStatus($"❌ خطا در پاکسازی: {ex.Message}", "error");
             System.Diagnostics.Debug.WriteLine($"[Settings] FactoryReset failed: {ex}");
         }
     }
@@ -363,11 +369,30 @@ public sealed class SettingsViewModel : ViewModelBase
         };
         if (dialog.ShowDialog() != true) return;
 
-        var result = BackupEngine.ImportAndroidChanges(dialog.FileName, _dbPath);
+        // SEC-015: encrypted package — ask for its password first; if the
+        // user cancels, the import is cancelled without an error message.
+        string? importPassword = null;
+        if (BackupEngine.IsPackageEncrypted(dialog.FileName))
+        {
+            var pwWindow = new BackupPasswordWindow(askConfirm: false)
+            {
+                Title = "رمز فایل رمزنگاری‌شده"
+            };
+            if (pwWindow.ShowDialog() != true) return;
+            importPassword = pwWindow.Password;
+        }
+
+        // ARCH-003: ایمپورت مستقیم روی اتصال مشترک کار می‌کند؛ زیر قفل اتصال انجام می‌شود.
+        var db = Services.DatabaseService.Instance;
+        ImportResult result;
+        lock (db.SyncRoot)
+        {
+            result = BackupEngine.ImportAndroidChanges(dialog.FileName, db.Connection, importPassword);
+        }
         if (result.Success)
-            StatusMessage = $"✅ {result.Message}";
+            SetStatus($"✅ {result.Message}", "ok");
         else
-            StatusMessage = $"❌ خطا: {string.Join(", ", result.Errors)}";
+            SetStatus($"❌ خطا: {string.Join(", ", result.Errors)}", "error");
     }
 
     private void ExecuteChangePassword()
@@ -375,7 +400,180 @@ public sealed class SettingsViewModel : ViewModelBase
         var window = new NezamMonitorPro.App.Views.ChangePasswordWindow();
         if (window.ShowDialog() == true)
         {
-            StatusMessage = "✅ رمز عبور با موفقیت تغییر کرد ✓";
+            // SEC-004: اتصال اصلی با کلید قدیمی می‌ماند؛ برنامه از اول باز می‌شود.
+            System.Windows.MessageBox.Show(
+                "✅ رمز عوض شد؛ برنامه دوباره باز می‌شود.",
+                "تغییر رمز عبور",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+            App.Restart();
+        }
+    }
+
+    /// <summary>M-1: پشتیبان‌گیری از دیتابیس با رمزی که کاربر می‌دهد.</summary>
+    private void ExecuteBackup()
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "پشتیبان NezamMonitor (*.nzbkp)|*.nzbkp",
+            FileName = $"nezam-backup-{DateTime.Now:yyyyMMdd-HHmmss}.nzbkp"
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        var pwWindow = new BackupPasswordWindow(askConfirm: true);
+        if (pwWindow.ShowDialog() != true) return;
+
+        try
+        {
+            // ARCH-003: بکاپ مستقیم روی اتصال مشترک کار می‌کند؛ زیر قفل اتصال انجام می‌شود.
+            var db = Services.DatabaseService.Instance;
+            BackupResult result;
+            lock (db.SyncRoot)
+            {
+                result = BackupEngine.CreateBackup(db.Connection, _dbPath, dialog.FileName, pwWindow.Password);
+            }
+            if (result.Success)
+                SetStatus($"✅ پشتیبان‌گیری انجام شد: {dialog.FileName}", "ok");
+            else
+                SetStatus($"❌ پشتیبان‌گیری نشد: {string.Join("، ", result.Errors)}", "error");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"❌ پشتیبان‌گیری نشد: {ex.Message}", "error");
+        }
+    }
+
+    /// <summary>M-1: بازیابی از روی فایل پشتیبان؛ اتصال بسته می‌شود و برنامه از اول باز می‌شود.</summary>
+    private void ExecuteRestore()
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "پشتیبان NezamMonitor (*.nzbkp)|*.nzbkp"
+        };
+        if (dialog.ShowDialog() != true) return;
+
+        var pwWindow = new BackupPasswordWindow(askConfirm: false);
+        if (pwWindow.ShowDialog() != true) return;
+
+        // ARCH-003: بستن اتصال و جایگزینی فایل دیتابیس باید اتمی باشد؛
+        // هیچ نخ دیگری هم‌زمان به اتصال مشترک دست نزند. پیام‌ها بیرون از قفل نشان داده می‌شوند.
+        BackupResult? restoreResult = null;
+        Exception? restoreError = null;
+        try
+        {
+            var db = Services.DatabaseService.Instance;
+            lock (db.SyncRoot)
+            {
+                // اول اتصال بسته می‌شود تا فایل دیتابیس آزاد باشد.
+                Services.DatabaseService.Close();
+                restoreResult = BackupEngine.RestoreBackup(dialog.FileName, _dbPath, pwWindow.Password);
+            }
+        }
+        catch (Exception ex)
+        {
+            restoreError = ex;
+        }
+
+        if (restoreError != null)
+        {
+            System.Windows.MessageBox.Show(
+                $"❌ بازیابی نشد: {restoreError.Message}\nبرنامه دوباره باز می‌شود.",
+                "بازیابی پشتیبان",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
+        else if (restoreResult != null && restoreResult.Success)
+        {
+            System.Windows.MessageBox.Show(
+                "✅ بازیابی انجام شد؛ برنامه دوباره باز می‌شود.",
+                "بازیابی پشتیبان",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
+        }
+        else
+        {
+            // بازیابی نشد؛ فایل دیتابیس دست‌نخورده مانده و با ری‌استارت دوباره باز می‌شود.
+            System.Windows.MessageBox.Show(
+                $"❌ بازیابی نشد: {string.Join("، ", restoreResult?.Errors ?? new List<string>())}\nبرنامه دوباره باز می‌شود.",
+                "بازیابی پشتیبان",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Error);
+        }
+        App.Restart();
+    }
+
+    /// <summary>M-2: فایل لاگ خطا را با برنامه پیش‌فرض ویندوز باز می‌کند.</summary>
+    private void ViewErrorLog()
+    {
+        try
+        {
+            var path = ErrorLog.LogPath;
+            if (!System.IO.File.Exists(path))
+            {
+                SetStatus("هنوز لاگ خطایی نیست.", "info");
+                return;
+            }
+            Process.Start(new ProcessStartInfo { FileName = path, UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"❌ لاگ خطا باز نشد: {ex.Message}", "error");
+        }
+    }
+
+    /// <summary>M-2: لاگ خطا را خالی می‌کند.</summary>
+    private void ClearErrorLog()
+    {
+        try
+        {
+            ErrorLog.Clear();
+            SetStatus("لاگ خطا پاک شد.", "ok");
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"❌ لاگ خطا پاک نشد: {ex.Message}", "error");
+        }
+    }
+
+    /// <summary>M-10: آخرین نسخه گیت‌هاب را با نسخه فعلی مقایسه می‌کند.</summary>
+    private async Task CheckForUpdateAsync()
+    {
+        UpdateCheckMessage = "در حال بررسی به‌روزرسانی…";
+        try
+        {
+            using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(15) };
+            http.DefaultRequestHeaders.UserAgent.ParseAdd("NezamMonitorPro-Windows");
+            http.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
+            var json = await http.GetStringAsync(
+                "https://api.github.com/repos/Barkhordari-dev/NezamMonitor/releases/latest");
+            using var doc = JsonDocument.Parse(json);
+            var tag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
+            var latest = tag.TrimStart('v', 'V');
+            if (Version.TryParse(latest, out var latestVersion)
+                && Version.TryParse(AppVersion, out var currentVersion))
+            {
+                UpdateCheckMessage = latestVersion > currentVersion
+                    ? $"نسخه جدید {tag} هست؛ از گیت‌هاب بگیر."
+                    : "به‌روز هستی؛ نسخه تازه‌ای نیست.";
+            }
+            else
+            {
+                UpdateCheckMessage = string.Equals(latest, AppVersion, StringComparison.OrdinalIgnoreCase)
+                    ? "به‌روز هستی؛ نسخه تازه‌ای نیست."
+                    : $"نسخه جدید {tag} هست؛ از گیت‌هاب بگیر.";
+            }
+        }
+        catch (HttpRequestException)
+        {
+            UpdateCheckMessage = "اینترنت وصل نیست؛ بررسی به‌روزرسانی نشد.";
+        }
+        catch (TaskCanceledException)
+        {
+            UpdateCheckMessage = "بررسی به‌روزرسانی خیلی طول کشید؛ دوباره تلاش کن.";
+        }
+        catch (Exception)
+        {
+            UpdateCheckMessage = "بررسی به‌روزرسانی نشد؛ دوباره تلاش کن.";
         }
     }
 }

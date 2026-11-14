@@ -1,4 +1,4 @@
-using System.Collections.ObjectModel;
+﻿using System.Collections.ObjectModel;
 using System.Windows.Input;
 using NezamMonitorPro.Core.Data;
 using NezamMonitorPro.Core.Models;
@@ -22,7 +22,37 @@ public sealed class CasesViewModel : ViewModelBase
     /// instead of receiving one CollectionChanged per row (N UI updates on
     /// every navigation). Backed by SetProperty for the binding.</summary>
     public ObservableCollection<CaseDisplayItem> Cases { get => _cases; set => SetProperty(ref _cases, value); }
-    public string SearchText { get => _searchText; set { SetProperty(ref _searchText, value); FilterCases(); } }
+    public string SearchText
+    {
+        get => _searchText;
+        set
+        {
+            if (!SetProperty(ref _searchText, value)) return;
+            // PERF: پیش‌تر هر کلید مستقیم FilterCases را صدا می‌زد — یعنی
+            // جایگذاری کامل ItemsSource و اندازه‌گیری دوبارهٔ هر ۳۴ ستون
+            // Auto روی نخ UI، با هر حرف. حالا ۳۰۰ میلی‌ثانیه صبر می‌کنیم تا
+            // کاربر مکث کند و فقط یک بار فیلتر می‌شود.
+            RestartSearchDebounce();
+        }
+    }
+    // L-016 / DUP-003: وضعیت فیلتر (پیش‌نویس + اعمال‌شده) در سرویس مشترک
+    // FilterState نگه داشته می‌شود؛ همان ماشین وضعیت در Fees و FollowUp هم
+    // استفاده می‌شود. کنترل‌ها فقط Draft را عوض می‌کنند؛ جدول تا وقتی
+    // ApplyFilters صدا زده نشود فیلتر نمی‌شود.
+    public Services.FilterState Filters { get; } = new();
+    /// <summary>True وقتی فیلتری انتخاب شده ولی «اعمال» هنوز زده نشده.</summary>
+    public bool HasPendingFilters => Filters.HasPendingChanges;
+    public string DraftGroup { get => Filters.GetDraft("Group"); set { Filters.SetDraft("Group", value); OnPropertyChanged(nameof(DraftGroup)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string DraftDiscipline { get => Filters.GetDraft("Discipline"); set { Filters.SetDraft("Discipline", value); OnPropertyChanged(nameof(DraftDiscipline)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string DraftOwner { get => Filters.GetDraft("Owner"); set { Filters.SetDraft("Owner", value); OnPropertyChanged(nameof(DraftOwner)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string DraftOffice { get => Filters.GetDraft("Office"); set { Filters.SetDraft("Office", value); OnPropertyChanged(nameof(DraftOffice)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public bool HasActiveFilters => Filters.HasActiveFilters;
+    /// <summary>گزینه‌های فیلتر گروه/رشته/مالک/دفتر (XAML به این‌ها بایند است؛
+    /// RebuildFilterOptions آن‌ها را از داده‌ها می‌سازد؛ «همه» همیشه اول است).</summary>
+    public ObservableCollection<string> GroupFilters { get; } = new() { "همه" };
+    public ObservableCollection<string> DisciplineFilters { get; } = new() { "همه" };
+    public ObservableCollection<string> OwnerFilters { get; } = new() { "همه" };
+    public ObservableCollection<string> OfficeFilters { get; } = new() { "همه" };
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string DetailTitle { get => _detailTitle; set => SetProperty(ref _detailTitle, value); }
     public string DetailEngineers { get => _detailEngineers; set => SetProperty(ref _detailEngineers, value); }
@@ -33,8 +63,21 @@ public sealed class CasesViewModel : ViewModelBase
     public bool HasDetail => SelectedCase != null;
     public ICommand RefreshCommand { get; }
     public ICommand CloseDetailCommand { get; }
+    public ICommand ApplyFiltersCommand { get; }
+    public ICommand ClearFiltersCommand { get; }
 
     private List<CaseDisplayItem> _allCases = new();
+
+    /// <summary>تایمر ۳۰۰ میلی‌ثانیه‌ای جستجو (PERF): فیلتر فقط وقتی اجرا
+    /// می‌شود که کاربر مکث کند. تایمر بعد از هر شلیک خودش را خاموش می‌کند،
+    /// پس وقتی در حال اجرا نیست هیچ ارجاعی نگه نمی‌دارد.</summary>
+    private readonly System.Windows.Threading.DispatcherTimer _searchDebounceTimer;
+
+    private void RestartSearchDebounce()
+    {
+        _searchDebounceTimer.Stop();
+        _searchDebounceTimer.Start();
+    }
 
     /// <summary>Snapshot the grid was loaded from. The view is cached now,
     /// so OnNavigatedTo compares it with the active snapshot and reloads
@@ -44,8 +87,24 @@ public sealed class CasesViewModel : ViewModelBase
     public CasesViewModel(NezamDatabase db)
     {
         _db = db;
+        Filters.PropertyChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasActiveFilters));
+            OnPropertyChanged(nameof(HasPendingFilters));
+        };
         RefreshCommand = new RelayCommand(LoadCases);
         CloseDetailCommand = new RelayCommand(CloseDetail);
+        ApplyFiltersCommand = new RelayCommand(ApplyFilters);
+        ClearFiltersCommand = new RelayCommand(ClearFilters);
+        _searchDebounceTimer = new System.Windows.Threading.DispatcherTimer
+        {
+            Interval = TimeSpan.FromMilliseconds(300)
+        };
+        _searchDebounceTimer.Tick += (_, _) =>
+        {
+            _searchDebounceTimer.Stop();
+            FilterCases();
+        };
         LoadCases();
     }
 
@@ -65,6 +124,7 @@ public sealed class CasesViewModel : ViewModelBase
             // Engineers/Fees/Reports are loaded on demand in ShowCaseDetails.
             var rawCases = _db.LoadCasesLight(snapshotId);
             _allCases = rawCases.Select((c, i) => new CaseDisplayItem(c) { RowNumber = i + 1 }).ToList();
+            RebuildFilterOptions();
             Cases = new ObservableCollection<CaseDisplayItem>(_allCases);
             _loadedSnapshotId = snapshotId;
             StatusMessage = $"{Cases.Count} پرونده بارگذاری شد";
@@ -143,7 +203,9 @@ public sealed class CasesViewModel : ViewModelBase
         if (reports.Count > 0)
         {
             var lines = reports.Take(15).Select(r =>
-                $"  {r.ReportType} مرحله {r.Stage} | {r.Engineer} | {r.VisitDate}");
+                // TXT-002: خود Stage عنوان کامل «مرحله اول: …» است؛ پیشوند
+                // «مرحله » اضافه می‌شد و «مرحله مرحله اول» درمی‌آمد.
+                $"  {r.ReportType} {r.Stage} | {r.Engineer} | {r.VisitDate}");
             var text = string.Join("\n", lines);
             if (reports.Count > 15)
                 text += $"\n  ... و {reports.Count - 15} گزارش دیگر";
@@ -206,6 +268,9 @@ public sealed class CasesViewModel : ViewModelBase
 
     private void FilterCases()
     {
+        // تایمر معلق را خاموش کن تا دوبار اجرا نشود (مثلا «اعمال فیلتر»
+        // بلافاصله بعد از تایپ).
+        _searchDebounceTimer.Stop();
         var filtered = string.IsNullOrWhiteSpace(SearchText)
             ? _allCases
             : _allCases.Where(c =>
@@ -213,8 +278,51 @@ public sealed class CasesViewModel : ViewModelBase
                 c.Owner.Contains(SearchText) ||
                 c.Serial.Contains(SearchText) ||
                 c.Id.ToString().Contains(SearchText)).ToList();
+        // P4: applied selection filters (draft values only take effect via Apply).
+        filtered = FilterHelper.ApplyFilters(filtered,
+            (c => c.BuildingGroup, Filters.GetApplied("Group")),
+            (c => c.Responsibility, Filters.GetApplied("Discipline")),
+            (c => c.Owner, Filters.GetApplied("Owner")),
+            (c => c.Office, Filters.GetApplied("Office"))).ToList();
+        // PERF: اگر نتیجه دقیقاً همان چیزی است که الان نشان داده می‌شود،
+        // جایگذاری دوبارهٔ ItemsSource (و اندازه‌گیری دوبارهٔ ۳۴ ستون Auto)
+        // بیهوده است. پیام وضعیت را اول به‌روز می‌کنیم تا متن آن دقیقاً
+        // مثل قبل باشد، بعد فقط جایگذاری را رد می‌کنیم.
+        // M-9: وقتی جستجو/فیلتر چیزی پیدا نکرد، پیام روشن است.
+        StatusMessage = filtered.Count == 0 && _allCases.Count > 0 ? "چیزی پیدا نشد" : $"{filtered.Count} پرونده";
+        if (_cases.Count == filtered.Count && _cases.SequenceEqual(filtered))
+            return;
         Cases = new ObservableCollection<CaseDisplayItem>(filtered);
-        StatusMessage = $"{Cases.Count} پرونده";
+        OnPropertyChanged(nameof(HasActiveFilters));
+    }
+
+    /// <summary>Commits the draft filter selections (P4).</summary>
+    private void ApplyFilters()
+    {
+        Filters.Apply();
+        FilterCases();
+    }
+
+    private void ClearFilters()
+    {
+        Filters.Clear(("Group", "همه"), ("Discipline", "همه"), ("Owner", "همه"), ("Office", "همه"));
+        OnPropertyChanged(nameof(DraftGroup));
+        OnPropertyChanged(nameof(DraftDiscipline));
+        OnPropertyChanged(nameof(DraftOwner));
+        OnPropertyChanged(nameof(DraftOffice));
+        ApplyFilters();
+    }
+
+    private void RebuildFilterOptions()
+    {
+        GroupFilters.Clear();
+        foreach (var v in FilterHelper.ExtractDistinctValues(_allCases, c => c.BuildingGroup)) GroupFilters.Add(v);
+        DisciplineFilters.Clear();
+        foreach (var v in FilterHelper.ExtractDistinctValues(_allCases, c => c.Responsibility)) DisciplineFilters.Add(v);
+        OwnerFilters.Clear();
+        foreach (var v in FilterHelper.ExtractDistinctValues(_allCases, c => c.Owner)) OwnerFilters.Add(v);
+        OfficeFilters.Clear();
+        foreach (var v in FilterHelper.ExtractDistinctValues(_allCases, c => c.Office)) OfficeFilters.Add(v);
     }
 }
 

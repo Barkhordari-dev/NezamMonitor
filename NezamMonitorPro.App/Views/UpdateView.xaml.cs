@@ -1,18 +1,19 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Threading;
+using Microsoft.Extensions.DependencyInjection;
 using NezamMonitorPro.App.Services;
 using NezamMonitorPro.App.ViewModels;
+using NezamMonitorPro.Core.Data;
 
 namespace NezamMonitorPro.App.Views;
 
 public partial class UpdateView : UserControl, INavigationAware
 {
     private readonly UpdateViewModel _vm;
-    private readonly DispatcherTimer _uiTimer;
     private Storyboard? _pulseSb;
     private Storyboard? _floatSb;
     private Storyboard? _spinSb;
@@ -23,21 +24,17 @@ public partial class UpdateView : UserControl, INavigationAware
 
     public UpdateView()
     {
-        Trace("UpdateView ctor: start");
         InitializeComponent();
-        Trace("UpdateView ctor: InitializeComponent done");
 
-        _vm = new UpdateViewModel(DatabaseService.Instance);
+        // ARCH-001: ViewModel از کانتینر DI گرفته می‌شود.
+        _vm = App.Services.GetRequiredService<UpdateViewModel>();
         DataContext = _vm;
-        Trace("UpdateView ctor: ViewModel ready");
-
-        _uiTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(400) };
-        _uiTimer.Tick += (s, e) => UpdateButtonStates();
 
         Loaded += (_, _) =>
         {
             SubscribeController();
             UpdateButtonStates();
+            UpdateCapsWarning();
             // Show the saved password as dots in the password box (it was
             // loaded into the ViewModel but PasswordBox.Password is not
             // bindable, so it stayed empty until now). The eye button then
@@ -49,7 +46,7 @@ public partial class UpdateView : UserControl, INavigationAware
             {
                 _initialized = true;
                 try { ApplyStageVisual(ExtractionController.Instance.Stage, animate: false); }
-                catch (Exception ex) { Log("UpdateView.ApplyStageVisual(initial)", ex); }
+                catch { }
             }
         };
 
@@ -57,11 +54,11 @@ public partial class UpdateView : UserControl, INavigationAware
         // و روی کنترل‌های آزادشده کار می‌کنند (منبع کرش).
         Unloaded += (_, _) =>
         {
-            _uiTimer.Stop();
             UnsubscribeController();
+            // DUP-005: اطلاعات ورود موقع بستن صفحه ذخیره می‌شوند (نه با هر کلید).
+            try { _vm.SaveCredentials(); } catch { }
         };
 
-        Trace("UpdateView ctor: done");
     }
 
     /// <summary>هنگام بازگشت به این صفحه (ویو کش شده) وضعیت دکمه‌ها و تصویر مرحله تازه می‌شود.</summary>
@@ -73,19 +70,9 @@ public partial class UpdateView : UserControl, INavigationAware
             UpdateButtonStates();
             ApplyStageVisual(ExtractionController.Instance.Stage, animate: false);
         }
-        catch (Exception ex) { Log("UpdateView.OnNavigatedTo", ex); }
-    }
-
-    private static void Trace(string message)
-    {
-        try
-        {
-            var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
-                      ?? AppDomain.CurrentDomain.BaseDirectory;
-            File.AppendAllText(Path.Combine(dir, "startup.log"), $"[{DateTime.Now}] {message}\n");
-        }
         catch { }
     }
+
 
     private bool _subscribed;
 
@@ -97,7 +84,7 @@ public partial class UpdateView : UserControl, INavigationAware
             ExtractionController.Instance.PropertyChanged += UpdateView_PropertyChanged;
             _subscribed = true;
         }
-        catch (Exception ex) { Log("UpdateView.SubscribeController", ex); }
+        catch { }
     }
 
     private void UnsubscribeController()
@@ -111,17 +98,6 @@ public partial class UpdateView : UserControl, INavigationAware
         _subscribed = false;
     }
 
-    private static void Log(string where, Exception ex)
-    {
-        try
-        {
-            var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
-                      ?? AppDomain.CurrentDomain.BaseDirectory;
-            File.AppendAllText(Path.Combine(dir, "startup.log"),
-                $"[{DateTime.Now}] {where}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n");
-        }
-        catch { }
-    }
 
     private void UpdateView_PropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
     {
@@ -138,10 +114,9 @@ public partial class UpdateView : UserControl, INavigationAware
         {
             UpdateView_PropertyChangedCore(e);
         }
-        catch (Exception ex)
+        catch
         {
             // هرگز نگذار خطای یک ویو به کنترلر/برنامه سرایت کند
-            Log($"UpdateView.PropertyChanged({e.PropertyName})", ex);
         }
     }
 
@@ -149,15 +124,15 @@ public partial class UpdateView : UserControl, INavigationAware
     {
         if (e.PropertyName == nameof(ExtractionController.IsBusy))
         {
-            if (ExtractionController.Instance.IsBusy)
+            UpdateButtonStates();
+        }
+        else if (e.PropertyName == nameof(ExtractionController.Progress))
+        {
+            // S-005: پیشرفت مستقیم از رویداد کنترلر می‌آید؛ تایمر polling حذف شد.
+            if (ProgressFill != null)
             {
-                _uiTimer.Start();
-                UpdateButtonStates();
-            }
-            else
-            {
-                _uiTimer.Stop();
-                UpdateButtonStates();
+                ProgressFill.Tag = Math.Max(0, Math.Min(100, ExtractionController.Instance.Progress));
+                UpdateProgressWidth();
             }
         }
         else if (e.PropertyName == nameof(ExtractionController.Stage))
@@ -305,10 +280,38 @@ public partial class UpdateView : UserControl, INavigationAware
 
     private async void BtnStart_Click(object sender, RoutedEventArgs e)
     {
+        // S-004: نام کاربری و رمز خالی را قبل از شروع می‌گیریم.
+        if (string.IsNullOrWhiteSpace(_vm.Username) || string.IsNullOrWhiteSpace(_vm.Password))
+        {
+            MessageBox.Show("نام کاربری و رمز سامانه را وارد کن.", "اطلاعات ناقص",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            UsernameBox.Focus();
+            return;
+        }
+        // S-008: «شروع از پرونده شماره» حداقل ۱ و «تعداد» حداقل ۰ است (۰ یعنی همه).
+        if (!int.TryParse(StartFromBox.Text, out var startFrom) || startFrom < 1)
+        {
+            MessageBox.Show("«شروع از پرونده شماره» باید ۱ یا بیشتر باشد؛ ۱ یعنی از اولین پرونده.", "عدد اشتباه",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            StartFromBox.Focus();
+            StartFromBox.SelectAll();
+            return;
+        }
+        if (!int.TryParse(MaxCasesBox.Text, out var maxCases) || maxCases < 0)
+        {
+            MessageBox.Show("«تعداد» باید ۰ یا بیشتر باشد؛ ۰ یعنی همه پرونده‌ها.", "عدد اشتباه",
+                MessageBoxButton.OK, MessageBoxImage.Warning);
+            MaxCasesBox.Focus();
+            MaxCasesBox.SelectAll();
+            return;
+        }
+
         var ec = ExtractionController.Instance;
-        ec.Username = DataContext is ViewModels.UpdateViewModel vm ? vm.Username : "";
-        ec.Password = DataContext is ViewModels.UpdateViewModel vm2 ? vm2.Password : "";
-        ec.RememberMe = DataContext is ViewModels.UpdateViewModel vm3 ? vm3.RememberMe : false;
+        ec.Username = _vm.Username;
+        ec.Password = _vm.Password;
+        ec.RememberMe = _vm.RememberMe;
+        // DUP-005: اطلاعات ورود فقط موقع شروع ذخیره می‌شوند (نه با هر کلید).
+        _vm.SaveCredentials();
 
         if (ec.StartCommand is ViewModels.AsyncRelayCommand asyncCmd)
             await asyncCmd.ExecuteAsync();
@@ -343,7 +346,7 @@ public partial class UpdateView : UserControl, INavigationAware
                 VisiblePasswordBox.Visibility = Visibility.Collapsed;
             }
         }
-        catch (Exception ex) { Log("UpdateView.TogglePassword", ex); }
+        catch { }
     }
 
     /// <summary>Editing the revealed password keeps the ViewModel in sync.</summary>
@@ -360,22 +363,35 @@ public partial class UpdateView : UserControl, INavigationAware
             _vm.Password = PasswordBox.Password;
             if (VisiblePasswordBox != null && VisiblePasswordBox.Visibility == Visibility.Visible)
                 VisiblePasswordBox.Text = PasswordBox.Password;
-            // Saving is decided by the live "remember me" checkbox, via the
-            // Password property setter — not by the previously stored value.
+            // نام کاربری و رمز موقع شروع به‌روزرسانی یا بستن صفحه ذخیره می‌شوند، نه با هر کلید.
         }
+    }
+
+    /// <summary>S-027: هشدار Caps Lock، مثل پنجره رمز برنامه.</summary>
+    private void UpdateView_PreviewKeyDown(object sender, KeyEventArgs e) => UpdateCapsWarning();
+
+    /// <summary>S-027: هشدار Caps Lock، مثل پنجره رمز برنامه.</summary>
+    private void UpdateView_PreviewKeyUp(object sender, KeyEventArgs e) => UpdateCapsWarning();
+
+    private void UpdateCapsWarning()
+    {
+        if (CapsWarning != null)
+            CapsWarning.Visibility = Keyboard.IsKeyToggled(Key.CapsLock)
+                ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void BtnBrowseOutput_Click(object sender, RoutedEventArgs e)
     {
         var dialog = new Microsoft.Win32.OpenFolderDialog
         {
-            Title = "انتخاب پوشه ذخیره فایلها"
+            Title = "انتخاب پوشه ذخیره فایل‌ها"
         };
         if (dialog.ShowDialog() == true)
         {
-            DatabaseService.Instance.SaveSetting("output_path", dialog.FolderName);
-            if (Template.FindName("OutputPathBox", this) is TextBox tb)
-                tb.Text = dialog.FolderName;
+            // S-002: مسیر همان لحظه هم در کادر و هم در کنترلر اعمال می‌شود.
+            DatabaseService.Instance.SaveSetting(SettingKeys.OutputPath, dialog.FolderName);
+            OutputPathBox.Text = dialog.FolderName;
+            ExtractionController.Instance.OutputPath = dialog.FolderName;
         }
     }
 }

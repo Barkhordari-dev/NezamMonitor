@@ -5,7 +5,7 @@ namespace NezamMonitorPro.App.ViewModels;
 
 public sealed class MainViewModel : ViewModelBase
 {
-    private string _title = "سیستم مانیتورینگ نظام مهندسی نسخه پرو";
+    private string _title = "NezamMonitor Pro — مانیتورینگ نظام مهندسی";
     public string Title { get => _title; set => SetProperty(ref _title, value); }
 
     private string _currentView = "dashboard";
@@ -17,15 +17,13 @@ public sealed class MainViewModel : ViewModelBase
     private bool _isBusy;
     public bool IsBusy { get => _isBusy; set => SetProperty(ref _isBusy, value); }
 
-    private double _progress;
-    public double Progress { get => _progress; set => SetProperty(ref _progress, value); }
-
-    private string _currentActivity = "";
-    public string CurrentActivity { get => _currentActivity; set => SetProperty(ref _currentActivity, value); }
-
     public MainViewModel()
     {
-        RefreshCommand = new RelayCommand(() => StatusMessage = "به‌روزرسانی شد");
+        // B-011: F5 صفحه جاری را تازه می‌کند (نه فقط یک پیام).
+        RefreshCommand = new RelayCommand(() =>
+        {
+            if (Application.Current?.MainWindow is MainWindow mw) mw.RefreshCurrentPage();
+        });
         GoToDashboardCommand = new RelayCommand(() => Navigate("dashboard"));
         GoToUpdateCommand = new RelayCommand(() => Navigate("update"));
         GoToGeneratorCommand = new RelayCommand(() => Navigate("generator"));

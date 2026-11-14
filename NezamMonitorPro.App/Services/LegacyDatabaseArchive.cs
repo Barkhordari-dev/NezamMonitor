@@ -7,7 +7,7 @@ using Microsoft.Data.Sqlite;
 
 namespace NezamMonitorPro.App.Services;
 
-/// <summary>یک پایگاه‌دادهٔ قدیمی (نسخه‌های قبلی برنامه) که به‌صورت بایگانی و فقط‌خواندنی افزوده شده است.</summary>
+/// <summary>یک پایگاه‌داده قدیمی (نسخه‌های قبلی برنامه) که به‌صورت بایگانی و فقط‌خواندنی افزوده شده است.</summary>
 public sealed class LegacyArchiveItem
 {
     public string Name { get; init; } = "";
@@ -27,7 +27,7 @@ public sealed class LegacyArchiveItem
 
 /// <summary>
 /// بایگانی پایگاه‌داده‌های نسخه‌های قبلی.
-/// ⚠ این کلاس هرگز پایگاه‌دادهٔ فعال برنامه را جایگزین یا تغییر نمی‌کند؛ فقط یک کپی
+/// ⚠ این کلاس هرگز پایگاه‌داده فعال برنامه را جایگزین یا تغییر نمی‌کند؛ فقط یک کپی
 /// از فایل قدیمی را در data\legacy نگه می‌دارد و آن را به‌صورت ReadOnly می‌خواند.
 /// </summary>
 public static class LegacyDatabaseArchive
@@ -47,7 +47,7 @@ public static class LegacyDatabaseArchive
         }
     }
 
-    /// <summary>فهرست پایگاه‌داده‌های بایگانی‌شده (بدون دست‌زدن به پایگاه‌دادهٔ فعال).</summary>
+    /// <summary>فهرست پایگاه‌داده‌های بایگانی‌شده (بدون دست‌زدن به پایگاه‌داده فعال).</summary>
     public static List<LegacyArchiveItem> List()
     {
         var items = new List<LegacyArchiveItem>();
@@ -80,8 +80,8 @@ public static class LegacyDatabaseArchive
     }
 
     /// <summary>
-    /// یک فایل پایگاه‌دادهٔ قدیمی را کپی و بایگانی می‌کند. فایل مبدأ دست‌نخورده می‌ماند
-    /// و پایگاه‌دادهٔ فعال برنامه هرگز تغییر نمی‌کند.
+    /// یک فایل پایگاه‌داده قدیمی را کپی و بایگانی می‌کند. فایل مبدا دست‌نخورده می‌ماند
+    /// و پایگاه‌داده فعال برنامه هرگز تغییر نمی‌کند.
     /// </summary>
     public static LegacyArchiveItem Attach(string sourcePath)
     {
@@ -127,9 +127,9 @@ public static class LegacyDatabaseArchive
     }
 
     /// <summary>
-    /// پایگاه‌داده‌هایی که کاربر کنار فایل اجرایی یا در پوشهٔ data گذاشته است
-    /// (مثل فایل قدیمی nezam_monitor.db در ریشهٔ برنامه). فقط شناسایی می‌شوند؛
-    /// هیچ تغییری روی آن‌ها اعمال نمی‌شود و پایگاه‌دادهٔ فعال نادیده گرفته می‌شود.
+    /// پایگاه‌داده‌هایی که کاربر کنار فایل اجرایی یا در پوشه data گذاشته است
+    /// (مثل فایل قدیمی nezam_monitor.db در ریشه برنامه). فقط شناسایی می‌شوند؛
+    /// هیچ تغییری روی آن‌ها اعمال نمی‌شود و پایگاه‌داده فعال نادیده گرفته می‌شود.
     /// </summary>
     public static List<LegacyArchiveItem> ScanCandidates()
     {
@@ -234,7 +234,7 @@ public static class LegacyDatabaseArchive
         }
         catch
         {
-            return (false, "قابل خواندن نیست (احتمالاً رمزنگاری‌شده یا نسخهٔ قدیمی SQLite)", "—");
+            return (false, "قابل خواندن نیست (احتمالا رمزنگاری‌شده یا نسخه قدیمی SQLite)", "—");
         }
     }
 }

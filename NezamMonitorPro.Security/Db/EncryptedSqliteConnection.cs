@@ -27,16 +27,6 @@ namespace NezamMonitorPro.Security.Db
             if (string.IsNullOrEmpty(password))
                 throw new ArgumentException("Password cannot be null or empty", nameof(password));
 
-            var logPath = Path.Combine(
-                Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
-                ?? AppDomain.CurrentDomain.BaseDirectory,
-                "startup.log");
-
-            try
-            {
-                File.AppendAllText(logPath, $"[{DateTime.Now}] EncryptedSqliteConnection -> Opening DB: {databasePath}, PasswordLen: {password.Length}\n");
-            }
-            catch { }
 
             var builder = new SqliteConnectionStringBuilder
             {
@@ -55,21 +45,25 @@ namespace NezamMonitorPro.Security.Db
             }
             catch (Exception ex)
             {
-                try { File.AppendAllText(logPath, $"[{DateTime.Now}] Connection Open FAIL: {ex.Message}\n"); } catch { }
                 throw new UnauthorizedAccessException("Invalid password.", ex);
             }
 
+            // باندل SQLCipher باید نسخه cipher را برگرداند؛ اگر خالی بود یعنی
+            // باندل plain است و برنامه نباید با آن بالا بیاید
+            string? cipherVersion;
             try
             {
                 using var cmd = _connection.CreateCommand();
                 cmd.CommandText = "PRAGMA cipher_version;";
-                var version = cmd.ExecuteScalar();
-                File.AppendAllText(logPath, $"[{DateTime.Now}] Connection Open OK, SQLCipher version: {version}\n");
+                cipherVersion = cmd.ExecuteScalar()?.ToString();
             }
             catch (Exception ex)
             {
-                try { File.AppendAllText(logPath, $"[{DateTime.Now}] Cipher version check FAIL: {ex.Message}\n"); } catch { }
+                throw new InvalidOperationException("باندل SQLCipher در دسترس نیست؛ برنامه با دیتابیس رمزنگاری‌نشده بالا نمی‌آید.", ex);
             }
+
+            if (string.IsNullOrWhiteSpace(cipherVersion))
+                throw new InvalidOperationException("باندل SQLCipher در دسترس نیست؛ برنامه با دیتابیس رمزنگاری‌نشده بالا نمی‌آید.");
         }
 
         public SqliteConnection Connection => _connection;
@@ -80,6 +74,15 @@ namespace NezamMonitorPro.Security.Db
         {
             if (string.IsNullOrEmpty(newPassword))
                 throw new ArgumentException("New password cannot be null or empty", nameof(newPassword));
+
+            // تذکر: sqlite3_rekey خام در باندل هست، ولی Microsoft.Data.Sqlite هندل
+            // خام اتصال را بیرون نمی‌دهد؛ پس رمز را با همان PRAGMA عوض می‌کنیم و
+            // ورودی را سخت‌گیرانه اعتبارسنجی می‌کنیم تا رشته‌سازی امن بماند
+            foreach (var ch in newPassword)
+            {
+                if (ch == '\0' || char.IsControl(ch))
+                    throw new ArgumentException("رمز عبور نمی‌تواند کاراکتر کنترلی داشته باشد.", nameof(newPassword));
+            }
 
             using var cmd = _connection.CreateCommand();
             // SQLite/SQLCipher PRAGMA statements do not accept parameter binding (@newPassword).

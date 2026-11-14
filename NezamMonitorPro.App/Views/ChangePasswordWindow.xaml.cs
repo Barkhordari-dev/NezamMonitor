@@ -19,6 +19,9 @@ public partial class ChangePasswordWindow : Window
     {
         InitializeComponent();
         Loaded += OnLoaded;
+        // S-029: نشانگر قدرت، رمز جدید را دنبال می‌کند.
+        NewPasswordBox.PasswordChanged += (_, _) => UpdateStrength();
+        NewPasswordTextBox.TextChanged += (_, _) => UpdateStrength();
     }
 
     private string CurrentPassword => _revealCurrent ? CurrentPasswordTextBox.Text : CurrentPasswordBox.Password;
@@ -41,6 +44,7 @@ public partial class ChangePasswordWindow : Window
         catch { }
 
         CurrentPasswordBox.Focus();
+        UpdateCapsWarning();
     }
 
     private void SaveButton_Click(object sender, RoutedEventArgs e)
@@ -51,25 +55,21 @@ public partial class ChangePasswordWindow : Window
 
         if (string.IsNullOrEmpty(current))
         {
-            ErrorText.Text = "لطفاً رمز عبور فعلی را وارد کنید.";
+            ErrorText.Text = "لطفا رمز عبور فعلی را وارد کنید.";
             CurrentPasswordBox.Focus();
             return;
         }
 
         if (string.IsNullOrEmpty(next))
         {
-            ErrorText.Text = "لطفاً رمز عبور جدید را وارد کنید.";
+            ErrorText.Text = "لطفا رمز عبور جدید را وارد کنید.";
             NewPasswordBox.Focus();
             return;
         }
 
-        if (next.Length < 8)
-        {
-            ErrorText.Text = "رمز عبور جدید باید حداقل ۸ کاراکتر باشد.";
-            NewPasswordBox.Focus();
-            return;
-        }
-
+        // هیچ قانون طول یا ترکیبی برای رمز جدید اعمال نمی‌شود — فقط
+        // خالی نبودن، متفاوت بودن از رمز فعلی و یکسان بودن با تکرارش
+        // بررسی می‌شود. نشانگر قدرت و متن راهنما فقط پیشنهاد می‌دهند.
         if (current == next)
         {
             ErrorText.Text = "رمز عبور جدید باید با رمز عبور فعلی متفاوت باشد.";
@@ -207,6 +207,67 @@ public partial class ChangePasswordWindow : Window
             ConfirmPasswordTextBox.CaretIndex = ConfirmPasswordTextBox.Text.Length;
         }
         SetIconColor(ConfirmRevealIcon, _revealConfirm);
+    }
+
+    private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
+    {
+        // A11Y-003: Esc همه‌جا پنجره را می‌بندد (نه فقط وقتی فوکوس روی کادر رمز است).
+        if (e.Key == Key.Escape)
+        {
+            e.Handled = true;
+            CancelButton_Click(sender, e);
+            return;
+        }
+        UpdateCapsWarning();
+    }
+
+    private void Window_PreviewKeyUp(object sender, KeyEventArgs e) => UpdateCapsWarning();
+
+    /// <summary>S-027: هشدار Caps Lock، مثل پنجره رمز برنامه.</summary>
+    private void UpdateCapsWarning()
+    {
+        try
+        {
+            CapsWarning.Visibility = Keyboard.IsKeyToggled(Key.CapsLock)
+                ? Visibility.Visible
+                : Visibility.Collapsed;
+        }
+        catch { }
+    }
+
+    /// <summary>S-029: نشانگر قدرت رمز جدید — همان منطق پنجره ساخت رمز.</summary>
+    private void UpdateStrength()
+    {
+        var pwd = NewPassword;
+        int score = 0;
+        if (pwd.Length >= 8) score++;
+        if (pwd.Length >= 12) score++;
+        if (pwd.Any(char.IsDigit)) score++;
+        if (pwd.Any(c => !char.IsLetterOrDigit(c))) score++;
+
+        var bars = new[] { StrengthBar1, StrengthBar2, StrengthBar3, StrengthBar4 };
+        string[] labels = { "خیلی ضعیف", "ضعیف", "متوسط", "خوب", "قوی" };
+
+        Brush on = Res("ErrorBrush");
+        if (score >= 4) on = Res("SuccessBrush");
+        else if (score == 3) on = Res("PrimaryBrush");
+        else if (score == 2) on = Res("WarningBrush");
+
+        for (int i = 0; i < bars.Length; i++)
+            bars[i].Background = i < score ? on : Res("BorderBrush");
+
+        StrengthText.Text = pwd.Length == 0 ? "" : labels[Math.Clamp(score, 0, 4)];
+        StrengthText.Foreground = on;
+    }
+
+    private static Brush Res(string key)
+    {
+        try
+        {
+            if (Application.Current?.TryFindResource(key) is Brush b) return b;
+        }
+        catch { }
+        return Brushes.Gray;
     }
 
     private static void SetIconColor(TextBlock icon, bool revealed)

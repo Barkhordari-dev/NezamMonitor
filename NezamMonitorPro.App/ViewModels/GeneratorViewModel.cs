@@ -21,19 +21,21 @@ public sealed class GeneratorViewModel : ViewModelBase
     private readonly NezamDatabase _db;
     private string _templatePath = "";
     private string _outputPath = "";
-    private string _statusMessage = "مرحله و تمپلیت را انتخاب کنید";
+    private string _statusMessage = "برای شروع، «اسکن پرونده‌ها» را بزنید";
     private int _progress;
     private string _progressText = "";
     private int _selectedStage = 1;
     private string _selectedTemplateName = "";
     private string _selectedTemplatePath = "";
     private string _reportDate = "";
-    private bool _isHistoryExpanded = false;
     private string _historySearchText = "";
     private int _historyFilterStage = 0;
     private int _historyFilterFormat = 0;
     private string _previewText = "";
     private bool _useLtr = false;
+    private bool _useSignedTemplates = false;
+    private string _signedTemplatePath = "";
+    private bool _generatePdf = false;
     private int _activeTab = 0;
 
     public string TemplatePath { get => _templatePath; set => SetProperty(ref _templatePath, value); }
@@ -70,11 +72,47 @@ public sealed class GeneratorViewModel : ViewModelBase
         set => SetProperty(ref _reportDate, value);
     }
 
-    public bool IsHistoryExpanded
+    private bool _isScheduleExpanded = true;
+    /// <summary>Schedule-settings card open or collapsed (persisted).</summary>
+    public bool IsScheduleExpanded
     {
-        get => _isHistoryExpanded;
-        set => SetProperty(ref _isHistoryExpanded, value);
+        get => _isScheduleExpanded;
+        set
+        {
+            if (SetProperty(ref _isScheduleExpanded, value))
+            {
+                _db.SaveSetting(SettingKeys.ScheduleExpanded, value ? "1" : "0");
+                OnPropertyChanged(nameof(ScheduleToggleIcon));
+            }
+        }
     }
+    /// <summary>Collapse toggle glyph: ▼ open, ▶ collapsed.</summary>
+    public string ScheduleToggleIcon => IsScheduleExpanded ? "▼" : "▶";
+    public ICommand ToggleScheduleCommand { get; }
+
+    private bool _isProductionExpanded;
+    /// <summary>
+    /// Production-settings card open or collapsed (persisted as
+    /// production_expanded; starts hidden until the user opens it once).
+    /// </summary>
+    public bool IsProductionExpanded
+    {
+        get => _isProductionExpanded;
+        set
+        {
+            if (SetProperty(ref _isProductionExpanded, value))
+            {
+                _db.SaveSetting(SettingKeys.ProductionExpanded, value ? "1" : "0");
+                OnPropertyChanged(nameof(ProductionToggleIcon));
+            }
+        }
+    }
+    /// <summary>Collapse toggle glyph: ▼ open, ▶ collapsed.</summary>
+    public string ProductionToggleIcon => IsProductionExpanded ? "▼" : "▶";
+    /// <summary>One-line summary shown under the card title (PDF on/off, signed template on/off).</summary>
+    public string ProductionSummary => $"PDF: {(GeneratePdf ? "روشن" : "خاموش")}، تمپلیت امضا: {(UseSignedTemplates ? "روشن" : "خاموش")}";
+    public ICommand ToggleProductionCommand { get; }
+    public ICommand DownloadTemplatesCommand { get; }
 
     public string HistorySearchText
     {
@@ -108,6 +146,11 @@ public sealed class GeneratorViewModel : ViewModelBase
 
     public string PreviewText { get => _previewText; set => SetProperty(ref _previewText, value); }
     public bool UseLtr { get => _useLtr; set => SetProperty(ref _useLtr, value); }
+    /// <summary>تولید با تمپلیت امضاشده (P1) — در تنظیمات ذخیره می‌شود.</summary>
+    public bool UseSignedTemplates { get => _useSignedTemplates; set { if (SetProperty(ref _useSignedTemplates, value)) { _db.SaveSetting(SettingKeys.SignedReport, value ? "1" : "0"); OnPropertyChanged(nameof(ProductionSummary)); } } }
+    public string SignedTemplatePath { get => _signedTemplatePath; set { if (SetProperty(ref _signedTemplatePath, value)) _db.SaveSetting(SettingKeys.SignedTemplatesPath, value); } }
+    /// <summary>همراه هر گزارش Word یک PDF هم بسازد (P2) — نیاز به Word نصب‌شده دارد.</summary>
+    public bool GeneratePdf { get => _generatePdf; set { if (SetProperty(ref _generatePdf, value)) { _db.SaveSetting(SettingKeys.GeneratePdf, value ? "1" : "0"); OnPropertyChanged(nameof(ProductionSummary)); } } }
     public int ActiveTab { get => _activeTab; set => SetProperty(ref _activeTab, value); }
 
     public ObservableCollection<CaseReportItem> ReportStatus { get; } = new();
@@ -128,7 +171,9 @@ public sealed class GeneratorViewModel : ViewModelBase
     // کش مقایسه اسکن‌ها از دیتابیس
         private Dictionary<string, bool> _previousScanState = new();
             private bool _hasLoadedFromDb = false;
+            private long _loadedScanSnapshotId = -1;
             private CancellationTokenSource? _scanCts;
+            private CancellationTokenSource? _generateCts;
 
             // زمان‌بندی - آرایه ماه‌ها برای هر گروه و هر مرحله (اندیس ۱-۴ استفاده می‌شود)
         private readonly int[] _groupAMonths = new int[5]; // الف: ۳ مرحله
@@ -136,25 +181,37 @@ public sealed class GeneratorViewModel : ViewModelBase
         private readonly int[] _groupCMonths = new int[5]; // ج: ۴ مرحله
         private readonly int[] _groupDMonths = new int[5]; // د: ۴ مرحله
 
-        // Properties for each stage's months per group (for direct binding if needed)
-        public int GroupAStage1Months { get => _groupAMonths[1]; set { if (SetProperty(ref _groupAMonths[1], value)) { _db.SaveSetting("report_group_a_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupAStage2Months { get => _groupAMonths[2]; set { if (SetProperty(ref _groupAMonths[2], value)) { _db.SaveSetting("report_group_a_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupAStage3Months { get => _groupAMonths[3]; set { if (SetProperty(ref _groupAMonths[3], value)) { _db.SaveSetting("report_group_a_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
+        // Properties for each stage's months per group (for direct binding if needed).
+        // All 16 delegate to one helper so the setting key and the refresh
+        // behavior stay identical for every group/stage.
+        private bool SetGroupMonths(int[] months, int stage, string settingKey, int value, [CallerMemberName] string? propertyName = null)
+        {
+            if (months[stage] == value) return false;
+            months[stage] = value;
+            _db.SaveSetting(settingKey, value.ToString());
+            ApplyReportFilters();
+            OnPropertyChanged(propertyName);
+            return true;
+        }
 
-        public int GroupBStage1Months { get => _groupBMonths[1]; set { if (SetProperty(ref _groupBMonths[1], value)) { _db.SaveSetting("report_group_b_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupBStage2Months { get => _groupBMonths[2]; set { if (SetProperty(ref _groupBMonths[2], value)) { _db.SaveSetting("report_group_b_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupBStage3Months { get => _groupBMonths[3]; set { if (SetProperty(ref _groupBMonths[3], value)) { _db.SaveSetting("report_group_b_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupBStage4Months { get => _groupBMonths[4]; set { if (SetProperty(ref _groupBMonths[4], value)) { _db.SaveSetting("report_group_b_stage_4_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupAStage1Months { get => _groupAMonths[1]; set => SetGroupMonths(_groupAMonths, 1, SettingKeys.ReportGroupStageMonths("a", 1), value); }
+        public int GroupAStage2Months { get => _groupAMonths[2]; set => SetGroupMonths(_groupAMonths, 2, SettingKeys.ReportGroupStageMonths("a", 2), value); }
+        public int GroupAStage3Months { get => _groupAMonths[3]; set => SetGroupMonths(_groupAMonths, 3, SettingKeys.ReportGroupStageMonths("a", 3), value); }
 
-        public int GroupCStage1Months { get => _groupCMonths[1]; set { if (SetProperty(ref _groupCMonths[1], value)) { _db.SaveSetting("report_group_c_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupCStage2Months { get => _groupCMonths[2]; set { if (SetProperty(ref _groupCMonths[2], value)) { _db.SaveSetting("report_group_c_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupCStage3Months { get => _groupCMonths[3]; set { if (SetProperty(ref _groupCMonths[3], value)) { _db.SaveSetting("report_group_c_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupCStage4Months { get => _groupCMonths[4]; set { if (SetProperty(ref _groupCMonths[4], value)) { _db.SaveSetting("report_group_c_stage_4_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupBStage1Months { get => _groupBMonths[1]; set => SetGroupMonths(_groupBMonths, 1, SettingKeys.ReportGroupStageMonths("b", 1), value); }
+        public int GroupBStage2Months { get => _groupBMonths[2]; set => SetGroupMonths(_groupBMonths, 2, SettingKeys.ReportGroupStageMonths("b", 2), value); }
+        public int GroupBStage3Months { get => _groupBMonths[3]; set => SetGroupMonths(_groupBMonths, 3, SettingKeys.ReportGroupStageMonths("b", 3), value); }
+        public int GroupBStage4Months { get => _groupBMonths[4]; set => SetGroupMonths(_groupBMonths, 4, SettingKeys.ReportGroupStageMonths("b", 4), value); }
 
-        public int GroupDStage1Months { get => _groupDMonths[1]; set { if (SetProperty(ref _groupDMonths[1], value)) { _db.SaveSetting("report_group_d_stage_1_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupDStage2Months { get => _groupDMonths[2]; set { if (SetProperty(ref _groupDMonths[2], value)) { _db.SaveSetting("report_group_d_stage_2_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupDStage3Months { get => _groupDMonths[3]; set { if (SetProperty(ref _groupDMonths[3], value)) { _db.SaveSetting("report_group_d_stage_3_months", value.ToString()); ApplyReportFilters(); } } }
-        public int GroupDStage4Months { get => _groupDMonths[4]; set { if (SetProperty(ref _groupDMonths[4], value)) { _db.SaveSetting("report_group_d_stage_4_months", value.ToString()); ApplyReportFilters(); } } }
+        public int GroupCStage1Months { get => _groupCMonths[1]; set => SetGroupMonths(_groupCMonths, 1, SettingKeys.ReportGroupStageMonths("c", 1), value); }
+        public int GroupCStage2Months { get => _groupCMonths[2]; set => SetGroupMonths(_groupCMonths, 2, SettingKeys.ReportGroupStageMonths("c", 2), value); }
+        public int GroupCStage3Months { get => _groupCMonths[3]; set => SetGroupMonths(_groupCMonths, 3, SettingKeys.ReportGroupStageMonths("c", 3), value); }
+        public int GroupCStage4Months { get => _groupCMonths[4]; set => SetGroupMonths(_groupCMonths, 4, SettingKeys.ReportGroupStageMonths("c", 4), value); }
+
+        public int GroupDStage1Months { get => _groupDMonths[1]; set => SetGroupMonths(_groupDMonths, 1, SettingKeys.ReportGroupStageMonths("d", 1), value); }
+        public int GroupDStage2Months { get => _groupDMonths[2]; set => SetGroupMonths(_groupDMonths, 2, SettingKeys.ReportGroupStageMonths("d", 2), value); }
+        public int GroupDStage3Months { get => _groupDMonths[3]; set => SetGroupMonths(_groupDMonths, 3, SettingKeys.ReportGroupStageMonths("d", 3), value); }
+        public int GroupDStage4Months { get => _groupDMonths[4]; set => SetGroupMonths(_groupDMonths, 4, SettingKeys.ReportGroupStageMonths("d", 4), value); }
 
         // لیست ماه‌ها برای ComboBox (پیش‌فرض‌ها تا ۳۰ ماه بر اساس سند)
             public List<int> MonthOptions { get; } = Enumerable.Range(1, 30).ToList();
@@ -195,12 +252,34 @@ public sealed class GeneratorViewModel : ViewModelBase
             public bool IsScanning
             {
                 get => _isScanning;
-                private set => SetProperty(ref _isScanning, value);
+                private set
+                {
+                    if (SetProperty(ref _isScanning, value))
+                    {
+                        (ScanCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
+                        (CancelScanCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    }
+                }
             }
 
-            public ICommand CancelScanCommand { get; }
+            private bool _isGenerating;
+            /// <summary>تولید گزارش در حال اجراست؛ دکمه تولید در این مدت قفل است.</summary>
+            public bool IsGenerating
+            {
+                get => _isGenerating;
+                private set
+                {
+                    if (SetProperty(ref _isGenerating, value))
+                    {
+                        (GenerateCommand as AsyncRelayCommand)?.RaiseCanExecuteChanged();
+                        (CancelGenerateCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                    }
+                }
+            }
+
             public ICommand ResetToDefaultsCommand { get; }
-            public ICommand SaveStageConfigurationCommand { get; }
+            public ICommand CancelScanCommand { get; }
+            public ICommand CancelGenerateCommand { get; }
 
     public int FilterStage
     {
@@ -222,17 +301,48 @@ public sealed class GeneratorViewModel : ViewModelBase
         }
     }
 
-    public string CountDisplay => $"تعداد: {ReportStatus.Count(n => n.IsSelected)} از {ReportStatus.Count}";
+    public string CountDisplay => $"{ReportStatus.Count(n => n.IsSelected)} انتخاب‌شده از {ReportStatus.Count}";
+
+    /// <summary>شمارنده «X انتخاب‌شده از Y» را بعد از تیک خوردن/برداشته شدن یک ردیف به‌روز می‌کند.</summary>
+    public void RefreshCountDisplay() => OnPropertyChanged(nameof(CountDisplay));
+
+    private bool _hasSelectedHistory;
+    /// <summary>حداقل یک ردیف در تب تاریخچه انتخاب شده (تیک یا انتخاب در جدول).</summary>
+    public bool HasSelectedHistory { get => _hasSelectedHistory; set => SetProperty(ref _hasSelectedHistory, value); }
+
+    private int _selectedHistoryCount;
+    public int SelectedHistoryCount
+    {
+        get => _selectedHistoryCount;
+        set
+        {
+            if (SetProperty(ref _selectedHistoryCount, value))
+                OnPropertyChanged(nameof(SelectedHistoryCountDisplay));
+        }
+    }
+
+    /// <summary>شمارنده انتخاب در تب تاریخچه؛ وقتی صفر است خالی است.</summary>
+    public string SelectedHistoryCountDisplay => SelectedHistoryCount > 0 ? $"{SelectedHistoryCount} انتخاب‌شده" : "";
+
+    /// <summary>
+    /// وضعیت انتخاب تب تاریخچه را از ویو می‌گیرد؛ ردیف‌های تیک‌خورده اولویت
+    /// دارند وگرنه ردیف‌های انتخاب‌شده در جدول شمرده می‌شوند.
+    /// </summary>
+    public void UpdateHistorySelection(int checkedCount, int gridSelectedCount)
+    {
+        var total = checkedCount > 0 ? checkedCount : gridSelectedCount;
+        SelectedHistoryCount = total;
+        HasSelectedHistory = total > 0;
+    }
 
     public ICommand BrowseTemplateCommand { get; }
     public ICommand BrowseOutputCommand { get; }
+    public ICommand BrowseSignedTemplateCommand { get; }
+    public ICommand ResetSignedTemplateCommand { get; }
+    public ICommand ConvertToPdfCommand { get; }
     public ICommand ScanCommand { get; }
-    public ICommand SelectAllCommand { get; }
-    public ICommand DeselectAllCommand { get; }
     public ICommand GenerateCommand { get; }
     public ICommand PreviewCommand { get; }
-    public ICommand ToggleHistoryCommand { get; }
-    public ICommand RefreshHistoryCommand { get; }
     public ICommand OpenReportCommand { get; }
     public ICommand OpenFolderCommand { get; }
     public ICommand RegenerateCommand { get; }
@@ -250,21 +360,32 @@ public sealed class GeneratorViewModel : ViewModelBase
                 var exeDir = DatabaseService.GetAppDirectory();
                 _templatePath = Path.Combine(exeDir, "templates");
                 _outputPath = Path.Combine(exeDir, "outputs");
-                _reportDate = PersianDateHelper.ToPersianDateDigits(DateTime.Now);
+                _reportDate = PersianDateHelper.ToPersianDate(DateTime.Now);
+
+                // P1/P2: signed templates + PDF generation (persisted in settings).
+                _useSignedTemplates = _db.GetSetting(SettingKeys.SignedReport) == "1";
+                var signedPath = _db.GetSetting(SettingKeys.SignedTemplatesPath);
+                _signedTemplatePath = string.IsNullOrWhiteSpace(signedPath) ? Path.Combine(_templatePath, "signed") : signedPath;
+                _generatePdf = _db.GetSetting(SettingKeys.GeneratePdf) == "1";
+                _isScheduleExpanded = _db.GetSetting(SettingKeys.ScheduleExpanded) != "0";
+                _isProductionExpanded = _db.GetSetting(SettingKeys.ProductionExpanded) == "1";
 
             // بارگذاری تنظیمات زمان‌بندی جدید (بر اساس مرحله و گروه)
             LoadSchedulingSettings();
 
             BrowseTemplateCommand = new RelayCommand(BrowseTemplate);
                         BrowseOutputCommand = new RelayCommand(BrowseOutput);
+                        BrowseSignedTemplateCommand = new RelayCommand(BrowseSignedTemplate);
+                        ResetSignedTemplateCommand = new RelayCommand(() => SignedTemplatePath = Path.Combine(_templatePath, "signed"));
+                        ConvertToPdfCommand = new RelayCommand<ReportHistoryItem>(ConvertHistoryToPdf);
                         ScanCommand = new AsyncRelayCommand(ScanAsync, () => !IsScanning);
-                                    CancelScanCommand = new RelayCommand(() => _scanCts?.Cancel(), () => IsScanning);
-                                    SelectAllCommand = new RelayCommand(SelectAll);
-                        DeselectAllCommand = new RelayCommand(DeselectAll);
-                        GenerateCommand = new RelayCommand(Generate);
+                        CancelScanCommand = new RelayCommand(CancelScan, () => IsScanning);
+                        GenerateCommand = new AsyncRelayCommand(GenerateAsync, () => !IsGenerating);
+                        CancelGenerateCommand = new RelayCommand(CancelGenerate, () => IsGenerating);
                         PreviewCommand = new RelayCommand(Preview);
-                        ToggleHistoryCommand = new RelayCommand(() => IsHistoryExpanded = !IsHistoryExpanded);
-                        RefreshHistoryCommand = new RelayCommand(LoadHistory);
+                        ToggleScheduleCommand = new RelayCommand(() => IsScheduleExpanded = !IsScheduleExpanded);
+                        ToggleProductionCommand = new RelayCommand(() => IsProductionExpanded = !IsProductionExpanded);
+                        DownloadTemplatesCommand = new RelayCommand(OpenTemplateDownload);
                         OpenReportCommand = new RelayCommand<ReportHistoryItem>(OpenReport);
                         OpenFolderCommand = new RelayCommand<ReportHistoryItem>(OpenFolder);
                         RegenerateCommand = new RelayCommand<ReportHistoryItem>(RegenerateWithConfirmation);
@@ -274,76 +395,69 @@ public sealed class GeneratorViewModel : ViewModelBase
                         DeleteLogCommand = new RelayCommand<ReportHistoryItem>(DeleteLog);
                         SyncOutputCommand = new RelayCommand(SyncOutputFolder);
                         ResetToDefaultsCommand = new RelayCommand(ResetSchedulingDefaults);
-                        SaveStageConfigurationCommand = new RelayCommand<int>(SaveStageConfiguration);
 
             LoadTemplates();
-            LoadHistory();
             LoadPreviousScanResults();
             UpdateStageConfigurations();
         }
 
         private void LoadSchedulingSettings()
                 {
-                    // Group A (3 stages)
-                    _groupAMonths[1] = int.TryParse(_db.GetSetting("report_group_a_stage_1_months"), out var a1) && a1 >= 1 && a1 <= 30 ? a1 : 2;
-                    _groupAMonths[2] = int.TryParse(_db.GetSetting("report_group_a_stage_2_months"), out var a2) && a2 >= 1 && a2 <= 30 ? a2 : 6;
-                    _groupAMonths[3] = int.TryParse(_db.GetSetting("report_group_a_stage_3_months"), out var a3) && a3 >= 1 && a3 <= 30 ? a3 : 10;
-
-                    // Group B (4 stages)
-                    _groupBMonths[1] = int.TryParse(_db.GetSetting("report_group_b_stage_1_months"), out var b1) && b1 >= 1 && b1 <= 30 ? b1 : 3;
-                    _groupBMonths[2] = int.TryParse(_db.GetSetting("report_group_b_stage_2_months"), out var b2) && b2 >= 1 && b2 <= 30 ? b2 : 6;
-                    _groupBMonths[3] = int.TryParse(_db.GetSetting("report_group_b_stage_3_months"), out var b3) && b3 >= 1 && b3 <= 30 ? b3 : 12;
-                    _groupBMonths[4] = int.TryParse(_db.GetSetting("report_group_b_stage_4_months"), out var b4) && b4 >= 1 && b4 <= 30 ? b4 : 20;
-
-                    // Group C (4 stages)
-                    _groupCMonths[1] = int.TryParse(_db.GetSetting("report_group_c_stage_1_months"), out var c1) && c1 >= 1 && c1 <= 30 ? c1 : 3;
-                    _groupCMonths[2] = int.TryParse(_db.GetSetting("report_group_c_stage_2_months"), out var c2) && c2 >= 1 && c2 <= 30 ? c2 : 8;
-                    _groupCMonths[3] = int.TryParse(_db.GetSetting("report_group_c_stage_3_months"), out var c3) && c3 >= 1 && c3 <= 30 ? c3 : 16;
-                    _groupCMonths[4] = int.TryParse(_db.GetSetting("report_group_c_stage_4_months"), out var c4) && c4 >= 1 && c4 <= 30 ? c4 : 24;
-
-                    // Group D (4 stages)
-                    _groupDMonths[1] = int.TryParse(_db.GetSetting("report_group_d_stage_1_months"), out var d1) && d1 >= 1 && d1 <= 30 ? d1 : 3;
-                    _groupDMonths[2] = int.TryParse(_db.GetSetting("report_group_d_stage_2_months"), out var d2) && d2 >= 1 && d2 <= 30 ? d2 : 8;
-                    _groupDMonths[3] = int.TryParse(_db.GetSetting("report_group_d_stage_3_months"), out var d3) && d3 >= 1 && d3 <= 30 ? d3 : 16;
-                    _groupDMonths[4] = int.TryParse(_db.GetSetting("report_group_d_stage_4_months"), out var d4) && d4 >= 1 && d4 <= 30 ? d4 : 30;
+                    // One table drives all four groups: (months array, setting prefix, defaults per stage).
+                    var groups = new (int[] Months, string Prefix, int[] Defaults)[]
+                    {
+                        (_groupAMonths, "a", new[] { 0, 2, 6, 10 }),
+                        (_groupBMonths, "b", new[] { 0, 3, 6, 12, 20 }),
+                        (_groupCMonths, "c", new[] { 0, 3, 8, 16, 24 }),
+                        (_groupDMonths, "d", new[] { 0, 3, 8, 16, 30 }),
+                    };
+                    foreach (var (months, prefix, defaults) in groups)
+                    {
+                        for (int stage = 1; stage < defaults.Length; stage++)
+                        {
+                            months[stage] = int.TryParse(_db.GetSetting(SettingKeys.ReportGroupStageMonths(prefix, stage)), out var m) && m >= 1 && m <= 30
+                                ? m
+                                : defaults[stage];
+                        }
+                    }
 
                     // Per‑group migration: if a group’s stage‑1 setting is missing, copy the old group‑wide setting (if any)
                     int oldA = 2;
-                    if (!string.IsNullOrEmpty(_db.GetSetting("report_interval_group_a")))
+                    if (!string.IsNullOrEmpty(_db.GetSetting(SettingKeys.ReportIntervalGroupA)))
                     {
-                        if (int.TryParse(_db.GetSetting("report_interval_group_a"), out var parsed) && parsed >= 1 && parsed <= 30)
+                        if (int.TryParse(_db.GetSetting(SettingKeys.ReportIntervalGroupA), out var parsed) && parsed >= 1 && parsed <= 30)
                             oldA = parsed;
                     }
                     int oldB = 3;
-                    if (!string.IsNullOrEmpty(_db.GetSetting("report_interval_group_b")))
+                    if (!string.IsNullOrEmpty(_db.GetSetting(SettingKeys.ReportIntervalGroupB)))
                     {
-                        if (int.TryParse(_db.GetSetting("report_interval_group_b"), out var parsed) && parsed >= 1 && parsed <= 30)
+                        if (int.TryParse(_db.GetSetting(SettingKeys.ReportIntervalGroupB), out var parsed) && parsed >= 1 && parsed <= 30)
                             oldB = parsed;
                     }
 
                     // Group A
-                    if (string.IsNullOrEmpty(_db.GetSetting("report_group_a_stage_1_months")))
+                    if (string.IsNullOrEmpty(_db.GetSetting(SettingKeys.ReportGroupStageMonths("a", 1))))
                     {
                         _groupAMonths[1] = oldA;
                         _groupAMonths[2] = oldA;
                         _groupAMonths[3] = oldA;
                         // persist so we don’t migrate again
-                        _db.SaveSetting("report_group_a_stage_1_months", oldA.ToString());
-                        _db.SaveSetting("report_group_a_stage_2_months", oldA.ToString());
-                        _db.SaveSetting("report_group_a_stage_3_months", oldA.ToString());
+                        _db.SaveSetting(SettingKeys.ReportGroupStageMonths("a", 1), oldA.ToString());
+                        _db.SaveSetting(SettingKeys.ReportGroupStageMonths("a", 2), oldA.ToString());
+                        _db.SaveSetting(SettingKeys.ReportGroupStageMonths("a", 3), oldA.ToString());
                     }
 
                     // Group B
-                    if (string.IsNullOrEmpty(_db.GetSetting("report_group_b_stage_1_months")))
+                    if (string.IsNullOrEmpty(_db.GetSetting(SettingKeys.ReportGroupStageMonths("b", 1))))
                     {
                         _groupBMonths[1] = oldB;
                         _groupBMonths[2] = oldB;
                         _groupBMonths[3] = oldB;
                         _groupBMonths[4] = oldB;
-                        _db.SaveSetting("report_group_b_stage_1_months", oldB.ToString());
-                        _db.SaveSetting("report_group_b_stage_2_months", oldB.ToString());
-                        _db.SaveSetting("report_group_b_stage_3_months", oldB.ToString());
-                        _db.SaveSetting("report_group_b_stage_4_months", oldB.ToString());
+                        _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 1), oldB.ToString());
+                        _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 2), oldB.ToString());
+                        _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 3), oldB.ToString());
+                        _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 4), oldB.ToString());
                     }
                     // Groups C and D have no legacy settings; keep defaults.
                 }
@@ -358,12 +472,14 @@ public sealed class GeneratorViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// ساخت مولد گزارش با تمام مسیرهای قالب: پوشهٔ خود برنامه + مسیرهای نسخه‌های قبلی
+    /// ساخت مولد گزارش با تمام مسیرهای قالب: پوشه خود برنامه + مسیرهای نسخه‌های قبلی
     /// (مثل Downloads\NezamMonitor-Windows\templates) + مسیرهای قابل‌تنظیم در پایگاه‌داده.
     /// </summary>
     private StageReportGenerator CreateGenerator(string? primaryDir = null)
     {
         var generator = new StageReportGenerator(primaryDir ?? _templatePath);
+        generator.UseSignedTemplates = UseSignedTemplates;
+        generator.SetSignedTemplateDirectory(SignedTemplatePath);
 
         foreach (var dir in GetExtraTemplateDirectories())
             generator.AddTemplateDirectory(dir);
@@ -386,7 +502,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                 dirs.Add(Path.Combine(profile, "Downloads", "templates"));
             }
 
-            // مسیر نسخهٔ قبلی/سورس روی درایو E
+            // مسیر نسخه قبلی/سورس روی درایو E
             dirs.Add(@"E:\Nezam Monitor-Mahdi2\Source_and_Development\templates");
             dirs.Add(@"E:\NezamMonitor-Mahdi2\Source_and_Development\templates");
             dirs.Add(@"E:\Nezam Monitor-Mahdi2\templates");
@@ -396,7 +512,7 @@ public sealed class GeneratorViewModel : ViewModelBase
         // مسیر دلخواه کاربر: template_paths=D:\a\templates;D:\b\templates
         try
         {
-            var extra = _db.GetSetting("template_paths");
+            var extra = _db.GetSetting(SettingKeys.TemplatePaths);
             if (!string.IsNullOrWhiteSpace(extra))
             {
                 foreach (var part in extra.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
@@ -437,6 +553,110 @@ public sealed class GeneratorViewModel : ViewModelBase
         }
     }
 
+    /// <summary>انتخاب پوشه تمپلیت‌های امضاشده (P1).</summary>
+    private void BrowseSignedTemplate()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "انتخاب پوشه تمپلیت‌های امضاشده",
+            InitialDirectory = Directory.Exists(SignedTemplatePath) ? SignedTemplatePath : _templatePath
+        };
+        if (dialog.ShowDialog() == true)
+            SignedTemplatePath = dialog.FolderName;
+    }
+
+    /// <summary>Converts one generated Word file to PDF and records it in the
+    /// history (P2/V5). Returns "" on success, " (PDF نشد: ...)" on failure.</summary>
+    private string ConvertWith(WordToPdfConverter converter, string caseNumber, int stage, string wordPath)
+    {
+        var pdfPath = Path.ChangeExtension(wordPath, ".pdf");
+        if (!converter.Convert(wordPath, pdfPath, out var error))
+            return $" (PDF نشد: {error})";
+        _db.SetGeneratedReportPdf(caseNumber, stage, pdfPath);
+        return "";
+    }
+
+    /// <summary>تبدیل یک گزارش موجود در سابقه به PDF (P2).</summary>
+    private void ConvertHistoryToPdf(ReportHistoryItem? item)
+    {
+        if (item == null || string.IsNullOrEmpty(item.OutputPath) || !File.Exists(item.OutputPath))
+        {
+            StatusMessage = "فایل Word یافت نشد";
+            return;
+        }
+        var pdfError = ConvertOneToPdf(item);
+        StatusMessage = string.IsNullOrEmpty(pdfError)
+            ? $"PDF ساخته شد: {item.CaseNumber} مرحله {item.StageName}"
+            : $"PDF ساخته نشد: {pdfError.Trim()}";
+        LoadHistory();
+    }
+
+    /// <summary>Convert one history item to PDF. Returns the error, or empty on success. No grid reload.</summary>
+    private string ConvertOneToPdf(ReportHistoryItem item)
+    {
+        using var pdfConverter = new WordToPdfConverter();
+        if (!pdfConverter.IsAvailable)
+            return $"PDF ساخته نمی‌شود: {pdfConverter.Error}";
+        return ConvertWith(pdfConverter, item.CaseNumber, item.Stage, item.OutputPath);
+    }
+
+    /// <summary>Convert the selected history rows to PDF (one pass, one grid reload).</summary>
+    public void ConvertSelectedToPdf(List<ReportHistoryItem> items)
+    {
+        if (items == null || items.Count == 0) { StatusMessage = "موردی انتخاب نشده"; return; }
+        int done = 0, errors = 0;
+        string lastError = "";
+        foreach (var item in items)
+        {
+            if (string.IsNullOrEmpty(item.OutputPath) || !File.Exists(item.OutputPath)) { errors++; continue; }
+            var err = ConvertOneToPdf(item);
+            if (string.IsNullOrEmpty(err)) done++; else { errors++; lastError = err; }
+        }
+        StatusMessage = errors == 0
+            ? $"{done} PDF ساخته شد"
+            : $"{done} PDF ساخته شد، {errors} نشد" + (string.IsNullOrEmpty(lastError) ? "" : $": {lastError.Trim()}");
+        LoadHistory();
+    }
+
+    /// <summary>Open the selected history rows (each file in its own app).</summary>
+    public void OpenSelectedHistory(List<ReportHistoryItem> items)
+    {
+        if (items == null || items.Count == 0) { StatusMessage = "موردی انتخاب نشده"; return; }
+        if (items.Count > 1)
+        {
+            var confirm = MessageBox.Show(
+                $"{items.Count} گزارش یک‌جا باز شود؟",
+                "باز کردن چند گزارش", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
+        }
+        int done = 0, missing = 0;
+        foreach (var item in items)
+        {
+            if (!string.IsNullOrEmpty(item.OutputPath) && File.Exists(item.OutputPath))
+            {
+                Process.Start(new ProcessStartInfo { FileName = item.OutputPath, UseShellExecute = true });
+                done++;
+            }
+            else missing++;
+        }
+        StatusMessage = missing == 0
+            ? $"{done} گزارش باز شد"
+            : $"{done} گزارش باز شد، {missing} فایل یافت نشد";
+    }
+
+    /// <summary>Open the folders of the selected history rows.</summary>
+    public void OpenSelectedHistoryFolder(List<ReportHistoryItem> items)
+    {
+        if (items == null || items.Count == 0) { StatusMessage = "موردی انتخاب نشده"; return; }
+        int done = 0;
+        foreach (var item in items)
+        {
+            OpenFolder(item);
+            done++;
+        }
+        StatusMessage = $"{done} پوشه باز شد";
+    }
+
     private void BrowseOutput()
     {
         var dialog = new OpenFolderDialog
@@ -446,9 +666,25 @@ public sealed class GeneratorViewModel : ViewModelBase
         };
         if (dialog.ShowDialog() == true)
         {
-            _outputPath = dialog.FolderName;
+            OutputPath = dialog.FolderName;
         }
     }
+
+    private void OpenTemplateDownload()
+    {
+        var window = new Views.TemplateDownloadWindow
+        {
+            Owner = System.Windows.Application.Current?.MainWindow
+        };
+        window.ShowDialog();
+    }
+
+    /// <summary>
+    /// وضعیت «تولیدشده» است؟ هم شکل جدید («تولیدشده») و هم شکل قدیمی
+    /// ذخیره‌شده در دیتابیس («تولید شده») را می‌پذیرد.
+    /// </summary>
+    internal static bool IsProducedStatus(string? status)
+        => !string.IsNullOrEmpty(status) && (status.Contains("تولیدشده") || status.Contains("تولید شده"));
 
     /// <summary>
     /// بارگذاری نتایج اسکن قبلی از دیتابیس (فقط برای نمایش اولیه)
@@ -461,10 +697,18 @@ public sealed class GeneratorViewModel : ViewModelBase
             if (saved.Count == 0) return; // هنوز اسکنی انجام نشده
 
             // --- Build row-number map ONCE (O(N), not O(N²)) ---
-            var cases = _db.LoadCases(_db.GetActiveSnapshotId());
+            var snapshotId = _db.GetActiveSnapshotId();
+            var cases = _db.LoadCases(snapshotId);
             var rowMap = new Dictionary<string, int>(cases.Count);
             for (int i = 0; i < cases.Count; i++)
                 rowMap[cases[i].CaseNumber] = i + 1; // 1-based, matches CasesView order
+
+            // گزارش‌های سامانه از همان پرونده‌های لودشده (بدون لود دوباره)؛
+            // کش هم با همین داده پر می‌شود تا اسکن بعدی دوباره نخواند.
+            var userName = CurrentUserNameNormalized();
+            _serverLookup = BuildServerLookup(cases, userName);
+            _serverLookupSnapshotId = snapshotId;
+            _serverLookupUserName = userName;
 
             _allReportItems.Clear();
             ReportStatus.Clear();
@@ -475,6 +719,11 @@ public sealed class GeneratorViewModel : ViewModelBase
                 // شمسی ذخیره شده باشند؛ اول به میلادی نرمال می‌کنیم و بعد شمسی را می‌سازیم.
                 var gregorianAt = PersianDateHelper.NormalizeToGregorian(s.GeneratedAt);
                 var shamsi = PersianDateHelper.GregoryStringToShamsi(gregorianAt);
+                // در سامانه هست؟ وضعیت ذخیره‌شده ممکن است قدیمی باشد (قبل از این ویژگی)؛
+                // اگر سامانه گزارش را دارد، وضعیت «تولیدشده» است.
+                var serverReport = LatestServerReport(_serverLookup, s.CaseNumber, s.Stage);
+                var inServer = serverReport != null;
+                var generated = IsProducedStatus(s.Status) || inServer;
                 var item = new CaseReportItem
                 {
                     CaseNumber = s.CaseNumber,
@@ -485,7 +734,9 @@ public sealed class GeneratorViewModel : ViewModelBase
                     PermitNumber = s.PermitNumber,
                     Companion = s.Companion,
                     StageName = s.StageName,
-                    Status = s.Status,
+                    Status = inServer ? "✅ تولیدشده (سامانه)" : generated ? "✅ تولیدشده (سیستم)" : "⏳ در انتظار",
+                    ServerDate = serverReport?.VisitDate ?? "",
+                    IsServerReport = inServer,
                     GeneratedAt = gregorianAt,
                     GeneratedAtShamsi = shamsi,
                     PermitDate = s.PermitDate,
@@ -499,9 +750,17 @@ public sealed class GeneratorViewModel : ViewModelBase
                 _allReportItems.Add(item);
             }
             ApplyReportFilters();
+            _loadedScanSnapshotId = snapshotId;
             StatusMessage = $"نتایج اسکن قبلی بارگذاری شد ({_allReportItems.Count} مورد). اسکن مجدد برای بروزرسانی.";
         }
         catch { /* silently ignore - scan will show fresh results */ }
+    }
+
+    /// <summary>اگر از آخرین اسکن، اسنپ‌شات فعال عوض شده، نتایج اسکن قبلی را دوباره بخوان.</summary>
+    public void RefreshIfSnapshotChanged()
+    {
+        if (_loadedScanSnapshotId != _db.GetActiveSnapshotId())
+            LoadPreviousScanResults();
     }
 
     /// <summary>
@@ -509,9 +768,10 @@ public sealed class GeneratorViewModel : ViewModelBase
         /// </summary>
         private async Task ScanAsync()
         {
+            if (IsScanning) return;
             _scanCts = new CancellationTokenSource();
             var ct = _scanCts.Token;
-        
+
             IsScanning = true;
             StatusMessage = "در حال اسکن...";
             Progress = 0;
@@ -529,7 +789,8 @@ public sealed class GeneratorViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                StatusMessage = $"خطا: {ex.Message}";
+                StatusMessage = "اسکن با خطا مواجه شد؛ جزییات در فایل لاگ ثبت شد.";
+                ErrorLog.Write(ex, "GeneratorViewModel.ScanAsync");
                 Progress = 0;
                 return;
             }
@@ -539,6 +800,26 @@ public sealed class GeneratorViewModel : ViewModelBase
                 _scanCts?.Dispose();
                 _scanCts = null;
             }
+        }
+
+        /// <summary>لغو اسکن در حال اجرا (دکمه «لغو اسکن»).</summary>
+        private void CancelScan() => _scanCts?.Cancel();
+
+        /// <summary>
+        /// ردیف‌های اسکن‌شده را دسته‌ای به UI می‌فرستد؛ یک Invoke برای چند ردیف
+        /// و پیشرفت، نه یک Invoke برای هر ردیف.
+        /// </summary>
+        private void FlushScanBatch(List<CaseReportItem> pending, int progress, string progressText)
+        {
+            if (pending.Count == 0) return;
+            var batch = pending.ToArray();
+            pending.Clear();
+            Application.Current.Dispatcher.Invoke(() =>
+            {
+                foreach (var item in batch) _allReportItems.Add(item);
+                Progress = progress;
+                ProgressText = progressText;
+            });
         }
 
         private void DoScan(CancellationToken ct)
@@ -560,7 +841,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                 _hasLoadedFromDb = true;
             }
 
-            // دریافت تمام گزارش‌های تولید شده از دیتابیس
+            // دریافت تمام گزارش‌های تولیدشده از دیتابیس
             var existingReports = _db.GetGeneratedReports();
             var generatedDates = new Dictionary<string, string>();
             foreach (var r in existingReports)
@@ -569,6 +850,9 @@ public sealed class GeneratorViewModel : ViewModelBase
                 if (!generatedDates.ContainsKey(key) && !string.IsNullOrEmpty(r.CreatedAt))
                     generatedDates[key] = r.CreatedAt;
             }
+
+            // گزارش‌های سامانه (کش‌شده بر اساس اسنپ‌شات) — برای وضعیت و تاریخ سامانه.
+            var server = GetServerLookup();
 
             // همچنین اسکن فایل‌های واقعی در پوشه outputs
             var actualFiles = new HashSet<string>(); // "CaseNumber|Stage"
@@ -615,19 +899,17 @@ public sealed class GeneratorViewModel : ViewModelBase
                 rowMap[cases[i].CaseNumber] = i + 1;
 
             int current = 0;
+            // ردیف‌های تازه‌اسکن‌شده اینجا جمع می‌شوند و دسته‌ای به UI می‌روند.
+            var pendingItems = new List<CaseReportItem>();
             foreach (var c in cases)
             {
                 ct.ThrowIfCancellationRequested();
                 current++;
-            
-                // Update progress on UI thread
+
+                // Progress is applied on the UI thread together with the
+                // batched item flush below (not one Invoke per case).
                 var progress = (int)((double)current / cases.Count * 100);
                 var progressText = $"{current}/{cases.Count}";
-                Application.Current.Dispatcher.Invoke(() =>
-                {
-                    Progress = progress;
-                    ProgressText = progressText;
-                });
 
                 // تعیین تعداد مراحل بر اساس حق‌الزحمه
                 var feeStages = c.Fees.Where(f => f.Stage != "0" && f.Stage != "۰")
@@ -672,7 +954,13 @@ public sealed class GeneratorViewModel : ViewModelBase
                     var deadline = CalculateDeadlineFromMonths(permitDate, monthsForStage);
                     var daysRemaining = CalculateDaysRemaining(deadline);
                     var daysRemainingSort = CalculateDaysRemainingSort(deadline);
-                    var deadlineStatus = GetDeadlineStatus(hasReport, daysRemaining);
+
+                    // در سامانه هست؟ تازه‌ترین گزارش سامانه برای این (پرونده، مرحله).
+                    // وضعیت «تولیدشده» یعنی روی سیستم ساخته شده یا در سامانه ثبت شده.
+                    var serverReport = LatestServerReport(server, c.CaseNumber, stage);
+                    var inServer = serverReport != null;
+                    var generated = hasReport || inServer;
+                    var deadlineStatus = GetDeadlineStatus(generated, daysRemaining);
 
                     // تاریخ تولید — در دیتابیس میلادی ذخیره می‌شود، ولی ردیف‌های قدیمی
                     // ممکن است شمسی ذخیره شده باشند؛ اول به میلادی نرمال می‌کنیم.
@@ -690,7 +978,9 @@ public sealed class GeneratorViewModel : ViewModelBase
                         Companion = c.OwnerMobile,
                         Stage = stage,
                         StageName = StageReportRules.StageName(stage),
-                        Status = hasReport ? "✅ تولید شده" : "⏳ در انتظار",
+                        Status = inServer ? "✅ تولیدشده (سامانه)" : generated ? "✅ تولیدشده (سیستم)" : "⏳ در انتظار",
+                        ServerDate = serverReport?.VisitDate ?? "",
+                        IsServerReport = inServer,
                         GeneratedAt = generatedAt,
                         GeneratedAtShamsi = PersianDateHelper.GregoryStringToShamsi(generatedAt),
                         PermitDate = NormalizePermitDate(c.Specification?.PermitDate),
@@ -702,10 +992,15 @@ public sealed class GeneratorViewModel : ViewModelBase
                         IsChanged = isChanged,
                     };
                 
-                    // Add to list on UI thread for thread safety
-                    Application.Current.Dispatcher.Invoke(() => _allReportItems.Add(item));
+                    // Add to the batch; flushed to the UI thread in chunks.
+                    pendingItems.Add(item);
+                    if (pendingItems.Count >= 25)
+                        FlushScanBatch(pendingItems, progress, progressText);
                 }
             }
+
+            // Flush any rows still waiting in the batch.
+            FlushScanBatch(pendingItems, 100, $"{cases.Count}/{cases.Count}");
 
             // ─── آپدیت کش (حافظه + DB) ───
             _previousScanState = currentScanState;
@@ -729,9 +1024,10 @@ public sealed class GeneratorViewModel : ViewModelBase
                 DaysRemaining = item.DaysRemaining,
                 DeadlineStatus = item.DeadlineStatus,
                 BuildingGroup = item.BuildingGroup,
-                HasReport = item.Status.Contains("تولید شده"),
+                HasReport = IsProducedStatus(item.Status),
             }).ToList();
             _db.SaveLastScanResults(scanResults);
+            _loadedScanSnapshotId = _db.GetActiveSnapshotId();
 
             // Final UI updates
             Application.Current.Dispatcher.Invoke(() =>
@@ -763,11 +1059,11 @@ public sealed class GeneratorViewModel : ViewModelBase
         if (FilterStage > 0)
             filtered = filtered.Where(r => r.Stage == FilterStage);
 
-        // فیلتر وضعیت: 0=همه, 1=در انتظار, 2=تولید شده
+        // فیلتر وضعیت: 0=همه, 1=در انتظار, 2=تولیدشده
         if (FilterStatus == 1)
             filtered = filtered.Where(r => r.Status.Contains("در انتظار"));
         else if (FilterStatus == 2)
-            filtered = filtered.Where(r => r.Status.Contains("تولید شده"));
+            filtered = filtered.Where(r => IsProducedStatus(r.Status));
 
         ReportStatus.Clear();
         foreach (var item in filtered)
@@ -894,138 +1190,342 @@ public sealed class GeneratorViewModel : ViewModelBase
         return "📅";
     }
 
-    private int GetRowNumber(string caseNumber)
-    {
-        var cases = _db.LoadCases(_db.GetActiveSnapshotId());
-        var idx = cases.FindIndex(c => c.CaseNumber == caseNumber);
-        return idx >= 0 ? idx + 1 : -1; // -1 = پرونده یافت نشد
-    }
-
-    private void SelectAll()
-    {
-        foreach (var item in ReportStatus)
-            item.IsSelected = true;
-    }
-
-    private void DeselectAll()
-    {
-        foreach (var item in ReportStatus)
-            item.IsSelected = false;
-    }
-
     private void Preview()
     {
-        var selected = ReportStatus.Where(r => r.IsSelected && !r.Status.Contains("تولید شده")).ToList();
+        var selected = ReportStatus.Where(r => r.IsSelected).ToList();
         if (selected.Count == 0)
         {
             PreviewText = "موردی انتخاب نشده";
             return;
         }
 
-        var ltrSuffix = UseLtr ? " - LTR" : "";
-        var lines = new List<string> { $"گزارش‌های آماده تولید ({selected.Count} مورد):", "" };
+        // Rows already produced are not generated again in a batch; rebuild
+        // them from the history tab («تولید مجدد») or the row's context menu.
+        var toGenerate = selected.Where(r => !IsProducedStatus(r.Status)).ToList();
+        var skipped = selected.Count - toGenerate.Count;
 
-        foreach (var item in selected)
+        if (toGenerate.Count == 0)
+        {
+            PreviewText = "همه موارد انتخاب‌شده قبلا تولید شده‌اند و دوباره ساخته نمی‌شوند؛ برای تولید مجدد از تب «گزارش‌های تولیدشده» استفاده کن.";
+            return;
+        }
+
+        var ltrSuffix = UseLtr ? " - LTR" : "";
+        var lines = new List<string> { $"گزارش‌های آماده تولید ({toGenerate.Count} مورد):", "" };
+
+        foreach (var item in toGenerate)
         {
             var folderName = StageReportRules.GenerateFolderName(item.RowNumber, new Case { CaseNumber = item.CaseNumber, Owner = item.Owner });
             lines.Add($"- {item.Owner} ({item.StageName}), {item.CaseNumber} -> {folderName}{ltrSuffix}/گزارش مرحله {item.Stage}{ltrSuffix}.docx");
+        }
+
+        if (skipped > 0)
+        {
+            lines.Add("");
+            lines.Add($"{skipped} مورد چون قبلا تولید شده‌اند ساخته نمی‌شوند؛ برای تولید مجدد از تب «گزارش‌های تولیدشده» استفاده کن.");
         }
 
         PreviewText = string.Join("\r\n", lines);
     }
 
     /// <summary>
-    /// تولید گزارش‌های انتخاب شده
+    /// تولید گزارش‌های انتخاب شده — غیرهم‌زمان: ساخت Word روی نخ پس‌زمینه،
+    /// تبدیل PDF روی یک نخ STA جدا (Word با COM فقط روی STA کار می‌کند).
     /// </summary>
-    private void Generate()
+    private async Task GenerateAsync()
     {
+        if (IsGenerating) return;
+
+        // Capture the selection synchronously: the context menu clears
+        // IsSelected right after Execute returns, so the snapshot must
+        // happen before the first await.
+        var selected = ReportStatus.Where(r => r.IsSelected).ToList();
+        if (selected.Count == 0)
+        {
+            StatusMessage = "هیچ موردی انتخاب نشده";
+            return;
+        }
+
+        _generateCts = new CancellationTokenSource();
+        var ct = _generateCts.Token;
+        IsGenerating = true;
+        Progress = 0;
+        ProgressText = "";
+        StatusMessage = "در حال تولید گزارش‌ها...";
+
         try
         {
-            Directory.CreateDirectory(_outputPath);
-            var cases = _db.LoadCases(_db.GetActiveSnapshotId());
-            var generator = CreateGenerator();
-
-            int generated = 0, failed = 0, skipped = 0;
-            var selected = ReportStatus.Where(r => r.IsSelected).ToList();
-            int total = selected.Count;
-
-            if (total == 0)
+            var result = await Task.Run(() => GenerateBatch(selected, ct), ct);
+            if (result.cancelled)
             {
-                StatusMessage = "هیچ موردی انتخاب نشده";
-                return;
+                StatusMessage = $"تولید لغو شد؛ {result.generated} تولید شد و {result.remaining} مورد ناتمام ماند. فایل نیمه‌کاره‌ای باقی نماند.";
+                Progress = 0;
             }
-
-            int current = 0;
-            foreach (var item in selected)
+            else
             {
-                current++;
-                Progress = (int)((double)current / total * 100);
-                ProgressText = $"{current}/{total}";
-
-                var c = cases.FirstOrDefault(x => x.CaseNumber == item.CaseNumber);
-                if (c == null) { failed++; item.Status = "❌ پرونده یافت نشد"; continue; }
-
-                var rowNumber = GetRowNumber(c.CaseNumber);
-                if (rowNumber <= 0)
-                {
-                    failed++;
-                    item.Status = $"❌ پرونده {c.CaseNumber} در لیست پرونده‌ها یافت نشد (ردیف نامعتبر)";
-                    continue;
-                }
-
-                var templateForStage = generator.FindTemplateForStage(item.Stage);
-                if (templateForStage == null)
-                {
-                    failed++;
-                    item.Status = $"❌ تمپلیت مرحله {item.StageName} یافت نشد";
-                    continue;
-                }
-
-                var genResult = generator.GenerateReport(c, item.Stage, rowNumber, _outputPath, DateTime.Now, templateForStage, UseLtr);
-
-                if (genResult.Success && genResult.OutputPath != null && File.Exists(genResult.OutputPath) && new FileInfo(genResult.OutputPath).Length > 0)
-                {
-                    var numFormat = UseLtr ? "LTR" : "Persian";
-                    var fileHash = NezamDatabase.ComputeFileHash(genResult.OutputPath);
-                    _db.SaveGeneratedReport(c.CaseNumber, item.Stage, Path.GetFileNameWithoutExtension(templateForStage), genResult.OutputPath, c.Owner, numFormat, fileHash);
-                    generated++;
-                    item.Status = "✅ تولید شده";
-                    var now2 = DateTime.Now;
-                    // مهم: بدون InvariantCulture، با فرهنگ fa-IR این رشته شمسی می‌شود.
-                    item.GeneratedAt = now2.ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture);
-                    item.GeneratedAtShamsi = PersianDateHelper.ToShamsiDateTime(now2);
-                    item.IsSelected = false;
-                }
-                else if (genResult.Success)
-                {
-                    failed++;
-                    item.Status = "❌ فایل ایجاد نشد";
-                }
-                else
-                {
-                    failed++;
-                    item.Status = $"❌ {genResult.ErrorMessage}";
-                }
+                var parts = new List<string> { $"{result.generated} تولید شد", $"{result.failed} خطا" };
+                if (result.skipped > 0)
+                    parts.Add($"{result.skipped} مورد از قبل تولید شده بود");
+                StatusMessage = "تکمیل: " + string.Join(" | ", parts) + $" | مسیر: {_outputPath}";
+                Progress = 100;
             }
-
-            StatusMessage = $"تکمیل: {generated} تولید شد | {failed} خطا | {skipped} لغو شد | مسیر: {_outputPath}";
-            Progress = 100;
-            LoadHistory();
+        }
+        catch (OperationCanceledException)
+        {
+            StatusMessage = "تولید لغو شد؛ فایل نیمه‌کاره‌ای باقی نماند.";
+            Progress = 0;
         }
         catch (Exception ex)
         {
-            StatusMessage = $"خطا: {ex.Message}";
+            StatusMessage = "تولید گزارش با خطا مواجه شد؛ جزییات در فایل لاگ ثبت شد.";
+            ErrorLog.Write(ex, "GeneratorViewModel.Generate");
+            Progress = 0;
+        }
+        finally
+        {
+            IsGenerating = false;
+            _generateCts?.Dispose();
+            _generateCts = null;
+            LoadHistory();
+        }
+    }
+
+    /// <summary>لغو تولید در حال اجرا (دکمه «لغو تولید»).</summary>
+    private void CancelGenerate() => _generateCts?.Cancel();
+
+    /// <summary>
+    /// The heavy batch work: runs on a background thread. Word generation
+    /// (Open XML) is thread-safe; PDF conversion runs on a dedicated STA
+    /// thread because Word COM requires STA. UI-bound item properties are
+    /// updated through the Dispatcher.
+    /// Returns (generated, failed, skipped-already-produced, cancelled, remaining).
+    /// </summary>
+    private (int generated, int failed, int skipped, bool cancelled, int remaining) GenerateBatch(List<CaseReportItem> selected, CancellationToken ct)
+    {
+        Directory.CreateDirectory(_outputPath);
+        var cases = _db.LoadCases(_db.GetActiveSnapshotId());
+
+        // One-time lookup maps (O(N), not a linear search per row).
+        var caseMap = new Dictionary<string, Case>(cases.Count);
+        var rowMap = new Dictionary<string, int>(cases.Count);
+        for (int i = 0; i < cases.Count; i++)
+        {
+            if (!caseMap.ContainsKey(cases[i].CaseNumber)) caseMap[cases[i].CaseNumber] = cases[i];
+            if (!rowMap.ContainsKey(cases[i].CaseNumber)) rowMap[cases[i].CaseNumber] = i + 1;
+        }
+
+        var generator = CreateGenerator();
+        var dispatcher = Application.Current.Dispatcher;
+
+        // PDF conversion needs an STA thread (Word COM); it must NOT run on
+        // a plain Task.Run thread pool thread.
+        using var staWorker = GeneratePdf ? new StaWorker() : null;
+        WordToPdfConverter? pdfConverter = null;
+        if (staWorker != null)
+        {
+            staWorker.Run(() => { pdfConverter = new WordToPdfConverter(); });
+            if (pdfConverter != null && !pdfConverter.IsAvailable)
+                dispatcher.Invoke(() => StatusMessage = $"PDF ساخته نمی‌شود: {pdfConverter.Error}");
+        }
+
+        int generated = 0, failed = 0, skipped = 0, current = 0;
+        var total = selected.Count;
+
+        try
+        {
+            foreach (var item in selected)
+            {
+                ct.ThrowIfCancellationRequested();
+                current++;
+                var progress = (int)((double)current / total * 100);
+                var progressText = $"{current}/{total}";
+
+                // Rows already produced are skipped in a batch; rebuild them
+                // from the history tab («تولید مجدد») or the row's context menu.
+                if (IsProducedStatus(item.Status))
+                {
+                    skipped++;
+                    dispatcher.Invoke(() => { Progress = progress; ProgressText = progressText; });
+                    continue;
+                }
+
+                string? wordPath = null;
+                string? pdfPath = null;
+                try
+                {
+                    if (!caseMap.TryGetValue(item.CaseNumber, out var c))
+                    {
+                        failed++;
+                        dispatcher.Invoke(() => { item.Status = "❌ پرونده یافت نشد"; Progress = progress; ProgressText = progressText; });
+                        continue;
+                    }
+
+                    if (!rowMap.TryGetValue(c.CaseNumber, out var rowNumber) || rowNumber <= 0)
+                    {
+                        failed++;
+                        dispatcher.Invoke(() => { item.Status = $"❌ پرونده {c.CaseNumber} در لیست پرونده‌ها یافت نشد (ردیف نامعتبر)"; Progress = progress; ProgressText = progressText; });
+                        continue;
+                    }
+
+                    var templateForStage = generator.FindTemplateForStage(item.Stage);
+                    if (templateForStage == null)
+                    {
+                        failed++;
+                        dispatcher.Invoke(() => { item.Status = $"❌ تمپلیت مرحله {item.StageName} یافت نشد"; Progress = progress; ProgressText = progressText; });
+                        continue;
+                    }
+
+                    var genResult = generator.GenerateReport(c, item.Stage, rowNumber, _outputPath, DateTime.Now, templateForStage, UseLtr);
+
+                    if (!genResult.Success || genResult.OutputPath == null || !File.Exists(genResult.OutputPath) || new FileInfo(genResult.OutputPath).Length == 0)
+                    {
+                        failed++;
+                        var err = genResult.Success ? "❌ فایل ایجاد نشد" : $"❌ {genResult.ErrorMessage}";
+                        dispatcher.Invoke(() => { item.Status = err; Progress = progress; ProgressText = progressText; });
+                        continue;
+                    }
+
+                    wordPath = genResult.OutputPath;
+
+                    // Cancelled while this file was being built: drop the
+                    // partial file instead of recording it.
+                    if (ct.IsCancellationRequested)
+                    {
+                        TryDeleteFile(wordPath);
+                        throw new OperationCanceledException();
+                    }
+
+                    string pdfSuffix = "";
+                    if (pdfConverter != null && pdfConverter.IsAvailable)
+                    {
+                        pdfPath = Path.ChangeExtension(wordPath, ".pdf");
+                        var converter = pdfConverter;
+                        var wPath = wordPath;
+                        var pPath = pdfPath;
+                        string? pdfError = null;
+                        var pdfOk = false;
+                        staWorker!.Run(() => { pdfOk = converter.Convert(wPath, pPath, out pdfError); });
+                        if (pdfOk)
+                        {
+                            pdfSuffix = " + PDF";
+                        }
+                        else
+                        {
+                            pdfSuffix = $" (PDF نشد: {pdfError})";
+                            pdfPath = null; // failed conversion leaves no usable PDF
+                        }
+                    }
+
+                    if (ct.IsCancellationRequested)
+                    {
+                        TryDeleteFile(wordPath);
+                        TryDeleteFile(pdfPath);
+                        throw new OperationCanceledException();
+                    }
+
+                    var numFormat = UseLtr ? "LTR" : "Persian";
+                    var fileHash = NezamDatabase.ComputeFileHash(wordPath);
+                    _db.SaveGeneratedReport(c.CaseNumber, item.Stage, Path.GetFileNameWithoutExtension(templateForStage), wordPath, c.Owner, numFormat, fileHash);
+                    if (pdfPath != null)
+                        _db.SetGeneratedReportPdf(c.CaseNumber, item.Stage, pdfPath);
+
+                    var now2 = DateTime.Now;
+                    // مهم: بدون InvariantCulture، با فرهنگ fa-IR این رشته شمسی می‌شود.
+                    var generatedAt = now2.ToString("yyyy/MM/dd HH:mm", CultureInfo.InvariantCulture);
+                    var generatedAtShamsi = PersianDateHelper.ToShamsiDateTime(now2);
+                    var signedSuffix = generator.IsSignedTemplate(templateForStage) ? " (امضا شده)" : "";
+                    generated++;
+                    dispatcher.Invoke(() =>
+                    {
+                        item.Status = "✅ تولیدشده" + signedSuffix + pdfSuffix;
+                        item.GeneratedAt = generatedAt;
+                        item.GeneratedAtShamsi = generatedAtShamsi;
+                        item.IsSelected = false;
+                        Progress = progress;
+                        ProgressText = progressText;
+                    });
+                }
+                catch (OperationCanceledException)
+                {
+                    TryDeleteFile(wordPath);
+                    TryDeleteFile(pdfPath);
+                    throw;
+                }
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            return (generated, failed, skipped, true, total - current);
+        }
+        finally
+        {
+            if (pdfConverter != null && staWorker != null)
+            {
+                var converter = pdfConverter;
+                staWorker.Run(() => converter.Dispose());
+            }
+        }
+
+        return (generated, failed, skipped, false, 0);
+    }
+
+    private static void TryDeleteFile(string? path)
+    {
+        try { if (!string.IsNullOrEmpty(path) && File.Exists(path)) File.Delete(path); } catch { }
+    }
+
+    /// <summary>
+    /// A dedicated STA thread with its own Dispatcher (message pump) for
+    /// Word COM calls. Word automation requires STA; a Task.Run thread is
+    /// MTA and would break conversion.
+    /// </summary>
+    private sealed class StaWorker : IDisposable
+    {
+        private readonly Thread _thread;
+        private Dispatcher? _dispatcher;
+        private readonly ManualResetEventSlim _ready = new(false);
+        private bool _disposed;
+
+        public StaWorker()
+        {
+            _thread = new Thread(() =>
+            {
+                _dispatcher = Dispatcher.CurrentDispatcher;
+                _ready.Set();
+                Dispatcher.Run();
+            })
+            { IsBackground = true, Name = "NezamMonitor PDF STA" };
+            _thread.SetApartmentState(ApartmentState.STA);
+            _thread.Start();
+            _ready.Wait();
+        }
+
+        public void Run(Action action)
+        {
+            if (_dispatcher == null) throw new InvalidOperationException("نخ STA آماده نیست.");
+            _dispatcher.Invoke(action);
+        }
+
+        public void Dispose()
+        {
+            if (_disposed) return;
+            _disposed = true;
+            try { _dispatcher?.InvokeShutdown(); } catch { }
+            _thread.Join(TimeSpan.FromSeconds(30));
+            _ready.Dispose();
         }
     }
 
     /// <summary>
-    /// بارگذاری تاریخچه گزارش‌های تولید شده
+    /// بارگذاری تاریخچه گزارش‌های تولیدشده
     /// </summary>
     public void LoadHistory()
     {
         try
         {
             ReportHistory.Clear();
+            HasSelectedHistory = false;
+            SelectedHistoryCount = 0;
             var reports = _db.GetGeneratedReports();
             int row = 1;
             foreach (var r in reports)
@@ -1071,6 +1571,8 @@ public sealed class GeneratorViewModel : ViewModelBase
                     ReportDate = displayTime,
                     NumberFormat = r.NumberFormat,
                     OutputPath = r.OutputPath,
+                    PdfPath = r.PdfPath,
+                    FileType = r.FileType,
                     Status = status,
                     FileExists = fileExists,
                     FolderPath = folderPath
@@ -1079,10 +1581,10 @@ public sealed class GeneratorViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"خطا در بارگذاری تاریخچه: {ex.Message}";
+            StatusMessage = "بارگذاری تاریخچه با خطا مواجه شد؛ جزییات در فایل لاگ ثبت شد.";
+            ErrorLog.Write(ex, "GeneratorViewModel.LoadHistory");
         }
     }
-
     private string FormatTimestamp(string? createdAt)
     {
         if (string.IsNullOrEmpty(createdAt)) return "نامشخص";
@@ -1092,6 +1594,94 @@ public sealed class GeneratorViewModel : ViewModelBase
     }
 
     public ObservableCollection<ReportHistoryItem> ReportHistory { get; } = new();
+
+    /// <summary>
+    /// Server reports grouped by case number, from already-loaded cases.
+    /// </summary>
+    private sealed record ServerReportInfo(int Stage, string VisitDate, string Title, string Owner);
+
+    private int _serverLookupSnapshotId = -1;
+    private string _serverLookupUserName = "";
+    private Dictionary<string, List<ServerReportInfo>> _serverLookup = new(StringComparer.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// The logged-in user's name, normalized for comparison (Arabic→Persian,
+    /// whitespace collapsed). Read fresh every time — it only exists after an
+    /// update, which can happen after this ViewModel was created.
+    /// </summary>
+    private string CurrentUserNameNormalized()
+        => FilterHelper.Normalize(_db.GetSetting(SettingKeys.ApiUserName));
+
+    /// <summary>
+    /// The user's OWN server reports grouped by case number, from already-loaded cases.
+    /// Only reports whose engineer is the logged-in user count — a case's other
+    /// engineers' reports must not mark this user's report as produced.
+    /// With no known user name, nothing can be attributed, so the map is empty
+    /// and the status falls back to local files only.
+    /// </summary>
+    private static Dictionary<string, List<ServerReportInfo>> BuildServerLookup(List<Case> cases, string userNameNormalized)
+    {
+        var map = new Dictionary<string, List<ServerReportInfo>>(StringComparer.OrdinalIgnoreCase);
+        if (string.IsNullOrEmpty(userNameNormalized)) return map;
+        foreach (var c in cases)
+        {
+            foreach (var r in c.Reports)
+            {
+                if (!string.Equals(FilterHelper.Normalize(r.Engineer), userNameNormalized, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (!map.TryGetValue(c.CaseNumber, out var list))
+                    map[c.CaseNumber] = list = new List<ServerReportInfo>();
+                list.Add(new ServerReportInfo(ParseStageNumber(r.Stage), r.VisitDate, r.Stage, c.Owner));
+            }
+        }
+        return map;
+    }
+
+    /// <summary>
+    /// The user's own server reports grouped by case number, rebuilt when the
+    /// active snapshot changes or when the user's name becomes known — scans
+    /// and reloads reuse the cache.
+    /// </summary>
+    private Dictionary<string, List<ServerReportInfo>> GetServerLookup()
+    {
+        var snapshotId = _db.GetActiveSnapshotId();
+        var userName = CurrentUserNameNormalized();
+        if (snapshotId == _serverLookupSnapshotId && userName == _serverLookupUserName) return _serverLookup;
+        _serverLookupSnapshotId = snapshotId;
+        _serverLookupUserName = userName;
+        _serverLookup = snapshotId != 0
+            ? BuildServerLookup(_db.LoadCases(snapshotId), userName)
+            : new Dictionary<string, List<ServerReportInfo>>(StringComparer.OrdinalIgnoreCase);
+        return _serverLookup;
+    }
+
+    /// <summary>
+    /// Server stage titles look like "مرحله اول: اجرای فنداسیون" — the
+    /// ordinal word gives the stage number (0 when it cannot be parsed).
+    /// </summary>
+    private static int ParseStageNumber(string? stageTitle)
+    {
+        if (string.IsNullOrWhiteSpace(stageTitle)) return 0;
+        var t = FilterHelper.Normalize(stageTitle);
+        if (t.Contains("اول")) return 1;
+        if (t.Contains("دوم")) return 2;
+        if (t.Contains("سوم")) return 3;
+        if (t.Contains("چهارم")) return 4;
+        return 0;
+    }
+
+    /// <summary>
+    /// Latest server report for one (case, stage), or null when the سامانه
+    /// has none — the most recent registration date wins.
+    /// </summary>
+    private static ServerReportInfo? LatestServerReport(
+        Dictionary<string, List<ServerReportInfo>> server, string caseNumber, int stage)
+    {
+        if (!server.TryGetValue(caseNumber, out var list)) return null;
+        return list.Where(s => s.Stage == stage)
+                   .OrderByDescending(s => s.VisitDate, StringComparer.Ordinal)
+                   .FirstOrDefault();
+    }
 
     /// <summary>
     /// باز کردن فایل گزارش
@@ -1209,7 +1799,8 @@ public sealed class GeneratorViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"خطا در حذف: {ex.Message}";
+            StatusMessage = "حذف گزارش با خطا مواجه شد؛ جزییات در فایل لاگ ثبت شد.";
+            ErrorLog.Write(ex, "GeneratorViewModel.DeleteHistory");
         }
     }
 
@@ -1227,7 +1818,8 @@ public sealed class GeneratorViewModel : ViewModelBase
         }
         catch (Exception ex)
         {
-            StatusMessage = $"خطا در حذف لاگ: {ex.Message}";
+            StatusMessage = "حذف لاگ با خطا مواجه شد؛ جزییات در فایل لاگ ثبت شد.";
+            ErrorLog.Write(ex, "GeneratorViewModel.DeleteLog");
         }
     }
 
@@ -1312,7 +1904,7 @@ public sealed class GeneratorViewModel : ViewModelBase
     {
         if (item == null) { StatusMessage = "موردی انتخاب نشده"; return; }
 
-        var confirmMsg = $"این گزارش قبلاً تولید شده است.\n\nآیا می‌خواهید آن را مجدداً تولید کنید?\n\nمالک: {item.OwnerName}\nمرحله: {item.StageName}";
+        var confirmMsg = $"این گزارش قبلا تولید شده است.\n\nآیا می‌خواهید آن را مجددا تولید کنید?\n\nمالک: {item.OwnerName}\nمرحله: {item.StageName}";
         var confirm = MessageBox.Show(confirmMsg, "تولید مجدد", MessageBoxButton.YesNo, MessageBoxImage.Question);
         if (confirm != MessageBoxResult.Yes)
         {
@@ -1320,14 +1912,96 @@ public sealed class GeneratorViewModel : ViewModelBase
             return;
         }
 
-        var cases = _db.LoadCases(_db.GetActiveSnapshotId());
-        var c = cases.FirstOrDefault(x => x.CaseNumber == item.CaseNumber);
-        if (c == null) { StatusMessage = "پرونده یافت نشد"; return; }
+        if (TryRegenerate(item, out var error))
+        {
+            StatusMessage = $"تولید مجدد: {item.CaseNumber} مرحله {item.StageName} ✅";
+            LoadHistory();
+        }
+        else
+        {
+            StatusMessage = $"خطا: {error}";
+        }
+    }
 
-        var idx = cases.IndexOf(c);
+    /// <summary>تولید مجدد یک ردیف جدول تولید که قبلا تولید شده (با تایید)؛
+    /// تولید دسته‌ای چنین ردیف‌هایی را رد می‌کند، پس منوی راست‌کلیک اینجا را صدا می‌زند.</summary>
+    public void RegenerateCaseReport(CaseReportItem item)
+    {
+        if (item == null) { StatusMessage = "موردی انتخاب نشده"; return; }
+
+        var confirmMsg = $"این گزارش قبلا تولید شده است.\n\nآیا می‌خواهید آن را مجددا تولید کنید?\n\nمالک: {item.Owner}\nمرحله: {item.StageName}";
+        var confirm = MessageBox.Show(confirmMsg, "تولید مجدد", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes)
+        {
+            StatusMessage = "لغو تولید مجدد";
+            return;
+        }
+
+        // Keep the original direction (LTR/Persian) of the generated report.
+        var existing = _db.GetGeneratedReports().FirstOrDefault(r => r.CaseNumber == item.CaseNumber && r.Stage == item.Stage);
+        var historyItem = new ReportHistoryItem
+        {
+            CaseNumber = item.CaseNumber,
+            Stage = item.Stage,
+            NumberFormat = existing.NumberFormat ?? "Persian",
+            OwnerName = item.Owner
+        };
+
+        if (TryRegenerate(historyItem, out var error))
+        {
+            StatusMessage = $"تولید مجدد: {item.CaseNumber} مرحله {item.StageName} ✅";
+            LoadHistory();
+        }
+        else
+        {
+            StatusMessage = $"خطا: {error}";
+        }
+    }
+
+    /// <summary>Regenerate the selected history rows — one confirmation for all, one grid reload.</summary>
+    public void RegenerateSelectedHistory(List<ReportHistoryItem> items)
+    {
+        if (items == null || items.Count == 0) { StatusMessage = "موردی انتخاب نشده"; return; }
+
+        var confirmMsg = items.Count == 1
+            ? $"این گزارش قبلا تولید شده است.\n\nآیا می‌خواهید آن را مجددا تولید کنید?\n\nمالک: {items[0].OwnerName}\nمرحله: {items[0].StageName}"
+            : $"آیا می‌خواهید {items.Count} گزارش انتخاب‌شده را مجددا تولید کنید?";
+        var confirm = MessageBox.Show(confirmMsg, "تولید مجدد", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes) { StatusMessage = "لغو تولید مجدد"; return; }
+
+        int done = 0; string lastError = "";
+        foreach (var item in items)
+        {
+            if (TryRegenerate(item, out var error)) done++;
+            else lastError = error;
+        }
+        StatusMessage = done == items.Count
+            ? $"{done} گزارش مجددا تولید شد ✅"
+            : $"{done} از {items.Count} گزارش تولید شد" + (string.IsNullOrEmpty(lastError) ? "" : $" — خطا: {lastError}");
+        LoadHistory();
+    }
+
+    /// <summary>Regenerate one history item (no dialog, no grid reload). Returns false + error on failure.</summary>
+    private bool TryRegenerate(ReportHistoryItem item, out string error)
+    {
+        error = "";
+        var cases = _db.LoadCases(_db.GetActiveSnapshotId());
+
+        // One-time lookup maps (O(N), not a linear search per row).
+        var caseMap = new Dictionary<string, Case>(cases.Count);
+        var rowMap = new Dictionary<string, int>(cases.Count);
+        for (int i = 0; i < cases.Count; i++)
+        {
+            if (!caseMap.ContainsKey(cases[i].CaseNumber)) caseMap[cases[i].CaseNumber] = cases[i];
+            if (!rowMap.ContainsKey(cases[i].CaseNumber)) rowMap[cases[i].CaseNumber] = i + 1;
+        }
+
+        if (!caseMap.TryGetValue(item.CaseNumber, out var c)) { error = "پرونده یافت نشد"; return false; }
+
+        var rowNumber = rowMap[item.CaseNumber];
         var isLtr = item.NumberFormat == "LTR";
         var generator = CreateGenerator(Path.GetDirectoryName(SelectedTemplatePath) ?? _templatePath);
-        var genResult = generator.GenerateReport(c, item.Stage, idx + 1, _outputPath, DateTime.Now, null, isLtr);
+        var genResult = generator.GenerateReport(c, item.Stage, rowNumber, _outputPath, DateTime.Now, null, isLtr);
 
         if (genResult.Success && genResult.OutputPath != null && File.Exists(genResult.OutputPath))
         {
@@ -1335,13 +2009,22 @@ public sealed class GeneratorViewModel : ViewModelBase
             var numFormat = isLtr ? "LTR" : "Persian";
             var fileHash = NezamDatabase.ComputeFileHash(genResult.OutputPath);
             _db.SaveGeneratedReport(c.CaseNumber, item.Stage, SelectedTemplateName, genResult.OutputPath, c.Owner, numFormat, fileHash);
-            StatusMessage = $"تولید مجدد: {item.CaseNumber} مرحله {item.StageName} ✅";
-            LoadHistory();
+            if (GeneratePdf)
+            {
+                using var pdfConverter = new WordToPdfConverter();
+                if (!pdfConverter.IsAvailable)
+                    error = $" (PDF نشد: {pdfConverter.Error})";
+                else
+                {
+                    var pdfError = ConvertWith(pdfConverter, c.CaseNumber, item.Stage, genResult.OutputPath);
+                    if (!string.IsNullOrEmpty(pdfError)) error = pdfError;
+                }
+            }
+            return true;
         }
-        else
-        {
-            StatusMessage = $"خطا: {genResult.ErrorMessage}";
-        }
+
+        error = genResult.ErrorMessage;
+        return false;
     }
 
     public void SyncOutputFolder()
@@ -1354,41 +2037,9 @@ public sealed class GeneratorViewModel : ViewModelBase
             }
             catch (Exception ex)
             {
-                StatusMessage = $"خطا در سینک: {ex.Message}";
+                StatusMessage = "همگام‌سازی پوشه خروجی با خطا مواجه شد؛ جزییات در فایل لاگ ثبت شد.";
+                ErrorLog.Write(ex, "GeneratorViewModel.SyncOutputFolder");
             }
-        }
-
-        /// <summary>
-        /// کلاس تنظیمات هر مرحله گزارش
-        /// </summary>
-        public class StageConfiguration : INotifyPropertyChanged
-        {
-            private int _configuredMonths;
-            public int StageNumber { get; set; }
-            public string StageTitle { get; set; } = "";
-            public int DefaultMonths { get; set; }
-            public string DeadlineType { get; set; } = "";
-            public string BuildingGroup { get; set; } = "";
-            public string Discipline { get; set; } = "";
-            public Action<int>? OnConfiguredMonthsChanged { get; set; }
-
-            public int ConfiguredMonths
-                        {
-                            get => _configuredMonths;
-                            set
-                            {
-                                if (_configuredMonths != value && value >= 1 && value <= 30)
-                                {
-                                    _configuredMonths = value;
-                                    OnPropertyChanged();
-                                    OnConfiguredMonthsChanged?.Invoke(value);
-                                }
-                            }
-                        }
-
-            public event PropertyChangedEventHandler? PropertyChanged;
-            protected void OnPropertyChanged([CallerMemberName] string? name = null)
-                => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
         }
 
         /// <summary>
@@ -1428,7 +2079,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             _groupAMonths[1] = value;
-                            _db.SaveSetting("report_group_a_stage_1_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths("a", 1), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1444,7 +2095,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             _groupAMonths[2] = value;
-                            _db.SaveSetting("report_group_a_stage_2_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths("a", 2), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1460,7 +2111,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             _groupAMonths[3] = value;
-                            _db.SaveSetting("report_group_a_stage_3_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths("a", 3), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1480,7 +2131,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             _groupBMonths[1] = value;
-                            _db.SaveSetting("report_group_b_stage_1_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 1), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1496,7 +2147,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             _groupBMonths[2] = value;
-                            _db.SaveSetting("report_group_b_stage_2_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 2), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1512,7 +2163,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             _groupBMonths[3] = value;
-                            _db.SaveSetting("report_group_b_stage_3_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 3), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1528,7 +2179,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             _groupBMonths[4] = value;
-                            _db.SaveSetting("report_group_b_stage_4_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths("b", 4), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1552,7 +2203,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             monthsArray[1] = value;
-                            _db.SaveSetting($"report_group_{prefix}_stage_1_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths(prefix, 1), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1568,7 +2219,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             monthsArray[2] = value;
-                            _db.SaveSetting($"report_group_{prefix}_stage_2_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths(prefix, 2), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1584,7 +2235,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             monthsArray[3] = value;
-                            _db.SaveSetting($"report_group_{prefix}_stage_3_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths(prefix, 3), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1600,7 +2251,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                         OnConfiguredMonthsChanged = (value) =>
                         {
                             monthsArray[4] = value;
-                            _db.SaveSetting($"report_group_{prefix}_stage_4_months", value.ToString());
+                            _db.SaveSetting(SettingKeys.ReportGroupStageMonths(prefix, 4), value.ToString());
                             ApplyReportFilters();
                         }
                     });
@@ -1620,7 +2271,7 @@ public sealed class GeneratorViewModel : ViewModelBase
                 "عمران" => "گزارش پایان نازک‌کاری (عمران)",
                 "معماری" => "گزارش پایان نازک‌کاری (معماری)",
                 "برق" => "گزارش پایان عملیات برقی",
-                "مکانیک" => "گزارش اتمام تأسیسات مکانیکی",
+                "مکانیک" => "گزارش اتمام تاسیسات مکانیکی",
                 "نقشه‌برداری" => $"{baseTitle} (نقشه‌برداری)",
                 "شهرسازی" => $"{baseTitle} (شهرسازی)",
                 _ => baseTitle
@@ -1684,49 +2335,29 @@ public sealed class GeneratorViewModel : ViewModelBase
         /// </summary>
         private void ResetSchedulingDefaults()
         {
-            // Reset Group A defaults
-            _groupAMonths[1] = 2; _groupAMonths[2] = 6; _groupAMonths[3] = 10;
-            _db.SaveSetting("report_group_a_stage_1_months", "2");
-            _db.SaveSetting("report_group_a_stage_2_months", "6");
-            _db.SaveSetting("report_group_a_stage_3_months", "10");
+            // برگرداندن همه ماه‌ها به پیش‌فرض، بدون برگشت؛ پس اول تایید می‌خواهد.
+            var confirm = MessageBox.Show(
+                "همه ماه‌های زمان‌بندی به مقادیر پیش‌فرض برگردد؟\n\nتنظیمات دستی‌ای که برای گروه‌ها و مرحله‌ها گذاشته‌ای، از بین می‌رود.",
+                "بازگردانی مقادیر پیش‌فرض", MessageBoxButton.YesNo, MessageBoxImage.Question);
+            if (confirm != MessageBoxResult.Yes) return;
 
-            // Reset Group B defaults
-            _groupBMonths[1] = 3; _groupBMonths[2] = 6; _groupBMonths[3] = 12; _groupBMonths[4] = 20;
-            _db.SaveSetting("report_group_b_stage_1_months", "3");
-            _db.SaveSetting("report_group_b_stage_2_months", "6");
-            _db.SaveSetting("report_group_b_stage_3_months", "12");
-            _db.SaveSetting("report_group_b_stage_4_months", "20");
-
-            // Reset Group C defaults
-            _groupCMonths[1] = 3; _groupCMonths[2] = 8; _groupCMonths[3] = 16; _groupCMonths[4] = 24;
-            _db.SaveSetting("report_group_c_stage_1_months", "3");
-            _db.SaveSetting("report_group_c_stage_2_months", "8");
-            _db.SaveSetting("report_group_c_stage_3_months", "16");
-            _db.SaveSetting("report_group_c_stage_4_months", "24");
-
-            // Reset Group D defaults
-            _groupDMonths[1] = 3; _groupDMonths[2] = 8; _groupDMonths[3] = 16; _groupDMonths[4] = 30;
-            _db.SaveSetting("report_group_d_stage_1_months", "3");
-            _db.SaveSetting("report_group_d_stage_2_months", "8");
-            _db.SaveSetting("report_group_d_stage_3_months", "16");
-            _db.SaveSetting("report_group_d_stage_4_months", "30");
-
-            // Notify property changes for direct binding properties
-            OnPropertyChanged(nameof(GroupAStage1Months));
-            OnPropertyChanged(nameof(GroupAStage2Months));
-            OnPropertyChanged(nameof(GroupAStage3Months));
-            OnPropertyChanged(nameof(GroupBStage1Months));
-            OnPropertyChanged(nameof(GroupBStage2Months));
-            OnPropertyChanged(nameof(GroupBStage3Months));
-            OnPropertyChanged(nameof(GroupBStage4Months));
-            OnPropertyChanged(nameof(GroupCStage1Months));
-            OnPropertyChanged(nameof(GroupCStage2Months));
-            OnPropertyChanged(nameof(GroupCStage3Months));
-            OnPropertyChanged(nameof(GroupCStage4Months));
-            OnPropertyChanged(nameof(GroupDStage1Months));
-            OnPropertyChanged(nameof(GroupDStage2Months));
-            OnPropertyChanged(nameof(GroupDStage3Months));
-            OnPropertyChanged(nameof(GroupDStage4Months));
+            // Same table as LoadSchedulingSettings: (months array, prefix, defaults).
+            var groups = new (int[] Months, string Prefix, int[] Defaults)[]
+            {
+                (_groupAMonths, "a", new[] { 0, 2, 6, 10 }),
+                (_groupBMonths, "b", new[] { 0, 3, 6, 12, 20 }),
+                (_groupCMonths, "c", new[] { 0, 3, 8, 16, 24 }),
+                (_groupDMonths, "d", new[] { 0, 3, 8, 16, 30 }),
+            };
+            foreach (var (months, prefix, defaults) in groups)
+            {
+                for (int stage = 1; stage < defaults.Length; stage++)
+                {
+                    months[stage] = defaults[stage];
+                    _db.SaveSetting(SettingKeys.ReportGroupStageMonths(prefix, stage), defaults[stage].ToString());
+                    OnPropertyChanged($"Group{char.ToUpperInvariant(prefix[0])}Stage{stage}Months");
+                }
+            }
 
             // Update UI
             UpdateStageConfigurations();
@@ -1735,16 +2366,6 @@ public sealed class GeneratorViewModel : ViewModelBase
         }
 
         /// <summary>
-                /// ذخیره تنظیمات مرحله (برای فراخوانی از Command)
-                /// </summary>
-                private void SaveStageConfiguration(int stageNumber)
-                {
-                    // Settings are already saved via OnConfiguredMonthsChanged callbacks
-                    // This method is kept for potential future use or explicit save
-                    StatusMessage = $"تنظیمات مرحله {stageNumber} ذخیره شد";
-                }
-
-                /// <summary>
                                 /// دریافت ماکزیمم تعداد مراحل برای یک گروه ساختمانی
                                 /// </summary>
                                 private int GetMaxStageForGroup(string buildingGroup)
@@ -1771,88 +2392,3 @@ public sealed class GeneratorViewModel : ViewModelBase
                                 }
             }
 
-/// <summary>
-/// آیتم وضعیت تولید گزارش (در جدول اسکن)
-/// </summary>
-public class CaseReportItem : INotifyPropertyChanged
-{
-    private bool _isSelected;
-    private string _status = "";
-    private string _generatedAt = "";
-    private string _generatedAtShamsi = "";
-    private bool _isChanged;
-
-    public bool IsSelected
-    {
-        get => _isSelected;
-        set { _isSelected = value; OnPropertyChanged(); }
-    }
-
-    public string CaseNumber { get; set; } = "";
-    public string PermitNumber { get; set; } = "";
-    public int RowNumber { get; set; }
-    public string Owner { get; set; } = "";
-    public string FullAddress { get; set; } = "";
-    public string Companion { get; set; } = "";
-    public int Stage { get; set; }
-    public string StageName { get; set; } = "";
-
-    public string Status
-    {
-        get => _status;
-        set { _status = value; OnPropertyChanged(); }
-    }
-
-    public string GeneratedAt
-    {
-        get => _generatedAt;
-        set { _generatedAt = value; OnPropertyChanged(); }
-    }
-    public string GeneratedAtShamsi
-    {
-        get => _generatedAtShamsi;
-        set { _generatedAtShamsi = value; OnPropertyChanged(); }
-    }
-
-    public bool IsChanged
-    {
-        get => _isChanged;
-        set { _isChanged = value; OnPropertyChanged(); }
-    }
-
-    public string PermitDate { get; set; } = "";
-    public string Deadline { get; set; } = "";
-    public string DaysRemaining { get; set; } = "";
-    /// <summary>مقدار عددی برای مرتب‌سازی ستون «مانده»: منفی=گذشته، ۰=امروز، مثبت=آینده، int.MaxValue=بدون مهلت</summary>
-    public int DaysRemainingSort { get; set; } = int.MaxValue;
-    public string DeadlineStatus { get; set; } = "";
-    public string BuildingGroup { get; set; } = "";
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-}
-
-/// <summary>
-/// آیتم تاریخچه گزارش‌های تولید شده
-/// </summary>
-public class ReportHistoryItem : INotifyPropertyChanged
-{
-    public int RowId { get; set; }
-    public string CaseNumber { get; set; } = "";
-    public string OwnerName { get; set; } = "";
-    public string Owner { get; set; } = "";
-    public int Stage { get; set; }
-    public string StageName { get; set; } = "";
-    public string ReportType { get; set; } = "";
-    public string ReportDate { get; set; } = "";
-    public string NumberFormat { get; set; } = "";
-    public string OutputPath { get; set; } = "";
-    public string FileName => Path.GetFileName(OutputPath) ?? "";
-    public string Status { get; set; } = "";
-    public bool FileExists { get; set; }
-    public string FolderPath { get; set; } = "";
-    public string FolderName { get; set; } = "";
-
-    public event PropertyChangedEventHandler? PropertyChanged;
-    protected void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-}

@@ -11,12 +11,12 @@
             <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="18"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusXLarge}"/>
             <Setter Property="Padding" Value="18,16"/>
             <Setter Property="SnapsToDevicePixels" Value="True"/>
             <Setter Property="Effect">
                 <Setter.Value>
-                    <DropShadowEffect BlurRadius="22" ShadowDepth="4" Direction="270" Opacity="0.08" Color="#0B1B33"/>
+                    <DropShadowEffect BlurRadius="22" ShadowDepth="4" Direction="270" Opacity="0.08" Color="{DynamicResource ShadowColor}"/>
                 </Setter.Value>
             </Setter>
         </Style>
@@ -24,14 +24,14 @@
         <Style x:Key="StatIcon" TargetType="Border">
             <Setter Property="Width" Value="44"/>
             <Setter Property="Height" Value="44"/>
-            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusLarge}"/>
             <Setter Property="HorizontalAlignment" Value="Center"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
         <Style x:Key="StatNumber" TargetType="TextBlock">
             <Setter Property="FontFamily" Value="{DynamicResource HeadingFontFamily}"/>
-            <Setter Property="FontSize" Value="32"/>
+            <Setter Property="FontSize" Value="{DynamicResource DisplayFontSize}"/>
             <Setter Property="FontWeight" Value="Bold"/>
             <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
             <Setter Property="Margin" Value="0,6,0,0"/>
@@ -41,7 +41,7 @@
         </Style>
 
         <Style x:Key="StatLabel" TargetType="TextBlock">
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="{DynamicResource LabelFontSize}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
             <Setter Property="Margin" Value="0,0,0,0"/>
             <Setter Property="HorizontalAlignment" Value="Right"/>
@@ -51,7 +51,7 @@
         <!-- ═══ ردیف متریک ═══ -->
         <Style x:Key="MetricRow" TargetType="Border">
             <Setter Property="Background" Value="Transparent"/>
-            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusLarge}"/>
             <Setter Property="Padding" Value="12,10"/>
             <Setter Property="Margin" Value="0,2"/>
             <Setter Property="HorizontalAlignment" Value="Stretch"/>
@@ -66,15 +66,18 @@
             <Setter Property="Height" Value="86"/>
             <Setter Property="Cursor" Value="Hand"/>
             <Setter Property="FontFamily" Value="{DynamicResource FontFamily}"/>
-            <Setter Property="FontSize" Value="12"/>
+            <Setter Property="FontSize" Value="{DynamicResource LabelFontSize}"/>
             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="Button">
+                        <!-- T-016: گوشه و سایه از توکن‌های حالت دکمه خوانده می‌شوند. -->
                         <Border x:Name="bd" Background="{TemplateBinding Background}"
                                 BorderBrush="{TemplateBinding BorderBrush}"
                                 BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="14" SnapsToDevicePixels="True">
+                                CornerRadius="{DynamicResource ButtonCornerRadius}"
+                                Effect="{DynamicResource ButtonShadowEffect}"
+                                SnapsToDevicePixels="True">
                             <ContentPresenter VerticalAlignment="Center" HorizontalAlignment="Center"/>
                         </Border>
                         <ControlTemplate.Triggers>
@@ -92,14 +95,14 @@
             <Setter Property="Background" Value="{DynamicResource PanelBrush}"/>
             <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="6"/>
+            <Setter Property="CornerRadius" Value="{DynamicResource RadiusSmall}"/>
             <Setter Property="Padding" Value="7,2"/>
             <Setter Property="Margin" Value="0,0,8,0"/>
         </Style>
 
     </UserControl.Resources>
 
-    <!-- جهت چیدمان این صفحه عمداً آینهٔ RTL برنامه است (به درخواست کاربر):
+    <!-- جهت چیدمان این صفحه عمدا آینه RTL برنامه است (به درخواست کاربر):
          پنل گرادیانی سمت راست، متن‌ها و کارت‌ها از چپ. متن فارسی داخل هر بلوک دست‌نخورده می‌ماند. -->
     <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
           MinWidth="0" MinHeight="0"
@@ -110,7 +113,7 @@
             <StackPanel Margin="22,18,22,24" HorizontalAlignment="Stretch" MinWidth="0">
 
             <!-- ════════════ HERO ════════════ -->
-            <Border CornerRadius="20" Padding="0" HorizontalAlignment="Stretch"
+            <Border CornerRadius="{DynamicResource RadiusXLarge}" Padding="0" HorizontalAlignment="Stretch"
                     Background="{DynamicResource CardBrush}"
                     BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"
                     Effect="{DynamicResource CardShadowEffect}">
@@ -123,37 +126,37 @@
                     <!-- متن خوش‌آمد (وسط‌چین) -->
                     <StackPanel Grid.Column="0" Margin="28,24" VerticalAlignment="Center"
                                 HorizontalAlignment="Stretch" FlowDirection="LeftToRight">
-                        <Border Background="#142563EB" CornerRadius="14" Padding="10,4"
+                        <Border Background="{DynamicResource HoverOverlayBrush}" CornerRadius="{DynamicResource RadiusBadge}" Padding="10,4"
                                 HorizontalAlignment="Center" Margin="0,0,0,14">
                             <StackPanel Orientation="Horizontal">
                                 <Ellipse Width="6" Height="6" Fill="{DynamicResource PrimaryBrush}"
                                          VerticalAlignment="Center" Margin="0,0,6,0"/>
-                                <TextBlock Text="{Binding ConnectionStatus}" FontSize="11"
+                                <TextBlock Text="{Binding ConnectionStatus}" FontSize="{DynamicResource CaptionFontSize}"
                                            Foreground="{DynamicResource PrimaryTextBrush}" FontWeight="SemiBold"/>
                             </StackPanel>
                         </Border>
 
-                        <TextBlock Text="سلام، خوش آمدید 👋" FontSize="13.5"
+                        <TextBlock Text="{Binding WelcomeMessage}" FontSize="{DynamicResource FontSize}"
                                    Foreground="{DynamicResource TextSecondaryBrush}"
                                    HorizontalAlignment="Stretch" TextAlignment="Center"/>
-                        <TextBlock Text="مرکز کنترل پرونده‌های نظام مهندسی" FontSize="26" FontWeight="Bold"
-                                   Foreground="{DynamicResource TextBrush}" Margin="0,8,0,0"
+                        <TextBlock Text="NezamMonitor Pro — مانیتورینگ نظام مهندسی" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold"
+                                   Foreground="{DynamicResource TextBrush}" Margin="0,8,0,0" TextWrapping="Wrap"
                                    HorizontalAlignment="Stretch" TextAlignment="Center"/>
                         <TextBlock Text="وضعیت لحظه‌ای پرونده‌ها، ناظرین، حق‌الزحمه و گزارش‌ها در یک نگاه"
-                                   FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextSecondaryBrush}"
                                    TextWrapping="Wrap" Margin="0,8,0,0" MaxWidth="560"
                                    HorizontalAlignment="Center" TextAlignment="Center"/>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,18,0,0">
-                            <Button Content="به‌روزرسانی از سامانه" Click="GoToUpdate_Click"
-                                    Style="{StaticResource ProButton}" Margin="0,0,10,0"/>
-                            <Button Content="تولید گزارش" Click="GoToGenerator_Click"
-                                    Style="{StaticResource ProButtonGhost}"/>
+                            <Button Content="_به‌روزرسانی از سامانه" Click="GoToUpdate_Click" ToolTip="رفتن مستقیم به صفحه به‌روزرسانی."
+                                    Style="{StaticResource ProButton}" Margin="0,0,10,0" TabIndex="1"/>
+                            <Button Content="_تولید گزارش" Click="GoToGenerator_Click" ToolTip="رفتن مستقیم به تب تولید گزارش."
+                                    Style="{StaticResource ProButtonGhost}" TabIndex="2"/>
                         </StackPanel>
                     </StackPanel>
 
-                    <!-- پنل گرادیانی تزئینی (سمت راست) -->
-                    <Border Grid.Column="1" Width="260" CornerRadius="0,20,20,0">
+                    <!-- پنل گرادیانی تزیینی (سمت راست) -->
+                    <Border x:Name="HeroPanel" Grid.Column="1" Width="260" CornerRadius="0,20,20,0">
                         <Border.Background>
                             <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                                 <GradientStop Color="{DynamicResource PrimaryColor}" Offset="0" x:Name="GradStart"/>
@@ -166,22 +169,24 @@
                             <Ellipse Width="120" Height="120" Fill="#10FFFFFF"
                                      HorizontalAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,-30,-40"/>
 
+                            <!-- A11Y-007c: لایه تیره نیمه‌شفاف پشت متن‌های روی گرادیان -->
+                            <Border Background="#1A000000" CornerRadius="{DynamicResource RadiusLarge}" Margin="12"/>
                             <StackPanel VerticalAlignment="Center" Margin="20">
-                                <Border Width="54" Height="54" CornerRadius="16" Background="#26FFFFFF"
+                                <Border Width="54" Height="54" CornerRadius="{DynamicResource RadiusBadge}" Background="#26FFFFFF"
                                         HorizontalAlignment="Center">
                                     <TextBlock Text="&#xE1D3;" FontFamily="{DynamicResource IconFontFamily}"
-                                               FontSize="26" Foreground="White"
+                                               FontSize="{DynamicResource HeadingFontSize}" Foreground="White"
                                                HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                 </Border>
-                                <TextBlock Text="نسخه ۳ پرو" FontSize="16" FontWeight="Bold" Foreground="White"
+                                <TextBlock Text="{Binding AppVersion, StringFormat='{}نسخه {0} پرو'}" FontSize="{DynamicResource SubHeadingFontSize}" FontWeight="Bold" Foreground="White"
                                            HorizontalAlignment="Center" Margin="0,12,0,0"/>
-                                <TextBlock Text="پایگاه دادهٔ رمزنگاری‌شده" FontSize="10.5"
-                                           Foreground="#DCE7FF" HorizontalAlignment="Center" Margin="0,4,0,0"/>
-                                <Border Background="#26FFFFFF" CornerRadius="8" Padding="10,5" Margin="0,14,0,0">
+                                <TextBlock Text="پایگاه داده رمزنگاری‌شده" FontSize="{DynamicResource CaptionFontSize}"
+                                           Foreground="White" HorizontalAlignment="Center" Margin="0,4,0,0"/>
+                                <Border Background="#26FFFFFF" CornerRadius="{DynamicResource RadiusMedium}" Padding="10,5" Margin="0,14,0,0">
                                     <StackPanel>
-                                        <TextBlock Text="آخرین به‌روزرسانی" FontSize="9.5" Foreground="#DCE7FF"
+                                        <TextBlock Text="آخرین به‌روزرسانی" FontSize="{DynamicResource CaptionFontSize}" Foreground="White" ToolTip="تاریخ و ساعت آخرین باری که از سامانه داده گرفتی."
                                                    HorizontalAlignment="Center"/>
-                                        <TextBlock Text="{Binding LastUpdate}" FontSize="10.5" FontWeight="SemiBold"
+                                        <TextBlock Text="{Binding LastUpdate}" FontSize="{DynamicResource CaptionFontSize}" FontWeight="SemiBold"
                                                    Foreground="White" HorizontalAlignment="Center"
                                                    TextAlignment="Center" TextWrapping="Wrap" Margin="0,2,0,0"/>
                                     </StackPanel>
@@ -193,7 +198,7 @@
             </Border>
 
             <!-- ════════════ کارت‌های آماری ════════════ -->
-            <UniformGrid Columns="4" Margin="0,14,0,0" HorizontalAlignment="Stretch">
+            <UniformGrid x:Name="StatGrid" Columns="4" Margin="0,14,0,0" HorizontalAlignment="Stretch">
 
                 <Border Style="{StaticResource StatTile}" Margin="0,0,12,0">
                     <Grid>
@@ -202,15 +207,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="کل پرونده‌ها" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="کل پرونده‌ها" Style="{StaticResource StatLabel}" ToolTip="تعداد همه‌ی پرونده‌هایی که در پایگاه داده هست."/>
                             <TextBlock Text="{Binding TotalCases}" Style="{StaticResource StatNumber}"/>
-                            <Border Height="3" Width="34" CornerRadius="2" Background="{DynamicResource PrimaryBrush}"
+                            <Border Height="3" Width="34" CornerRadius="{DynamicResource RadiusSmall}" Background="{DynamicResource PrimaryBrush}"
                                     HorizontalAlignment="Center" Margin="0,8,0,0" Opacity="0.85"/>
                         </StackPanel>
-                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#142563EB"
+                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE8C8;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource PrimaryTextBrush}"
+                                       FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource PrimaryTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -223,15 +228,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="ناظرین" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="ناظرین" Style="{StaticResource StatLabel}" ToolTip="تعداد ناظرینی که در پرونده‌ها ثبت شدن."/>
                             <TextBlock Text="{Binding TotalEngineers}" Style="{StaticResource StatNumber}"/>
-                            <Border Height="3" Width="34" CornerRadius="2" Background="{DynamicResource SuccessBrush}"
+                            <Border Height="3" Width="34" CornerRadius="{DynamicResource RadiusSmall}" Background="{DynamicResource SuccessBrush}"
                                     HorizontalAlignment="Center" Margin="0,8,0,0" Opacity="0.85"/>
                         </StackPanel>
-                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#1410B981"
+                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE77B;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource SuccessTextBrush}"
+                                       FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource SuccessTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -244,15 +249,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="حق‌الزحمه‌ها" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="حق‌الزحمه‌ها" Style="{StaticResource StatLabel}" ToolTip="تعداد ردیف‌های حق‌الزحمه ثبت‌شده."/>
                             <TextBlock Text="{Binding TotalFees}" Style="{StaticResource StatNumber}"/>
-                            <Border Height="3" Width="34" CornerRadius="2" Background="{DynamicResource WarningBrush}"
+                            <Border Height="3" Width="34" CornerRadius="{DynamicResource RadiusSmall}" Background="{DynamicResource WarningBrush}"
                                     HorizontalAlignment="Center" Margin="0,8,0,0" Opacity="0.85"/>
                         </StackPanel>
-                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#14F59E0B"
+                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE8C7;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource WarningTextBrush}"
+                                       FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource WarningTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -265,15 +270,15 @@
                             <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
                         <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                            <TextBlock Text="گزارش‌ها" Style="{StaticResource StatLabel}"/>
+                            <TextBlock Text="گزارش‌ها" Style="{StaticResource StatLabel}" ToolTip="تعداد گزارش‌هایی که در سامانه ثبت شده یا روی سیستم ساخته شده."/>
                             <TextBlock Text="{Binding TotalReports}" Style="{StaticResource StatNumber}"/>
-                            <Border Height="3" Width="34" CornerRadius="2" Background="{DynamicResource AccentBrush}"
+                            <Border Height="3" Width="34" CornerRadius="{DynamicResource RadiusSmall}" Background="{DynamicResource AccentBrush}"
                                     HorizontalAlignment="Center" Margin="0,8,0,0" Opacity="0.85"/>
                         </StackPanel>
-                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="#147C3AED"
+                        <Border Grid.Column="1" Style="{StaticResource StatIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                 HorizontalAlignment="Left" VerticalAlignment="Center" Margin="12,0,0,0">
                             <TextBlock Text="&#xE7C3;" FontFamily="{DynamicResource IconFontFamily}"
-                                       FontSize="20" Foreground="{DynamicResource AccentTextBrush}"
+                                       FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource AccentTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
                     </Grid>
@@ -281,32 +286,21 @@
             </UniformGrid>
 
             <!-- ════════════ بدنه دو ستونی ════════════ -->
-            <Grid Margin="0,14,0,0" HorizontalAlignment="Stretch">
+            <Grid x:Name="BodyGrid" Margin="0,14,0,0" HorizontalAlignment="Stretch">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="16"/>
-                    <ColumnDefinition Width="360"/>
+                    <ColumnDefinition x:Name="RightColumn" Width="360"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- کیفیت داده -->
-                <Border Grid.Column="0" Style="{StaticResource ProCard}" Padding="18,16" Margin="0">
+                <Border x:Name="DataCard" Grid.Column="0" Style="{StaticResource ProCard}" Padding="18,16" Margin="0">
                     <StackPanel>
-                        <Grid Margin="0,0,0,12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*"/>
-                                <ColumnDefinition Width="Auto"/>
-                            </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="کامل بودن اطلاعات پرونده‌ها"
-                                       Style="{StaticResource ProSectionTitle}" Margin="0" FontSize="16"
-                                       TextAlignment="Center" HorizontalAlignment="Stretch"
-                                       VerticalAlignment="Center"/>
-                            <Border Grid.Column="1" Background="{DynamicResource PanelBrush}" CornerRadius="10"
-                                    Padding="10,4" HorizontalAlignment="Left" VerticalAlignment="Center"
-                                    Margin="10,0,0,0">
-                                <TextBlock Text="{Binding ConnectionStatus}" FontSize="10.5"
-                                           Foreground="{DynamicResource TextSecondaryBrush}"/>
-                            </Border>
-                        </Grid>
+                        <!-- L-012: وضعیت اتصال فقط در هیرو نشان داده می‌شود (تکرار حذف شد). -->
+                        <TextBlock Text="کامل بودن اطلاعات پرونده‌ها" ToolTip="چند پرونده مشخصات، ناظر، حق‌الزحمه و گزارش دارن؛ پرونده ناقص از اینجا معلوم می‌شه."
+                                   Style="{StaticResource ProSectionTitle}" Margin="0,0,0,12" FontSize="{DynamicResource SubHeadingFontSize}"
+                                   TextAlignment="Center" HorizontalAlignment="Stretch"
+                                   VerticalAlignment="Center"/>
 
                         <Border Style="{StaticResource MetricRow}">
                             <Grid>
@@ -315,8 +309,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="دارای مشخصات" VerticalAlignment="Center"
-                                           FontSize="12.5" Foreground="{DynamicResource TextBrush}" MinWidth="118"
+                                <TextBlock Grid.Column="0" Text="دارای مشخصات" VerticalAlignment="Center" ToolTip="تعداد پرونده‌هایی که مشخصاتشان از سامانه گرفته شده."
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextBrush}" MinWidth="118"
                                            HorizontalAlignment="Stretch" TextAlignment="Center"/>
                                 <ProgressBar Grid.Column="1" Height="7" Margin="14,0"
                                              Value="{Binding CasesWithSpecs}" Maximum="{Binding TotalCases}"
@@ -335,8 +329,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="دارای ناظر" VerticalAlignment="Center"
-                                           FontSize="12.5" Foreground="{DynamicResource TextBrush}" MinWidth="118"
+                                <TextBlock Grid.Column="0" Text="دارای ناظر" VerticalAlignment="Center" ToolTip="تعداد پرونده‌هایی که حداقل یک ناظر دارن."
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextBrush}" MinWidth="118"
                                            HorizontalAlignment="Stretch" TextAlignment="Center"/>
                                 <ProgressBar Grid.Column="1" Height="7" Margin="14,0"
                                              Value="{Binding CasesWithEngineers}" Maximum="{Binding TotalCases}"
@@ -355,8 +349,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="دارای حق‌الزحمه" VerticalAlignment="Center"
-                                           FontSize="12.5" Foreground="{DynamicResource TextBrush}" MinWidth="118"
+                                <TextBlock Grid.Column="0" Text="دارای حق‌الزحمه" VerticalAlignment="Center" ToolTip="تعداد پرونده‌هایی که حداقل یک حق‌الزحمه دارن."
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextBrush}" MinWidth="118"
                                            HorizontalAlignment="Stretch" TextAlignment="Center"/>
                                 <ProgressBar Grid.Column="1" Height="7" Margin="14,0"
                                              Value="{Binding CasesWithFees}" Maximum="{Binding TotalCases}"
@@ -375,8 +369,8 @@
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Column="0" Text="دارای گزارش" VerticalAlignment="Center"
-                                           FontSize="12.5" Foreground="{DynamicResource TextBrush}" MinWidth="118"
+                                <TextBlock Grid.Column="0" Text="دارای گزارش" VerticalAlignment="Center" ToolTip="تعداد پرونده‌هایی که حداقل یک گزارش دارن."
+                                           FontSize="{DynamicResource LabelFontSize}" Foreground="{DynamicResource TextBrush}" MinWidth="118"
                                            HorizontalAlignment="Stretch" TextAlignment="Center"/>
                                 <ProgressBar Grid.Column="1" Height="7" Margin="14,0"
                                              Value="{Binding CasesWithReports}" Maximum="{Binding TotalCases}"
@@ -387,92 +381,82 @@
                                            VerticalAlignment="Center" MinWidth="44" TextAlignment="Center"/>
                             </Grid>
                         </Border>
-
-                        <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,12,0,10"/>
-
-                        <Grid>
-                            <TextBlock Text="آخرین به‌روزرسانی" Style="{StaticResource StatLabel}"
-                                       VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                            <TextBlock Text="{Binding LastUpdate}" FontSize="12" FontWeight="SemiBold"
-                                       Foreground="{DynamicResource TextBrush}" HorizontalAlignment="Stretch"
-                                       TextAlignment="Center"
-                                       VerticalAlignment="Center"/>
-                        </Grid>
+                        <!-- L-012: «آخرین به‌روزرسانی» فقط در پنل هیرو هست (تکرار پایین کارت حذف شد). -->
                     </StackPanel>
                 </Border>
 
                 <!-- دسترسی سریع -->
-                <Border Grid.Column="2" Style="{StaticResource ProCard}" Padding="18,16" Margin="0">
+                <Border x:Name="QuickCard" Grid.Column="2" Style="{StaticResource ProCard}" Padding="18,16" Margin="0">
                     <StackPanel>
-                        <TextBlock Text="دسترسی سریع" Style="{StaticResource ProSectionTitle}" FontSize="16"
+                        <TextBlock Text="دسترسی سریع" Style="{StaticResource ProSectionTitle}" FontSize="{DynamicResource SubHeadingFontSize}"
                                    TextAlignment="Center" HorizontalAlignment="Stretch"/>
 
                         <UniformGrid Columns="2" HorizontalAlignment="Stretch">
-                            <Button Style="{StaticResource QuickTile}" Margin="0,0,6,8" Click="GoToUpdate_Click">
+                            <Button Style="{StaticResource QuickTile}" Margin="0,0,6,8" Click="GoToUpdate_Click" ToolTip="رفتن به صفحه به‌روزرسانی و گرفتن داده‌های تازه از سامانه." TabIndex="3" AutomationProperties.Name="به‌روزرسانی">
                                 <StackPanel>
-                                    <Border Width="34" Height="34" CornerRadius="10" Background="#1410B981"
+                                    <Border Width="34" Height="34" CornerRadius="{DynamicResource RadiusIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE895;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource SuccessTextBrush}"
+                                                   FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource SuccessTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="به‌روزرسانی" HorizontalAlignment="Center"
-                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="11.5"/>
+                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="{DynamicResource CaptionFontSize}"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button Style="{StaticResource QuickTile}" Margin="6,0,0,8" Click="GoToGenerator_Click">
+                            <Button Style="{StaticResource QuickTile}" Margin="6,0,0,8" Click="GoToGenerator_Click" ToolTip="رفتن به تب تولید گزارش برای ساخت گزارش." TabIndex="4" AutomationProperties.Name="تولید گزارش">
                                 <StackPanel>
-                                    <Border Width="34" Height="34" CornerRadius="10" Background="#142563EB"
+                                    <Border Width="34" Height="34" CornerRadius="{DynamicResource RadiusIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE70C;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource PrimaryTextBrush}"
+                                                   FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource PrimaryTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="تولید گزارش" HorizontalAlignment="Center"
-                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="11.5"/>
+                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="{DynamicResource CaptionFontSize}"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button Style="{StaticResource QuickTile}" Margin="0,0,6,0" Click="GoToCases_Click">
+                            <Button Style="{StaticResource QuickTile}" Margin="0,0,6,0" Click="GoToCases_Click" ToolTip="رفتن به لیست پرونده‌ها." TabIndex="5" AutomationProperties.Name="پرونده‌ها">
                                 <StackPanel>
-                                    <Border Width="34" Height="34" CornerRadius="10" Background="#147C3AED"
+                                    <Border Width="34" Height="34" CornerRadius="{DynamicResource RadiusIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE8C8;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource AccentTextBrush}"
+                                                   FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource AccentTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="پرونده‌ها" HorizontalAlignment="Center"
-                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="11.5"/>
+                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="{DynamicResource CaptionFontSize}"/>
                                 </StackPanel>
                             </Button>
 
-                            <Button Style="{StaticResource QuickTile}" Margin="6,0,0,0" Click="GoToFollowUp_Click">
+                            <Button Style="{StaticResource QuickTile}" Margin="6,0,0,0" Click="GoToFollowUp_Click" ToolTip="رفتن به صفحه پیگیری پرونده‌ها." TabIndex="6" AutomationProperties.Name="پیگیری">
                                 <StackPanel>
-                                    <Border Width="34" Height="34" CornerRadius="10" Background="#14F59E0B"
+                                    <Border Width="34" Height="34" CornerRadius="{DynamicResource RadiusIcon}" Background="{DynamicResource HoverOverlayBrush}"
                                             HorizontalAlignment="Center">
                                         <TextBlock Text="&#xE7BA;" FontFamily="{DynamicResource IconFontFamily}"
-                                                   FontSize="16" Foreground="{DynamicResource WarningTextBrush}"
+                                                   FontSize="{DynamicResource SubHeadingFontSize}" Foreground="{DynamicResource WarningTextBrush}"
                                                    HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                     </Border>
                                     <TextBlock Text="پیگیری" HorizontalAlignment="Center"
-                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="11.5"/>
+                                               Margin="0,6,0,0" FontWeight="SemiBold" FontSize="{DynamicResource CaptionFontSize}"/>
                                 </StackPanel>
                             </Button>
                         </UniformGrid>
 
                         <Border Height="1" Background="{DynamicResource BorderBrush}" Margin="0,14,0,12"/>
 
-                        <TextBlock Text="میانبرهای صفحه‌کلید" Style="{StaticResource StatLabel}"
+                        <TextBlock Text="میانبرهای صفحه‌کلید" Style="{StaticResource StatLabel}" ToolTip="کلیدهایی که بدون موس به قسمت‌های اصلی می‌ری (Ctrl+D داشبورد، Ctrl+O به‌روزرسانی، Ctrl+G تولید گزارش)."
                                    Margin="0,0,0,8" FontWeight="SemiBold"/>
 
                         <Grid Margin="0,0,0,7">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <Border Style="{StaticResource Kbd}">
-                                    <TextBlock Text="Ctrl + D" FontSize="10.5" FontFamily="Segoe UI"
+                                    <TextBlock Text="Ctrl + D" FontSize="{DynamicResource CaptionFontSize}" FontFamily="Segoe UI"
                                                Foreground="{DynamicResource TextBrush}"/>
                                 </Border>
-                                <TextBlock Text="داشبورد" FontSize="11.5" VerticalAlignment="Center"
+                                <TextBlock Text="داشبورد" FontSize="{DynamicResource CaptionFontSize}" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Grid>
@@ -480,10 +464,10 @@
                         <Grid Margin="0,0,0,7">
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <Border Style="{StaticResource Kbd}">
-                                    <TextBlock Text="Ctrl + O" FontSize="10.5" FontFamily="Segoe UI"
+                                    <TextBlock Text="Ctrl + O" FontSize="{DynamicResource CaptionFontSize}" FontFamily="Segoe UI"
                                                Foreground="{DynamicResource TextBrush}"/>
                                 </Border>
-                                <TextBlock Text="به‌روزرسانی" FontSize="11.5" VerticalAlignment="Center"
+                                <TextBlock Text="به‌روزرسانی" FontSize="{DynamicResource CaptionFontSize}" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Grid>
@@ -491,10 +475,10 @@
                         <Grid>
                             <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
                                 <Border Style="{StaticResource Kbd}">
-                                    <TextBlock Text="Ctrl + G" FontSize="10.5" FontFamily="Segoe UI"
+                                    <TextBlock Text="Ctrl + G" FontSize="{DynamicResource CaptionFontSize}" FontFamily="Segoe UI"
                                                Foreground="{DynamicResource TextBrush}"/>
                                 </Border>
-                                <TextBlock Text="تولید گزارش" FontSize="11.5" VerticalAlignment="Center"
+                                <TextBlock Text="تولید گزارش" FontSize="{DynamicResource CaptionFontSize}" VerticalAlignment="Center"
                                            Foreground="{DynamicResource TextSecondaryBrush}"/>
                             </StackPanel>
                         </Grid>

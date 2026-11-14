@@ -48,17 +48,24 @@ public static class DatabaseService
     {
         get
         {
+            // اگر هنوز Initialize صدا نشده، هرگز اتصال plain نساز؛
+            // صدا زدن Instance پیش از ورود یعنی باگ در ترتیب راه‌اندازی است
             if (_instance == null)
-            {
-                lock (_lock)
-                {
-                    if (_instance == null)
-                    {
-                        _instance = new NezamDatabase(DatabasePath);
-                    }
-                }
-            }
+                throw new InvalidOperationException("پایگاه‌داده هنوز باز نشده است؛ اول باید ورود انجام شود.");
             return _instance;
+        }
+    }
+
+    /// <summary>
+    /// اتصال singleton را می‌بندد تا بعد از ریستور بکاپ، برنامه دوباره با
+    /// فایل تازه بازش کند. (Dispose اتصال را می‌بندد.)
+    /// </summary>
+    public static void Close()
+    {
+        lock (_lock)
+        {
+            _instance?.Dispose();
+            _instance = null;
         }
     }
 }

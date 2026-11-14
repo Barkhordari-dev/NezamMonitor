@@ -62,7 +62,7 @@ public sealed class ThemeDimensions
     public double MinWindowHeight { get; set; } = 500;
     public double ButtonWidth { get; set; } = 180;
     public double ButtonHeight { get; set; } = 40;
-    public double InputHeight { get; set; } = 32;
+    public double InputHeight { get; set; } = 38;
     public double BorderRadius { get; set; } = 6;
     public double Padding { get; set; } = 16;
     public double Margin { get; set; } = 8;

@@ -1,9 +1,10 @@
-<UserControl
+﻿<UserControl
              xmlns:local="clr-namespace:NezamMonitorPro.App.Converters" x:Class="NezamMonitorPro.App.Views.ReportsView"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Grid Margin="15">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -14,85 +15,103 @@
         <TextBlock Grid.Row="0" Text="📄 گزارش‌ها" FontSize="{DynamicResource HeadingFontSize}" FontWeight="Bold" Margin="0,0,0,10"/>
 
         <!-- Filter Row 1 -->
-        <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8"
+        <Border Grid.Row="1" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="0,0,0,8"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="150"/><ColumnDefinition Width="10"/>
-                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="150"/>
-                    <ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="150"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                <TextBox Grid.Column="1" Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Height="34" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}" local:Watermark.Text="جستجو در پروندهها..." />
-                <TextBlock Grid.Column="3" Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                <ComboBox Grid.Column="4" ItemsSource="{Binding OwnerFilters}" SelectedItem="{Binding FilterOwner}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}" IsEditable="True" StaysOpenOnEdit="True"/>
-                <TextBlock Grid.Column="6" Text="شماره پرونده:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                <ComboBox Grid.Column="7" ItemsSource="{Binding CaseNumberFilters}" SelectedItem="{Binding FilterCaseNumber}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}" IsEditable="True" StaysOpenOnEdit="True"/>
-                <TextBlock Grid.Column="9" Text="ناظر:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                <ComboBox Grid.Column="10" ItemsSource="{Binding EngineerFilters}" SelectedItem="{Binding FilterEngineer}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}" IsEditable="True" StaysOpenOnEdit="True"/>
-            </Grid>
+            <!-- L-004: WrapPanel؛ در عرض باریک گروه‌ها به ردیف بعد می‌روند و جستجو تنگ نمی‌شود. -->
+            <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="🔍 جستجو:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                    <TextBox Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}" Width="220" MinWidth="180" VerticalContentAlignment="Center" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="1" local:Watermark.Text="جستجو در پرونده‌ها..." ToolTip="جستجو با نام مالک یا شماره پرونده." />
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="مالک:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding OwnerFilters}" SelectedItem="{Binding FilterOwner}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="2" IsEditable="True" StaysOpenOnEdit="True" ToolTip="جدول فقط گزارش‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="شماره پرونده:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding CaseNumberFilters}" SelectedItem="{Binding FilterCaseNumber}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="3" IsEditable="True" StaysOpenOnEdit="True" ToolTip="جدول فقط گزارش‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="ناظر:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}" Margin="0,0,5,0"/>
+                    <ComboBox ItemsSource="{Binding EngineerFilters}" SelectedItem="{Binding FilterEngineer}" Width="150" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="4" IsEditable="True" StaysOpenOnEdit="True" ToolTip="جدول فقط گزارش‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                </StackPanel>
+                <!-- B-007: دکمه بروزرسانی برای RefreshCommand -->
+                <Button Content="🔄 _به‌روزرسانی" Command="{Binding RefreshCommand}" Margin="0,0,10,4" ToolTip="جدول گزارش‌ها را دوباره از پایگاه داده می‌خواند."
+                        Padding="10,0" Height="34" Background="{DynamicResource PrimaryBrush}" Foreground="{DynamicResource OnPrimaryBrush}"
+                        FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" TabIndex="10"/>
+            </WrapPanel>
         </Border>
 
-        <!-- Filter Row 2 -->
-        <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" CornerRadius="8" Padding="12" Margin="0,0,0,8"
+        <!-- Filter Row 2 (WrapPanel: wraps instead of clipping on narrow screens) -->
+        <Border Grid.Row="2" Background="{DynamicResource PanelBrush}" CornerRadius="{DynamicResource RadiusMedium}" Padding="12" Margin="0,0,0,8"
                 BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="120"/>
-                    <ColumnDefinition Width="10"/><ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="120"/><ColumnDefinition Width="10"/>
-                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="120"/>
-                    <ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/><ColumnDefinition Width="10"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Column="0" Text="نوع گزارش:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                <ComboBox Grid.Column="1" ItemsSource="{Binding ReportTypeFilters}" SelectedItem="{Binding FilterReportType}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                <TextBlock Grid.Column="3" Text="مرحله:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                <ComboBox Grid.Column="4" ItemsSource="{Binding StageFilters}" SelectedItem="{Binding FilterStage}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                <TextBlock Grid.Column="6" Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
-                <ComboBox Grid.Column="7" ItemsSource="{Binding DisciplineFilters}" SelectedItem="{Binding FilterDiscipline}" Height="34" Margin="5,0" FontSize="{DynamicResource InputFontSize}"/>
-                <Button Grid.Column="9" Content="🧹 پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}"
-                        Padding="10,0" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
-                        FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold"
+            <WrapPanel Orientation="Horizontal">
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="نوع گزارش:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                    <ComboBox ItemsSource="{Binding ReportTypeFilters}" SelectedItem="{Binding FilterReportType}" Width="120" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="5" ToolTip="جدول فقط گزارش‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="مرحله:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                    <ComboBox ItemsSource="{Binding StageFilters}" SelectedItem="{Binding FilterStage}" Width="120" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="6" ToolTip="جدول فقط گزارش‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="رشته:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                    <ComboBox ItemsSource="{Binding DisciplineFilters}" SelectedItem="{Binding FilterDiscipline}" Width="120" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="7" ToolTip="جدول فقط گزارش‌هایی رو نشون می‌ده که با این فیلترها می‌خونن."/>
+                </StackPanel>
+                <StackPanel Orientation="Horizontal" Margin="0,0,10,4">
+                    <TextBlock Text="منبع:" VerticalAlignment="Center" FontWeight="Bold" FontSize="{DynamicResource LabelFontSize}"/>
+                    <ComboBox ItemsSource="{Binding SourceFilters}" SelectedItem="{Binding FilterSource}" Width="120" Margin="5,0" FontSize="{DynamicResource InputFontSize}" TabIndex="8" ToolTip="روی سیستم = همین‌جا ساخته شده؛ در سامانه = در سامانه ثبت شده"/>
+                </StackPanel>
+                <Button Content="🧹 _پاک کردن فیلترها" Command="{Binding ClearFiltersCommand}" Margin="0,0,10,4" ToolTip="همه‌ی فیلترها پاک می‌شه."
+                        Padding="10,0" Height="34" Background="{DynamicResource ErrorBrush}" Foreground="{DynamicResource OnErrorBrush}"
+                        FontSize="{DynamicResource ButtonFontSize}" FontWeight="Bold" TabIndex="9"
                         Visibility="{Binding HasActiveFilters, Converter={StaticResource BoolToVisConverter}}"/>
-                <TextBlock Grid.Column="12" Text="{Binding CountDisplay}" VerticalAlignment="Center" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold"/>
-            </Grid>
+                <TextBlock Text="{Binding CountDisplay}" VerticalAlignment="Center" Margin="0,0,0,4" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource FontSize}" FontWeight="Bold"/>
+            </WrapPanel>
         </Border>
+
+        <!-- G-007: راهنمای راست‌کلیک و دابل‌کلیک بالای جدول -->
+        <TextBlock Grid.Row="3" Text="💡 راست‌کلیک روی ردیف: باز کردن، پوشه، دانلود؛ دابل‌کلیک: باز کردن فایل گزارش."
+                   Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource CaptionFontSize}" Margin="0,0,0,6"/>
 
         <!-- DataGrid -->
-        <DataGrid Grid.Row="3" x:Name="ReportsGrid" ItemsSource="{Binding Reports}" AutoGenerateColumns="False"
+        <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="4" x:Name="ReportsGrid" ItemsSource="{Binding Reports}" AutoGenerateColumns="False" ToolTip="راست‌کلیک: باز کردن، پوشه، دانلود؛ دابل‌کلیک: باز کردن فایل گزارش."
                           IsReadOnly="True" AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="Horizontal"
                           HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                          MouseRightButtonUp="ReportsGrid_MouseRightButtonUp" FlowDirection="{DynamicResource TableFlowDirection}"
+                          MouseRightButtonUp="ReportsGrid_MouseRightButtonUp" MouseDoubleClick="ReportsGrid_MouseDoubleClick" FlowDirection="{DynamicResource TableFlowDirection}"
                           CanUserSortColumns="True">
-            <DataGrid.RowStyle>
-                <Style TargetType="DataGridRow">
-                    <Setter Property="ContextMenu">
-                        <Setter.Value>
-                            <ContextMenu>
-                                <MenuItem Header="📁 باز کردن پوشه"
-                                          Command="{Binding DataContext.OpenFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
-                                          CommandParameter="{Binding}" />
-                            </ContextMenu>
-                        </Setter.Value>
-                    </Setter>
-                </Style>
-            </DataGrid.RowStyle>
             <DataGrid.Columns>
+                            <DataGridTextColumn Binding="{Binding SourceDisplay}" SortMemberPath="Source" Width="Auto" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}">
+                            <DataGridTextColumn.Header>
+                                <TextBlock Text="منبع" ToolTip="این گزارش روی همین سیستم ساخته شده یا در سامانه ثبت شده."/>
+                            </DataGridTextColumn.Header>
+                        </DataGridTextColumn>
                             <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" SortMemberPath="CaseNumber" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
                             <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" SortMemberPath="Owner" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                            <DataGridTextColumn Header="نوع" Binding="{Binding ReportType}" SortMemberPath="ReportType" Width="Auto" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}"/>
-                            <DataGridTextColumn Header="مرحله" Binding="{Binding Stage}" SortMemberPath="Stage" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                            <DataGridTextColumn Header="ناظر" Binding="{Binding Engineer}" SortMemberPath="Engineer" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                            <DataGridTextColumn Binding="{Binding ReportType}" SortMemberPath="ReportType" Width="Auto" HeaderStyle="{StaticResource GridHeaderCenter}" ElementStyle="{StaticResource GridCellEllipsisCenter}">
+                            <DataGridTextColumn.Header>
+                                <TextBlock Text="نوع" ToolTip="نوع گزارش (در واقع رشته گزارش، مثلا معماری یا تاسیسات مکانیکی)."/>
+                            </DataGridTextColumn.Header>
+                        </DataGridTextColumn>
+                            <DataGridTextColumn Binding="{Binding Stage}" SortMemberPath="Stage" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}">
+                            <DataGridTextColumn.Header>
+                                <TextBlock Text="مرحله" ToolTip="مرحله گزارش (اول، دوم، سوم، چهارم)."/>
+                            </DataGridTextColumn.Header>
+                        </DataGridTextColumn>
+                            <DataGridTextColumn Binding="{Binding Engineer}" SortMemberPath="Engineer" Width="*" MinWidth="120" ElementStyle="{StaticResource GridCellEllipsis}">
+                            <DataGridTextColumn.Header>
+                                <TextBlock Text="ناظر" ToolTip="ناظری که این گزارش رو داده."/>
+                            </DataGridTextColumn.Header>
+                        </DataGridTextColumn>
                             <DataGridTextColumn Header="رشته" Binding="{Binding Discipline}" SortMemberPath="Discipline" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
-                            <DataGridTextColumn Header="تاریخ" Binding="{Binding VisitDate}" SortMemberPath="VisitDate" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
+                            <DataGridTextColumn Binding="{Binding VisitDate}" SortMemberPath="VisitDate" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}">
+                            <DataGridTextColumn.Header>
+                                <TextBlock Text="تاریخ" ToolTip="تاریخ بازدید این گزارش در سامانه."/>
+                            </DataGridTextColumn.Header>
+                        </DataGridTextColumn>
                         </DataGrid.Columns>
         </DataGrid>
 
-        <TextBlock Grid.Row="4" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" Margin="0,5,0,0"/>
+        <TextBlock Grid.Row="5" Text="{Binding StatusMessage}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="{DynamicResource LabelFontSize}" Margin="0,5,0,0"/>
     </Grid>
 </UserControl>

@@ -9,12 +9,18 @@ public sealed class NezamApiClient : IDisposable
     public string Token => _token;
     private int _userId;
     private int _cityId;
+    private string _userFullName = "";
+    /// <summary>Logged-in user's full name ("name famil") from /panel/api/user — empty until login.</summary>
+    public string UserFullName => _userFullName;
 
     public bool IsAuthenticated => !string.IsNullOrEmpty(_token);
     public int UserId => _userId;
     public int CityId => _cityId;
 
     private const string BaseUrl = "http://service.yazdnezam.ir:8033";
+
+    // هشدار: سرور HTTPS ندارد؛ اتصال plain است و نباید روی شبکه عمومی به‌روزرسانی کرد
+    public const string InsecureConnectionWarning = "اتصال به سامانه رمزنگاری نشده است؛ روی شبکه‌های عمومی و نامطمین به‌روزرسانی نکن.";
 
     public NezamApiClient() => _http = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
 
@@ -45,6 +51,11 @@ public sealed class NezamApiClient : IDisposable
             var user = json.RootElement.GetProperty("user");
             _userId = user.GetProperty("id").GetInt32();
             _cityId = user.GetProperty("user_shahrestan").GetInt32();
+            // Full name for the welcome message and for matching the user's own
+            // server reports (family key is "famil", not "family").
+            var name = user.TryGetProperty("name", out var n) ? n.GetString() ?? "" : "";
+            var famil = user.TryGetProperty("famil", out var f) ? f.GetString() ?? "" : "";
+            _userFullName = $"{name} {famil}".Trim();
             return true;
         }
         catch { return false; }

@@ -150,6 +150,27 @@
     <ScrollViewer Padding="24" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
         <StackPanel MaxWidth="900" HorizontalAlignment="Stretch">
 
+            <!-- ════════════ Status (S-012: بالای صفحه، با رنگ موفقیت/خطا) ════════════ -->
+            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,14"
+                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
+                <TextBlock Text="{Binding StatusMessage}"
+                           FontSize="{DynamicResource LabelFontSize}" FontWeight="Medium" TextWrapping="Wrap">
+                    <TextBlock.Style>
+                        <Style TargetType="TextBlock">
+                            <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding StatusKind}" Value="ok">
+                                    <Setter Property="Foreground" Value="{DynamicResource SuccessTextBrush}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding StatusKind}" Value="error">
+                                    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </TextBlock.Style>
+                </TextBlock>
+            </Border>
+
             <!-- ════════════ Theme ════════════ -->
             <Border Style="{StaticResource SettingsCard}">
                 <StackPanel>
@@ -162,22 +183,52 @@
                         <TextBlock Text="انتخاب تم" Style="{StaticResource SettingsCardTitle}"/>
                     </StackPanel>
 
+                    <!-- S-011: تم با تغییر کمبو همان‌جا اعمال می‌شود؛ دکمه «اعمال» حذف شد. -->
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="16"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="16"/>
-                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
-                        <TextBlock Grid.Column="0" Text="تم برنامه" Style="{StaticResource SettingsFieldLabel}"
+                        <TextBlock Grid.Column="0" Text="تم برنامه" Style="{StaticResource SettingsFieldLabel}" ToolTip="رنگ و ظاهر کلی برنامه (روشن، حرفه‌ای، تیره و…)."
                                    VerticalAlignment="Center" Margin="0,0,0,0"/>
-                        <ComboBox Grid.Column="2" Style="{StaticResource SettingsCombo}"
+                        <ComboBox Grid.Column="2" Style="{StaticResource SettingsCombo}" ToolTip="رنگ و ظاهر کلی برنامه (روشن، حرفه‌ای، تیره و…)."
                                   ItemsSource="{Binding ThemeNames}" SelectedItem="{Binding SelectedThemeName}"
-                                  HorizontalAlignment="Left" Width="240"/>
-                        <Button Grid.Column="4" Style="{StaticResource SettingsPrimaryButton}"
-                                Command="{Binding ApplyThemeCommand}" Content="اعمال تم"/>
+                                  HorizontalAlignment="Left" Width="240"
+                                  SelectionChanged="ThemeCombo_SelectionChanged"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <!-- ════════════ Button style (S-016: کارت جدا از تم) ════════════ -->
+            <Border Style="{StaticResource SettingsCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+                        <Border Width="34" Height="34" CornerRadius="10" Background="#1A7C3AED" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE713;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="{DynamicResource AccentTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="حالت دکمه‌ها" Style="{StaticResource SettingsCardTitle}"/>
+                    </StackPanel>
+
+                    <!-- S-011: حالت دکمه با تغییر کمبو همان‌جا اعمال می‌شود؛ دکمه «اعمال» حذف شد. -->
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="شکل دکمه‌ها" Style="{StaticResource SettingsFieldLabel}"
+                                   VerticalAlignment="Center" Margin="0,0,0,0"
+                                   ToolTip="شکل همه دکمه‌های برنامه: کلاسیک، شیشه‌ای، گرد، تخت، گرادیان یا سایه‌دار."/>
+                        <ComboBox Grid.Column="2" Style="{StaticResource SettingsCombo}"
+                                  ItemsSource="{Binding ButtonStyleNames}" SelectedItem="{Binding SelectedButtonStyle}"
+                                  HorizontalAlignment="Left" Width="240"
+                                  ToolTip="شکل همه دکمه‌های برنامه را عوض می‌کند؛ همان‌جا اعمال می‌شود."
+                                  SelectionChanged="ButtonStyleCombo_SelectionChanged"/>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -191,9 +242,11 @@
                                        Foreground="{DynamicResource AccentTextBrush}"
                                        HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         </Border>
-                        <TextBlock Text="فونتها" Style="{StaticResource SettingsCardTitle}"/>
+                        <TextBlock Text="فونت‌ها" Style="{StaticResource SettingsCardTitle}"/>
                     </StackPanel>
 
+                    <!-- S-011: فونت با تغییر کمبو و اندازه‌ها با خروج از کادر همان‌جا اعمال می‌شوند؛ دکمه «اعمال» حذف شد.
+                         S-013: اندازه‌ها بین ۱۰ تا ۲۴ پوینت‌اند و واحدشان (pt) کنارشان نوشته شده. -->
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -202,49 +255,60 @@
                             <ColumnDefinition Width="24"/>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="10"/>
-                            <ColumnDefinition Width="90"/>
+                            <ColumnDefinition Width="115"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="خانواده فونت" Style="{StaticResource SettingsFieldLabel}"
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="خانواده فونت" Style="{StaticResource SettingsFieldLabel}" ToolTip="فونتی که متن‌های برنامه با آن نشون داده می‌شه (پیش‌فرض B Nazanin)."
                                    VerticalAlignment="Center" Margin="0,0,0,0"/>
-                        <ComboBox Grid.Row="0" Grid.Column="2" Style="{StaticResource SettingsCombo}"
+                        <ComboBox Grid.Row="0" Grid.Column="2" Style="{StaticResource SettingsCombo}" ToolTip="فونتی که متن‌های برنامه با آن نشون داده می‌شه (پیش‌فرض B Nazanin)."
                                   ItemsSource="{Binding FontFamilies}" SelectedItem="{Binding FontFamily}"
-                                  HorizontalAlignment="Left" Width="220"/>
+                                  HorizontalAlignment="Left" Width="220"
+                                  SelectionChanged="FontFamilyCombo_SelectionChanged"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="اندازه کلی" Style="{StaticResource SettingsFieldLabel}"
                                    VerticalAlignment="Center" Margin="0,18,0,0"/>
-                        <TextBox Grid.Row="1" Grid.Column="2" Style="{StaticResource SettingsInput}"
-                                 Text="{Binding FontSize}" HorizontalAlignment="Left" Width="90" Margin="0,18,0,0"/>
+                        <StackPanel Grid.Row="1" Grid.Column="2" Orientation="Horizontal" Margin="0,18,0,0">
+                            <TextBox Style="{StaticResource SettingsInput}" ToolTip="بزرگ و کوچک کردن متن هر بخش؛ بین ۱۰ تا ۲۴ پوینت."
+                                     Text="{Binding FontSize}" Width="90" LostFocus="FontBox_LostFocus"/>
+                            <TextBlock Text="pt" Style="{StaticResource SettingsFieldLabel}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="اندازه عنوان" Style="{StaticResource SettingsFieldLabel}"
                                    VerticalAlignment="Center" Margin="0,18,0,0"/>
-                        <TextBox Grid.Row="2" Grid.Column="2" Style="{StaticResource SettingsInput}"
-                                 Text="{Binding HeadingFontSize}" HorizontalAlignment="Left" Width="90" Margin="0,18,0,0"/>
+                        <StackPanel Grid.Row="2" Grid.Column="2" Orientation="Horizontal" Margin="0,18,0,0">
+                            <TextBox Style="{StaticResource SettingsInput}" ToolTip="بزرگ و کوچک کردن متن هر بخش؛ بین ۱۰ تا ۲۴ پوینت."
+                                     Text="{Binding HeadingFontSize}" Width="90" LostFocus="FontBox_LostFocus"/>
+                            <TextBlock Text="pt" Style="{StaticResource SettingsFieldLabel}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="0" Grid.Column="4" Text="اندازه دکمه" Style="{StaticResource SettingsFieldLabel}"
                                    VerticalAlignment="Center" Margin="0,0,0,0"/>
-                        <TextBox Grid.Row="0" Grid.Column="6" Style="{StaticResource SettingsInput}"
-                                 Text="{Binding ButtonFontSize}" HorizontalAlignment="Left" Width="90"/>
+                        <StackPanel Grid.Row="0" Grid.Column="6" Orientation="Horizontal">
+                            <TextBox Style="{StaticResource SettingsInput}" ToolTip="بزرگ و کوچک کردن متن هر بخش؛ بین ۱۰ تا ۲۴ پوینت."
+                                     Text="{Binding ButtonFontSize}" Width="90" LostFocus="FontBox_LostFocus"/>
+                            <TextBlock Text="pt" Style="{StaticResource SettingsFieldLabel}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="1" Grid.Column="4" Text="اندازه ورودی" Style="{StaticResource SettingsFieldLabel}"
                                    VerticalAlignment="Center" Margin="0,18,0,0"/>
-                        <TextBox Grid.Row="1" Grid.Column="6" Style="{StaticResource SettingsInput}"
-                                 Text="{Binding InputFontSize}" HorizontalAlignment="Left" Width="90" Margin="0,18,0,0"/>
+                        <StackPanel Grid.Row="1" Grid.Column="6" Orientation="Horizontal" Margin="0,18,0,0">
+                            <TextBox Style="{StaticResource SettingsInput}" ToolTip="بزرگ و کوچک کردن متن هر بخش؛ بین ۱۰ تا ۲۴ پوینت."
+                                     Text="{Binding InputFontSize}" Width="90" LostFocus="FontBox_LostFocus"/>
+                            <TextBlock Text="pt" Style="{StaticResource SettingsFieldLabel}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
 
                         <TextBlock Grid.Row="2" Grid.Column="4" Text="اندازه سایدبار" Style="{StaticResource SettingsFieldLabel}"
                                    VerticalAlignment="Center" Margin="0,18,0,0"/>
-                        <TextBox Grid.Row="2" Grid.Column="6" Style="{StaticResource SettingsInput}"
-                                 Text="{Binding SidebarFontSize}" HorizontalAlignment="Left" Width="90" Margin="0,18,0,0"/>
-
-                        <Button Grid.Row="3" Grid.Column="2" Style="{StaticResource SettingsPrimaryButton}"
-                                Command="{Binding ApplyFontsCommand}" Content="اعمال فونتها"
-                                HorizontalAlignment="Left" Margin="0,22,0,0"/>
+                        <StackPanel Grid.Row="2" Grid.Column="6" Orientation="Horizontal" Margin="0,18,0,0">
+                            <TextBox Style="{StaticResource SettingsInput}" ToolTip="بزرگ و کوچک کردن متن هر بخش؛ بین ۱۰ تا ۲۴ پوینت."
+                                     Text="{Binding SidebarFontSize}" Width="90" LostFocus="FontBox_LostFocus"/>
+                            <TextBlock Text="pt" Style="{StaticResource SettingsFieldLabel}" VerticalAlignment="Center" Margin="8,0,0,0"/>
+                        </StackPanel>
                     </Grid>
                 </StackPanel>
             </Border>
@@ -261,22 +325,20 @@
                         <TextBlock Text="تراز متن جدول‌ها" Style="{StaticResource SettingsCardTitle}"/>
                     </StackPanel>
 
+                    <!-- S-011: تراز با تغییر کمبو همان‌جا اعمال می‌شود؛ دکمه «اعمال» حذف شد. -->
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="16"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="16"/>
-                            <ColumnDefinition Width="Auto"/>
                         </Grid.ColumnDefinitions>
 
                         <TextBlock Grid.Column="0" Text="تراز متن داخل سلول‌ها" Style="{StaticResource SettingsFieldLabel}"
                                    VerticalAlignment="Center" Margin="0,0,0,0"/>
-                        <ComboBox Grid.Column="2" Style="{StaticResource SettingsCombo}"
+                        <ComboBox Grid.Column="2" Style="{StaticResource SettingsCombo}" ToolTip="متن داخل سلول‌های جدول وسط، راست یا چپ باشه؛ برای همه‌ی جدول‌ها اعمال می‌شه."
                                   ItemsSource="{Binding TableAlignmentOptions}" SelectedItem="{Binding TableAlignmentDisplay}"
-                                  HorizontalAlignment="Left" Width="240"/>
-                        <Button Grid.Column="4" Style="{StaticResource SettingsPrimaryButton}"
-                                Command="{Binding ApplyTableAlignmentCommand}" Content="اعمال تراز جدول"/>
+                                  HorizontalAlignment="Left" Width="240"
+                                  SelectionChanged="TableAlignmentCombo_SelectionChanged"/>
                     </Grid>
                     <TextBlock Text="پیش‌فرض وسط است؛ انتخاب شما برای همه‌ی جدول‌های برنامه اعمال می‌شود."
                                Style="{StaticResource SettingsFieldLabel}" Margin="0,10,0,0"/>
@@ -304,18 +366,76 @@
 
                         <TextBlock Grid.Column="0" Text="تغییر رمز عبور ورود و رمزنگاری پایگاه داده برنامه" Style="{StaticResource SettingsFieldLabel}"
                                    VerticalAlignment="Center" Margin="0,0,0,0" TextWrapping="Wrap"/>
-                        <Button Grid.Column="2" Style="{StaticResource SettingsPrimaryButton}"
+                        <Button Grid.Column="2" Style="{StaticResource SettingsPrimaryButton}" ToolTip="عوض کردن رمز ورود به برنامه و رمزنگاری پایگاه داده."
                                 Command="{Binding ChangePasswordCommand}" Content="تغییر رمز عبور..."
+                                MinWidth="160"/>
+                    </Grid>
+
+                    <!-- S-015: دکمه ایمپورت از اندروید برگشت (دستورش از قبل بود، دکمه نداشت). -->
+                    <Grid Margin="0,14,0,0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="16"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <TextBlock Grid.Column="0" Text="ایمپورت تغییرات از اندروید (فایل .nzmdata)" Style="{StaticResource SettingsFieldLabel}"
+                                   VerticalAlignment="Center" Margin="0,0,0,0" TextWrapping="Wrap"/>
+                        <Button Grid.Column="2" Style="{StaticResource SettingsPrimaryButton}" ToolTip="تغییرات پرونده‌ها را از فایل خروجی اندروید می‌گیرد و روی همین دیتابیس اعمال می‌کند."
+                                Command="{Binding ImportAndroidCommand}" Content="ایمپورت از اندروید (.nzmdata)"
                                 MinWidth="160"/>
                     </Grid>
                 </StackPanel>
             </Border>
 
-            <!-- ════════════ Status ════════════ -->
-            <Border Background="{DynamicResource PanelBrush}" CornerRadius="12" Padding="16,12" Margin="0,0,0,14"
-                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1">
-                <TextBlock Text="{Binding StatusMessage}" Foreground="{DynamicResource TextBrush}"
-                           FontSize="{DynamicResource LabelFontSize}" FontWeight="Medium" TextWrapping="Wrap"/>
+            <!-- ════════════ Backup (M-1) ════════════ -->
+            <Border Style="{StaticResource SettingsCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Border Width="34" Height="34" CornerRadius="10" Background="#1A0EA5E9" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE8E5;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="{DynamicResource PrimaryTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="پشتیبان‌گیری" Style="{StaticResource SettingsCardTitle}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="از همه اطلاعات برنامه یک نسخه پشتیبان رمزدار می‌گیری؛ با رمز همان پشتیبان می‌توانی آن را برگردانی. رمز پشتیبان را جایی امن نگه دار؛ بدون آن، پشتیبان باز نمی‌شود."
+                               FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource SettingsPrimaryButton}" ToolTip="یک فایل پشتیبان رمزدار از همه اطلاعات می‌سازد."
+                                Command="{Binding BackupCommand}" Content="پشتیبان‌گیری" Margin="0,0,10,0"/>
+                        <Button Style="{StaticResource SettingsPrimaryButton}" ToolTip="اطلاعات را از روی یک فایل پشتیبان برمی‌گرداند؛ برنامه بعدش از اول باز می‌شود."
+                                Command="{Binding RestoreCommand}" Content="بازیابی"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
+            <!-- ════════════ Diagnostics (M-2) ════════════ -->
+            <Border Style="{StaticResource SettingsCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Border Width="34" Height="34" CornerRadius="10" Background="#1A7C3AED" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE946;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="{DynamicResource AccentTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="تشخیص و لاگ خطا" Style="{StaticResource SettingsCardTitle}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="اگر برنامه جایی به مشکل خورد، جزییاتش در فایل لاگ خطا ذخیره می‌شود؛ از اینجا می‌توانی آن را ببینی یا پاک کنی."
+                               FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Style="{StaticResource SettingsPrimaryButton}" ToolTip="فایل لاگ خطا را باز می‌کند."
+                                Command="{Binding ViewErrorLogCommand}" Content="مشاهده لاگ خطا" Margin="0,0,10,0"/>
+                        <Button Style="{StaticResource SettingsPrimaryButton}" ToolTip="فایل لاگ خطا را خالی می‌کند."
+                                Command="{Binding ClearErrorLogCommand}" Content="پاک کردن لاگ"/>
+                    </StackPanel>
+                </StackPanel>
             </Border>
 
             <!-- ════════════ Factory reset ════════════ -->
@@ -330,13 +450,66 @@
                         <TextBlock Text="پاکسازی کامل اطلاعات" Style="{StaticResource SettingsCardTitle}"/>
                     </StackPanel>
 
-                    <TextBlock Text="تمام اطلاعات برنامه (پروندهها، گزارشها، حقالزحمهها، تاریخچه و اطلاعات ورود) پاک میشود. قالبهای Word و فهرست مهندسین حفظ میشوند. این عملیات قابل بازگشت نیست."
+                    <TextBlock Text="تمام اطلاعات برنامه (پرونده‌ها، گزارش‌ها، حق‌الزحمه‌ها، تاریخچه و اطلاعات ورود) پاک می‌شود. قالب‌های Word و فهرست مهندسین حفظ می‌شوند. این عملیات قابل بازگشت نیست."
                                FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
                                TextWrapping="Wrap" Margin="0,0,0,14"/>
 
-                    <Button Style="{StaticResource SettingsDangerButton}"
+                    <Button Style="{StaticResource SettingsDangerButton}" ToolTip="حذف همه‌ی اطلاعات برنامه (پرونده‌ها، گزارش‌ها، حق‌الزحمه‌ها، تاریخچه و اطلاعات ورود)؛ غیرقابل بازگشت هست."
                             Command="{Binding FactoryResetCommand}" Content="پاکسازی کامل اطلاعات"
                             HorizontalAlignment="Right"/>
+                </StackPanel>
+            </Border>
+
+            <!-- ════════════ About ════════════ -->
+            <Border Style="{StaticResource SettingsCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Border Width="34" Height="34" CornerRadius="10" Background="#1A2563EB" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE946;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="{DynamicResource AccentTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock x:Name="AboutTitle" Text="درباره برنامه" Style="{StaticResource SettingsCardTitle}"
+                                   MouseLeftButtonUp="AboutTitle_MouseLeftButtonUp"
+                                   ToolTip="درباره برنامه: نسخه، سازنده و پیوندهای گیت‌هاب."/>
+                    </StackPanel>
+
+                    <TextBlock FontSize="13" FontWeight="Bold" Foreground="{DynamicResource TextBrush}" Margin="0,0,0,4">
+                        <Run Text="NezamMonitor Pro — مانیتورینگ نظام مهندسی "/>
+                        <Run Text="{Binding AppVersion, Mode=OneWay}"/>
+                    </TextBlock>
+                    <TextBlock Text="تولید و توسعه: مهندس محمد مهدی برخورداری"
+                               FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,2"/>
+                    <TextBlock Text="طراحی شده برای مهندسین نظام مهندسی"
+                               FontSize="12.5" Foreground="{DynamicResource AccentTextBrush}" Margin="0,0,0,12"/>
+
+                    <TextBlock Text="دریافت نسخه‌های جدید" FontSize="13" FontWeight="Bold"
+                               Foreground="{DynamicResource TextBrush}" Margin="0,0,0,6"/>
+                    <TextBlock FontSize="12.5" Margin="0,0,0,2">
+                        <Hyperlink NavigateUri="https://github.com/Barkhordari-dev/NezamMonitor-Android-UI"
+                                   RequestNavigate="AboutLink_RequestNavigate"
+                                   ToolTip="صفحه نسخه اندروید در گیت‌هاب در مرورگر باز می‌شود.">نسخه اندروید در گیت‌هاب</Hyperlink>
+                    </TextBlock>
+                    <TextBlock FontSize="12.5" Margin="0,0,0,8">
+                        <Hyperlink NavigateUri="https://github.com/Barkhordari-dev/NezamMonitor"
+                                   RequestNavigate="AboutLink_RequestNavigate"
+                                   ToolTip="صفحه نسخه ویندوز در گیت‌هاب در مرورگر باز می‌شود.">نسخه ویندوز در گیت‌هاب</Hyperlink>
+                    </TextBlock>
+
+                    <!-- M-10: بررسی به‌روزرسانی از گیت‌هاب. -->
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,6">
+                        <Button Style="{StaticResource SettingsPrimaryButton}" ToolTip="آخرین نسخه گیت‌هاب را با نسخه فعلی مقایسه می‌کند."
+                                Command="{Binding CheckUpdateCommand}" Content="🔄 بررسی به‌روزرسانی"/>
+                        <TextBlock Text="{Binding UpdateCheckMessage}" FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   VerticalAlignment="Center" Margin="12,0,0,0" TextWrapping="Wrap"/>
+                    </StackPanel>
+
+                    <TextBlock Text="برای دریافت به‌روزرسانی‌های بعدی برنامه، به پیوندهای گیت‌هاب بالا مراجعه کنید."
+                               FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,12"/>
+                    <TextBlock Text="این برنامه با هدف بهره‌مندی عمومی و به‌صورت عام‌المنفعه تهیه شده است؛ فروش آن و هرگونه استفاده نامتعارف، مورد رضایت توسعه‌دهنده نیست."
+                               FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap"/>
                 </StackPanel>
             </Border>
 

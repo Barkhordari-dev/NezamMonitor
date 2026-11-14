@@ -12,16 +12,25 @@ namespace NezamMonitorPro.App.ViewModels;
 public sealed class FeesViewModel : ViewModelBase
 {
     private readonly NezamDatabase _db;
-    private string _searchText = "";
     private string _statusMessage = "";
-    private string _filterStatus = "همه";
-    private string _filterDiscipline = "همه";
-    private string _filterStage = "همه";
-    private string _filterOwner = "همه";
-    private string _filterCaseNumber = "همه";
-    private string _filterServiceType = "همه";
-    private string _filterAmountFrom = "";
-    private string _filterAmountTo = "";
+
+    // L-016 / DUP-003: وضعیت فیلتر در سرویس مشترک FilterState است (همان
+    // Cases و FollowUp). کنترل‌ها فقط Draft را عوض می‌کنند؛ جدول تا دکمه
+    // «اعمال» فیلتر نمی‌شود. خواندن داخل ApplyFilters باید از GetApplied
+    // باشد، نه از این پراپرتی‌ها (که پیش‌نویس را نشان می‌دهند).
+    public Services.FilterState Filters { get; } = new();
+    /// <summary>True وقتی فیلتری انتخاب شده ولی «اعمال» هنوز زده نشده.</summary>
+    public bool HasPendingFilters => Filters.HasPendingChanges;
+    public string SearchText { get => Filters.GetDraft("Search", ""); set { Filters.SetDraft("Search", value); OnPropertyChanged(nameof(SearchText)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
+    public string FilterStatus { get => Filters.GetDraft("Status"); set { Filters.SetDraft("Status", value); OnPropertyChanged(nameof(FilterStatus)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string FilterDiscipline { get => Filters.GetDraft("Discipline"); set { Filters.SetDraft("Discipline", value); OnPropertyChanged(nameof(FilterDiscipline)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string FilterStage { get => Filters.GetDraft("Stage"); set { Filters.SetDraft("Stage", value); OnPropertyChanged(nameof(FilterStage)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string FilterOwner { get => Filters.GetDraft("Owner"); set { Filters.SetDraft("Owner", value); OnPropertyChanged(nameof(FilterOwner)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string FilterCaseNumber { get => Filters.GetDraft("CaseNumber"); set { Filters.SetDraft("CaseNumber", value); OnPropertyChanged(nameof(FilterCaseNumber)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string FilterServiceType { get => Filters.GetDraft("ServiceType"); set { Filters.SetDraft("ServiceType", value); OnPropertyChanged(nameof(FilterServiceType)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string FilterAmountFrom { get => Filters.GetDraft("AmountFrom", ""); set { Filters.SetDraft("AmountFrom", value); OnPropertyChanged(nameof(FilterAmountFrom)); OnPropertyChanged(nameof(HasPendingFilters)); } }
+    public string FilterAmountTo { get => Filters.GetDraft("AmountTo", ""); set { Filters.SetDraft("AmountTo", value); OnPropertyChanged(nameof(FilterAmountTo)); OnPropertyChanged(nameof(HasPendingFilters)); } }
 
     // Summary
     private string _totalAmount = "۰";
@@ -34,16 +43,6 @@ public sealed class FeesViewModel : ViewModelBase
     private int _pendingCount;
 
     public ObservableCollection<FeeItem> Fees { get; } = new();
-    public string SearchText { get => _searchText; set { SetProperty(ref _searchText, value); ApplyFilters(); } }
-    public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
-    public string FilterStatus { get => _filterStatus; set { SetProperty(ref _filterStatus, value); ApplyFilters(); } }
-    public string FilterDiscipline { get => _filterDiscipline; set { SetProperty(ref _filterDiscipline, value); ApplyFilters(); } }
-    public string FilterStage { get => _filterStage; set { SetProperty(ref _filterStage, value); ApplyFilters(); } }
-    public string FilterOwner { get => _filterOwner; set { SetProperty(ref _filterOwner, value); ApplyFilters(); } }
-    public string FilterCaseNumber { get => _filterCaseNumber; set { SetProperty(ref _filterCaseNumber, value); ApplyFilters(); } }
-    public string FilterServiceType { get => _filterServiceType; set { SetProperty(ref _filterServiceType, value); ApplyFilters(); } }
-    public string FilterAmountFrom { get => _filterAmountFrom; set { SetProperty(ref _filterAmountFrom, value); ApplyFilters(); } }
-    public string FilterAmountTo { get => _filterAmountTo; set { SetProperty(ref _filterAmountTo, value); ApplyFilters(); } }
 
     public string TotalAmount { get => _totalAmount; set => SetProperty(ref _totalAmount, value); }
     public string PaidAmount { get => _paidAmount; set => SetProperty(ref _paidAmount, value); }
@@ -60,10 +59,7 @@ public sealed class FeesViewModel : ViewModelBase
         ? $"{TotalCount} مورد"
         : $"{FilteredCount} از {TotalCount} مورد";
 
-    public bool HasActiveFilters => FilterStatus != "همه" || FilterDiscipline != "همه" || FilterStage != "همه" ||
-                                     FilterOwner != "همه" || FilterCaseNumber != "همه" || FilterServiceType != "همه" ||
-                                     !string.IsNullOrWhiteSpace(FilterAmountFrom) || !string.IsNullOrWhiteSpace(FilterAmountTo) ||
-                                     !string.IsNullOrWhiteSpace(SearchText);
+    public bool HasActiveFilters => Filters.HasActiveFilters;
 
     // Dynamic filter lists
     public List<string> StatusFilters { get; set; } = new() { "همه" };
@@ -74,9 +70,8 @@ public sealed class FeesViewModel : ViewModelBase
     public List<string> ServiceTypeFilters { get; set; } = new() { "همه" };
 
     public ICommand RefreshCommand { get; }
-    public ICommand SelectAllCommand { get; }
-    public ICommand DeselectAllCommand { get; }
     public ICommand ClearFiltersCommand { get; }
+    public ICommand ApplyFiltersCommand { get; }
     public ICommand FilterByValueCommand { get; }
 
     private string _selectedAmount = "۰ ریال";
@@ -126,10 +121,14 @@ public sealed class FeesViewModel : ViewModelBase
     public FeesViewModel(NezamDatabase db)
     {
         _db = db;
+        Filters.PropertyChanged += (_, _) =>
+        {
+            OnPropertyChanged(nameof(HasActiveFilters));
+            OnPropertyChanged(nameof(HasPendingFilters));
+        };
         RefreshCommand = new RelayCommand(Load);
-        SelectAllCommand = new RelayCommand(SelectAll);
-        DeselectAllCommand = new RelayCommand(DeselectAll);
         ClearFiltersCommand = new RelayCommand(ClearFilters);
+        ApplyFiltersCommand = new RelayCommand(ApplyFilters);
         FilterByValueCommand = new RelayCommand<string>(FilterByValue);
         AddReceiptCommand = new RelayCommand(AddReceipt);
         EditReceiptCommand = new RelayCommand<FeeReceiptRow>(EditReceipt);
@@ -146,7 +145,7 @@ public sealed class FeesViewModel : ViewModelBase
     private static string MapServiceForStage(string stage)
     {
         if (stage?.Trim() != "0") return "نظارت";
-        return ""; // برای مرحله 0 بعداً بر اساس مبلغ پر می‌شود
+        return ""; // برای مرحله 0 بعدا بر اساس مبلغ پر می‌شود
     }
 
     private void Load()
@@ -179,7 +178,7 @@ public sealed class FeesViewModel : ViewModelBase
                 else if (!serviceForFee.TryGetValue(f, out svc!))
                     svc = "بیمه"; // fallback
                 // اگر ServiceType از DB پر بود و مرحله !=0 بود، همان نظارت را نگه می‌داریم
-                // برای مرحله 0 حتماً نگاشت مرتب‌شده را اعمال می‌کنیم
+                // برای مرحله 0 حتما نگاشت مرتب‌شده را اعمال می‌کنیم
 
                 var item = new FeeItem
                 {
@@ -214,27 +213,39 @@ public sealed class FeesViewModel : ViewModelBase
 
     private void ApplyFilters()
     {
+        // فیلتر با مقدارهای اعمال‌شده خوانده می‌شود، نه پیش‌نویس.
+        Filters.Apply();
+        var appliedStatus = Filters.GetApplied("Status");
+        var appliedDiscipline = Filters.GetApplied("Discipline");
+        var appliedStage = Filters.GetApplied("Stage");
+        var appliedOwner = Filters.GetApplied("Owner");
+        var appliedCaseNumber = Filters.GetApplied("CaseNumber");
+        var appliedServiceType = Filters.GetApplied("ServiceType");
+        var appliedAmountFrom = Filters.GetApplied("AmountFrom", "");
+        var appliedAmountTo = Filters.GetApplied("AmountTo", "");
+        var appliedSearch = Filters.GetApplied("Search", "");
+
         var filtered = FilterHelper.ApplyFilters(_all,
-            (f => f.PayStatus, FilterStatus),
-            (f => f.Discipline, FilterDiscipline),
-            (f => f.Stage, FilterStage),
-            (f => f.Owner, FilterOwner),
-            (f => f.CaseNumber, FilterCaseNumber),
-            (f => f.ServiceType, FilterServiceType));
+            (f => f.PayStatus, appliedStatus),
+            (f => f.Discipline, appliedDiscipline),
+            (f => f.Stage, appliedStage),
+            (f => f.Owner, appliedOwner),
+            (f => f.CaseNumber, appliedCaseNumber),
+            (f => f.ServiceType, appliedServiceType));
 
         // Amount range
-        if (!string.IsNullOrWhiteSpace(FilterAmountFrom) && long.TryParse(NormalizeDigits(FilterAmountFrom).Replace(",", ""), out var fromAmt))
+        if (!string.IsNullOrWhiteSpace(appliedAmountFrom) && long.TryParse(NormalizeDigits(appliedAmountFrom).Replace(",", ""), out var fromAmt))
             filtered = filtered.Where(f => ParseAmount(f.Amount) >= fromAmt);
-        if (!string.IsNullOrWhiteSpace(FilterAmountTo) && long.TryParse(NormalizeDigits(FilterAmountTo).Replace(",", ""), out var toAmt))
+        if (!string.IsNullOrWhiteSpace(appliedAmountTo) && long.TryParse(NormalizeDigits(appliedAmountTo).Replace(",", ""), out var toAmt))
             filtered = filtered.Where(f => ParseAmount(f.Amount) <= toAmt);
 
         // General search
-        if (!string.IsNullOrWhiteSpace(SearchText))
+        if (!string.IsNullOrWhiteSpace(appliedSearch))
             filtered = filtered.Where(f =>
-                FilterHelper.Matches(f.Owner, SearchText) ||
-                FilterHelper.Matches(f.CaseNumber, SearchText) ||
-                FilterHelper.Matches(f.Discipline, SearchText) ||
-                FilterHelper.Matches(f.ServiceType, SearchText));
+                FilterHelper.Matches(f.Owner, appliedSearch) ||
+                FilterHelper.Matches(f.CaseNumber, appliedSearch) ||
+                FilterHelper.Matches(f.Discipline, appliedSearch) ||
+                FilterHelper.Matches(f.ServiceType, appliedSearch));
 
         Fees.Clear();
         foreach (var item in filtered) Fees.Add(item);
@@ -245,14 +256,21 @@ public sealed class FeesViewModel : ViewModelBase
         StatusMessage = CountDisplay;
     }
 
-    private void SelectAll() { foreach (var item in Fees) item.IsSelected = true; UpdateSelectedSummary(); }
-    private void DeselectAll() { foreach (var item in Fees) item.IsSelected = false; UpdateSelectedSummary(); }
-
     private void ClearFilters()
     {
-        SearchText = ""; FilterStatus = "همه"; FilterDiscipline = "همه"; FilterStage = "همه";
-        FilterOwner = "همه"; FilterCaseNumber = "همه"; FilterServiceType = "همه";
-        FilterAmountFrom = ""; FilterAmountTo = "";
+        Filters.Clear(("Search", ""), ("Status", "همه"), ("Discipline", "همه"), ("Stage", "همه"),
+            ("Owner", "همه"), ("CaseNumber", "همه"), ("ServiceType", "همه"),
+            ("AmountFrom", ""), ("AmountTo", ""));
+        OnPropertyChanged(nameof(SearchText));
+        OnPropertyChanged(nameof(FilterStatus));
+        OnPropertyChanged(nameof(FilterDiscipline));
+        OnPropertyChanged(nameof(FilterStage));
+        OnPropertyChanged(nameof(FilterOwner));
+        OnPropertyChanged(nameof(FilterCaseNumber));
+        OnPropertyChanged(nameof(FilterServiceType));
+        OnPropertyChanged(nameof(FilterAmountFrom));
+        OnPropertyChanged(nameof(FilterAmountTo));
+        ApplyFilters();
     }
 
     private void FilterByValue(string? parameter)
@@ -269,6 +287,8 @@ public sealed class FeesViewModel : ViewModelBase
             case "Status": FilterStatus = parts[1]; break;
             case "ServiceType": FilterServiceType = parts[1]; break;
         }
+        // An explicit "filter by this value" applies immediately.
+        ApplyFilters();
     }
 
     public void RemoveFilter(string column)
@@ -282,6 +302,7 @@ public sealed class FeesViewModel : ViewModelBase
             case "Status": FilterStatus = "همه"; break;
             case "ServiceType": FilterServiceType = "همه"; break;
         }
+        ApplyFilters();
     }
 
     public void UpdateSelectedSummary()
@@ -302,7 +323,7 @@ public sealed class FeesViewModel : ViewModelBase
             var amount = ParseAmount(item.Amount);
             total += amount; totalN++;
             var ps = item.PayStatus?.Trim() ?? "";
-            // پرداخت شده: دقیقاً پرداخت شده
+            // پرداخت شده: دقیقا پرداخت شده
             if (ps == "پرداخت شده") { paid += amount; paidN++; }
             // تایید شده: PayStatus تایید شده
             if (ps == "تایید شده") { confirmed += amount; confirmedN++; }
@@ -416,7 +437,7 @@ public sealed class FeesViewModel : ViewModelBase
     private void DeleteReceipt(FeeReceiptRow? row)
     {
         if (row == null) return;
-        if (MessageBox.Show($"حذف دریافتی {row.ReceiptDate} مبلغ {row.AmountDisplay} ؟", "تایید حذف", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
+        if (MessageBox.Show($"حذف دریافتی {row.ReceiptDate} به مبلغ {row.AmountDisplay}؟", "تایید حذف", MessageBoxButton.YesNo, MessageBoxImage.Warning) != MessageBoxResult.Yes) return;
         _db.DeleteFeeReceipt(row.Id);
         LoadReceipts(); ReceiptStatus = "حذف شد ✓";
     }

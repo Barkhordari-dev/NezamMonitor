@@ -3,6 +3,7 @@
 **/obj/
 publish/
 publish_release/
+publish_output/
 release_stage/
 runtimes/
 x64/

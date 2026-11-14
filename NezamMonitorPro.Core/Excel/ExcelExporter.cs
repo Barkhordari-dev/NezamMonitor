@@ -77,7 +77,7 @@ public static class ExcelExporter
             "شماره دستور نقشه", "نوع دستور نقشه", "تاریخ دستور نقشه",
             "نوع سازه", "عنوان بلوک", "تعداد بلوک", "طبقات", "واحد",
             "صادرکننده", "پروانه", "تاریخ پروانه", "تاریخ ترخیص",
-            "مساحت", "پاراف", "آدرس", "محدوده طرح", "دفتر", "تاریخ کسر", "مسئولیت" };
+            "مساحت", "پاراف", "آدرس", "محدوده طرح", "دفتر", "تاریخ کسر", "مسولیت" };
         for (int c = 0; c < h.Length; c++) ApplyHeader(ws.Cell(1, c + 1), h[c]);
         for (int r = 0; r < cases.Count; r++)
         {
@@ -152,7 +152,7 @@ public static class ExcelExporter
 
     private static void WriteReports(IXLWorksheet ws, IReadOnlyList<Case> cases)
     {
-        string[] h = { "مالک", "پرونده", "سریال", "نوع گزارش", "مرحله", "ناظر", "مسئولیت", "تاریخ" };
+        string[] h = { "مالک", "پرونده", "سریال", "نوع گزارش", "مرحله", "ناظر", "مسولیت", "تاریخ" };
         for (int c = 0; c < h.Length; c++) ApplyHeader(ws.Cell(1, c + 1), h[c]);
         int row = 2;
         foreach (var c in cases)

@@ -52,7 +52,9 @@ public partial class FeeReceiptDialog : Window
         if (list.Count == 0)
         {
             var msg = _isAdvance ? "هیچ تاریخ شروعی با وضعیت تایید شده یافت نشد." : "هیچ تاریخ شروعی با وضعیت پرداخت شده یافت نشد.";
-            EndDatePanel.Children.Add(new TextBlock { Text = msg, Foreground = System.Windows.Media.Brushes.Gray, Margin = new Thickness(4) });
+            var gray = System.Windows.Application.Current?.TryFindResource("TextSecondaryBrush") as System.Windows.Media.Brush
+                       ?? System.Windows.Media.Brushes.Gray;
+            EndDatePanel.Children.Add(new TextBlock { Text = msg, Foreground = gray, Margin = new Thickness(4) });
             return;
         }
         foreach (var d in list)
@@ -79,10 +81,10 @@ public partial class FeeReceiptDialog : Window
     {
         var date = DateBox.Text.Trim();
         var amtRaw = AmountBox.Text.Trim();
-        if (string.IsNullOrWhiteSpace(date)) { MessageBox.Show("تاریخ واریز را وارد کنید.", "خطا", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (string.IsNullOrWhiteSpace(date)) { MessageBox.Show("تاریخ واریز را وارد کنید.", "توجه", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         long amt = ParseAmount(amtRaw);
-        if (amt <= 0) { MessageBox.Show("مبلغ واریز معتبر نیست.", "خطا", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
-        if (_selected.Count == 0) { MessageBox.Show("حداقل یک تاریخ مرتبط انتخاب کنید.", "خطا", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (amt <= 0) { MessageBox.Show("مبلغ واریز معتبر نیست.", "توجه", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
+        if (_selected.Count == 0) { MessageBox.Show("حداقل یک تاریخ مرتبط انتخاب کنید.", "توجه", MessageBoxButton.OK, MessageBoxImage.Warning); return; }
         ResultReceipt.ReceiptDate = date;
         ResultReceipt.Amount = amt;
         ResultReceipt.IsAdvance = _isAdvance;

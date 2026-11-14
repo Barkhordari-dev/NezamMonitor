@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Media;
 using System.Windows.Controls;
 using NezamMonitorPro.Core.Theme;
@@ -13,7 +13,6 @@ public sealed class ThemeManager
 {
     private readonly NezamDatabase _db;
     private AppTheme _currentTheme;
-    private const string DbPrefix = "theme_";
 
     public AppTheme CurrentTheme => _currentTheme;
 
@@ -29,7 +28,7 @@ public sealed class ThemeManager
         var theme = BuiltInThemes.Light;
         var foundSavedTheme = false;
 
-        if (settings.TryGetValue($"{DbPrefix}Name", out var name))
+        if (settings.TryGetValue(SettingKeys.ThemeName, out var name))
         {
             var allThemes = BuiltInThemes.GetAllThemes();
             var match = allThemes.FirstOrDefault(t => t.Name == name);
@@ -60,23 +59,29 @@ public sealed class ThemeManager
             return theme;
         }
 
-        if (settings.TryGetValue($"{DbPrefix}Colors", out var colorJson))
+        if (settings.TryGetValue(SettingKeys.ThemeColors, out var colorJson))
         {
             try { theme.Colors = ThemeColors.FromDictionary(DeserializeDict(colorJson)); } catch { }
         }
-        if (settings.TryGetValue($"{DbPrefix}Fonts", out var fontJson))
+        if (settings.TryGetValue(SettingKeys.ThemeFonts, out var fontJson))
         {
             try { theme.Fonts = ThemeFonts.FromDictionary(DeserializeDict(fontJson)); } catch { }
         }
-        if (settings.TryGetValue($"{DbPrefix}Dimensions", out var dimJson))
+        if (settings.TryGetValue(SettingKeys.ThemeDimensions, out var dimJson))
         {
             try { theme.Dimensions = ThemeDimensions.FromDictionary(DeserializeDict(dimJson)); } catch { }
         }
-        if (settings.TryGetValue($"{DbPrefix}ButtonLayout", out var blJson))
+        // Tables/scroll fix: B Nazanin needs a ~26px line at 13pt (bold
+        // ~28px); an input shorter than 38px clips the text top and bottom
+        // (Padding 12,0 + 1px border leaves 36px). Saved themes from before
+        // this fix carry 32/34, so floor the height — the user can still
+        // pick a taller input in Settings, never a shorter one.
+        if (theme.Dimensions.InputHeight < 38) theme.Dimensions.InputHeight = 38;
+        if (settings.TryGetValue(SettingKeys.ThemeButtonLayout, out var blJson))
         {
             try { theme.ButtonLayout = ButtonLayout.FromDictionary(DeserializeDict(blJson)); } catch { }
         }
-        if (settings.TryGetValue($"{DbPrefix}LayoutDirection", out var ldJson))
+        if (settings.TryGetValue(SettingKeys.ThemeLayoutDirection, out var ldJson))
         {
             try { theme.LayoutDirection = LayoutDirection.FromDictionary(DeserializeDict(ldJson)); } catch { }
         }
@@ -88,12 +93,12 @@ public sealed class ThemeManager
     public void SaveTheme(AppTheme theme)
     {
         _currentTheme = theme;
-        _db.SaveSetting($"{DbPrefix}Name", theme.Name);
-        _db.SaveSetting($"{DbPrefix}Colors", SerializeDict(theme.Colors.ToDictionary()));
-        _db.SaveSetting($"{DbPrefix}Fonts", SerializeDict(theme.Fonts.ToDictionary()));
-        _db.SaveSetting($"{DbPrefix}Dimensions", SerializeDict(theme.Dimensions.ToDictionary()));
-        _db.SaveSetting($"{DbPrefix}ButtonLayout", SerializeDict(theme.ButtonLayout.ToDictionary()));
-        _db.SaveSetting($"{DbPrefix}LayoutDirection", SerializeDict(theme.LayoutDirection.ToDictionary()));
+        _db.SaveSetting(SettingKeys.ThemeName, theme.Name);
+        _db.SaveSetting(SettingKeys.ThemeColors, SerializeDict(theme.Colors.ToDictionary()));
+        _db.SaveSetting(SettingKeys.ThemeFonts, SerializeDict(theme.Fonts.ToDictionary()));
+        _db.SaveSetting(SettingKeys.ThemeDimensions, SerializeDict(theme.Dimensions.ToDictionary()));
+        _db.SaveSetting(SettingKeys.ThemeButtonLayout, SerializeDict(theme.ButtonLayout.ToDictionary()));
+        _db.SaveSetting(SettingKeys.ThemeLayoutDirection, SerializeDict(theme.LayoutDirection.ToDictionary()));
     }
 
     public AppTheme ResetToDefault()
@@ -109,14 +114,14 @@ public sealed class ThemeManager
     /// theme change does not wipe it.</summary>
     public string GetTableAlignment()
     {
-        var value = _db.GetSetting("theme_TableAlignment", "Center");
+        var value = _db.GetSetting(SettingKeys.ThemeTableAlignment, "Center");
         return value is "Right" or "Left" or "Center" ? value : "Center";
     }
 
     public void SaveTableAlignment(string value)
     {
         if (value is not ("Right" or "Left" or "Center")) value = "Center";
-        _db.SaveSetting("theme_TableAlignment", value);
+        _db.SaveSetting(SettingKeys.ThemeTableAlignment, value);
         ApplyTableAlignment(value);
     }
 
@@ -212,6 +217,11 @@ public sealed class ThemeManager
         app.Resources["ShadowColorBrush"] = new SolidColorBrush(HexToColor(theme.Colors.ShadowColor));
         app.Resources["ShadowColor"] = HexToColor(theme.Colors.ShadowColor);
         app.Resources["LogBackgroundBrush"] = new SolidColorBrush(HexToColor(theme.Colors.LogBackground));
+        // T-003: رنگ‌های گرادیان (سایدبار MainWindow، هیروی داشبورد و
+        // پنجره‌های رمز) از تم می‌آیند، نه از دو مقدار سخت‌کدشده
+        // PrimaryColor/AccentColor در ProTheme.xaml.
+        app.Resources["PrimaryColor"] = HexToColor(theme.Colors.Primary);
+        app.Resources["AccentColor"] = HexToColor(theme.Colors.Accent);
 
         // Fonts
         app.Resources["FontFamily"] = BuildFontFamily(theme.Fonts.FontFamily);
@@ -260,7 +270,7 @@ public sealed class ThemeManager
                 try
                 {
                     // مهم: در MainWindow.xaml ستون ۰ = سایدبار (سمت راست در RTL) و
-                    // ستون ۱ = محتوای اصلی که باید همیشه * بماند. قبلاً کد «آخرین ستون»
+                    // ستون ۱ = محتوای اصلی که باید همیشه * بماند. قبلا کد «آخرین ستون»
                     // را تنظیم می‌کرد و عرض محتوای اصلی را به ۲۶۴ پیکسل قفل می‌کرد
                     // (همان نوار سفید بزرگ سمت چپ).
                     if (mw.Content is System.Windows.Controls.Grid mainGrid &&
@@ -317,8 +327,11 @@ public sealed class ThemeManager
             if (string.Equals(name, "B Nazanin", StringComparison.OrdinalIgnoreCase)
                 && EmbeddedFontExists("Fonts/BNazanin.ttf"))
             {
+                // T-019: ارجاع به پوشه (نه تک‌فایل) تا WPF همه فایل‌های
+                // خانواده را ببیند و برای FontWeight=Bold از BNaznnBd.ttf
+                // استفاده کند، به‌جای Bold مصنوعی (کشیدن ضخیم حروف).
                 return new FontFamily(new Uri("pack://application:,,,/"),
-                    "./Fonts/BNazanin.ttf#B Nazanin");
+                    "./Fonts/#B Nazanin");
             }
 
             if (string.Equals(name, "Vazir", StringComparison.OrdinalIgnoreCase)

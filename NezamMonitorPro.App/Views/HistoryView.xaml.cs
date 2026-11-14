@@ -1,9 +1,10 @@
-using System.IO;
+﻿using System.IO;
 using System.Windows;
 using System.Windows.Controls;
 using Microsoft.Win32;
 using NezamMonitorPro.App.Services;
 using NezamMonitorPro.App.ViewModels;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NezamMonitorPro.App.Views;
 
@@ -15,7 +16,7 @@ public partial class HistoryView : UserControl, INavigationAware
     public void OnNavigatedTo()
     {
         try { _vm?.RefreshAll(); }
-        catch (Exception ex) { Log("HistoryView.OnNavigatedTo", ex); }
+        catch { }
     }
 
     public HistoryView()
@@ -24,36 +25,16 @@ public partial class HistoryView : UserControl, INavigationAware
 
         try
         {
-            _vm = new HistoryViewModel(DatabaseService.Instance);
+            // ARCH-001: ViewModel از کانتینر DI گرفته می‌شود.
+            _vm = App.Services.GetRequiredService<HistoryViewModel>();
             DataContext = _vm;
-
-            var snapshots = _vm.Snapshots.Count;
-            var legacy = _vm.LegacyDatabases.Count;
-            var detected = _vm.DetectedDatabases.Count;
-            LogInfo($"HistoryView ctor OK: snapshots={snapshots}, legacy={legacy}, detected={detected}");
-
-            Loaded += (_, _) => LogInfo(
-                $"HistoryView loaded: w={ActualWidth:0} h={ActualHeight:0} " +
-                $"shell={HistoryRoot?.ActualWidth:0}x{HistoryRoot?.ActualHeight:0} " +
-                $"dc={(DataContext is null ? "null" : DataContext.GetType().Name)}");
         }
-        catch (Exception ex)
+        catch
         {
-            Log("HistoryView ctor", ex);
             _vm = null;
         }
     }
 
-    private static void LogInfo(string message)
-    {
-        try
-        {
-            var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
-                      ?? AppDomain.CurrentDomain.BaseDirectory;
-            File.AppendAllText(Path.Combine(dir, "startup.log"), $"[{DateTime.Now}] {message}\n");
-        }
-        catch { }
-    }
 
     private void SetActive_Click(object sender, RoutedEventArgs e)
     {
@@ -67,9 +48,13 @@ public partial class HistoryView : UserControl, INavigationAware
         if (_vm is null) return;
         if (sender is Button btn && btn.Tag is long id)
         {
+            var snap = _vm.Snapshots.FirstOrDefault(s => s.Id == id);
+            var details = snap == null
+                ? ""
+                : $"\n\nتاریخ: {snap.CreatedAt}\nتعداد پرونده: {snap.CaseCount}";
             var result = MessageBox.Show(
-                "آیا از حذف اسنپ‌شات #" + id + " مطمئن هستید؟\n\nاین عمل غیرقابل بازگشت است.",
-                "تأیید حذف",
+                $"آیا از حذف اسنپ‌شات شماره {id} مطمین هستی؟{details}\n\nاین عمل غیرقابل بازگشت است.",
+                "تایید حذف",
                 MessageBoxButton.YesNo,
                 MessageBoxImage.Warning);
             if (result == MessageBoxResult.Yes)
@@ -83,13 +68,13 @@ public partial class HistoryView : UserControl, INavigationAware
         var selectedCount = _vm.Snapshots.Count(s => s.IsSelectedForMerge);
         if (selectedCount < 2)
         {
-            MessageBox.Show("حداقل ۲ اسنپ‌شات انتخاب کنید.", "خطا", MessageBoxButton.OK, MessageBoxImage.Warning);
+            MessageBox.Show("حداقل ۲ اسنپ‌شات انتخاب کنید.", "توجه", MessageBoxButton.OK, MessageBoxImage.Warning);
             return;
         }
 
         var result = MessageBox.Show(
-            $"آیا از ادغام {selectedCount} اسنپ‌شات مطمئن هستید؟\n\nاسنپ‌شات جدید ایجاد می‌شود.",
-            "تأیید ادغام",
+            $"آیا از ادغام {selectedCount} اسنپ‌شات مطمین هستید؟\n\nاسنپ‌شات جدید ایجاد می‌شود.",
+            "تایید ادغام",
             MessageBoxButton.YesNo,
             MessageBoxImage.Question);
         if (result == MessageBoxResult.Yes)
@@ -104,8 +89,8 @@ public partial class HistoryView : UserControl, INavigationAware
         {
             var dialog = new OpenFileDialog
             {
-                Title = "انتخاب پایگاه‌دادهٔ نسخهٔ قبلی",
-                Filter = "پایگاه‌داده SQLite (*.db;*.sqlite;*.db3;*.sqlite3)|*.db;*.sqlite;*.db3;*.sqlite3|همهٔ فایل‌ها (*.*)|*.*",
+                Title = "انتخاب پایگاه‌داده نسخه قبلی",
+                Filter = "پایگاه‌داده SQLite (*.db;*.sqlite;*.db3;*.sqlite3)|*.db;*.sqlite;*.db3;*.sqlite3|همه فایل‌ها (*.*)|*.*",
                 CheckFileExists = true,
                 Multiselect = false
             };
@@ -117,16 +102,15 @@ public partial class HistoryView : UserControl, INavigationAware
 
             MessageBox.Show(
                 status + "\n\n" +
-                "نکته: یک کپی در پوشهٔ data\\legacy ذخیره شد و فقط‌خواندنی است. " +
-                "پایگاه‌دادهٔ رمزنگاری‌شدهٔ فعلی برنامه تغییری نکرده است.",
+                "نکته: یک کپی در پوشه data\\legacy ذخیره شد و فقط‌خواندنی است. " +
+                "پایگاه‌داده رمزنگاری‌شده فعلی برنامه تغییری نکرده است.",
                 "بایگانی پایگاه‌داده",
                 MessageBoxButton.OK,
                 MessageBoxImage.Information);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log("HistoryView.AddLegacy", ex);
-            MessageBox.Show("افزودن فایل ناموفق بود:\n" + ex.Message, "خطا",
+            MessageBox.Show("افزودن فایل انجام نشد. دوباره تلاش کن.", "خطا",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -141,10 +125,9 @@ public partial class HistoryView : UserControl, INavigationAware
             var status = _vm.AttachDetected(path);
             MessageBox.Show(status, "بایگانی پایگاه‌داده", MessageBoxButton.OK, MessageBoxImage.Information);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log("HistoryView.AttachDetected", ex);
-            MessageBox.Show("افزودن به بایگانی ناموفق بود:\n" + ex.Message, "خطا",
+            MessageBox.Show("افزودن به بایگانی انجام نشد. دوباره تلاش کن.", "خطا",
                 MessageBoxButton.OK, MessageBoxImage.Warning);
         }
     }
@@ -155,10 +138,10 @@ public partial class HistoryView : UserControl, INavigationAware
         if (sender is not Button btn || btn.Tag is not string path) return;
 
         var confirm = MessageBox.Show(
-            "داده‌های این پایگاه‌دادهٔ قدیمی به برنامه ایمپورت شود؟\n\n" +
+            "داده‌های این پایگاه‌داده قدیمی به برنامه ایمپورت شود؟\n\n" +
             "• یک اسنپ‌شات جدید ساخته می‌شود و داده‌های فعلی حذف نمی‌شوند.\n" +
-            "• فایل قدیمی تغییر نمی‌کند و پایگاه‌دادهٔ رمزنگاری‌شدهٔ فعلی هم دست‌نخورده می‌ماند.",
-            "ایمپورت پایگاه‌دادهٔ نسخهٔ قبلی",
+            "• فایل قدیمی تغییر نمی‌کند و پایگاه‌داده رمزنگاری‌شده فعلی هم دست‌نخورده می‌ماند.",
+            "ایمپورت پایگاه‌داده نسخه قبلی",
             MessageBoxButton.YesNo, MessageBoxImage.Question);
 
         if (confirm != MessageBoxResult.Yes) return;
@@ -168,13 +151,12 @@ public partial class HistoryView : UserControl, INavigationAware
             Cursor = System.Windows.Input.Cursors.Wait;
             var message = await _vm.ImportLegacyAsync(path);
             var failed = message.Contains("ناموفق");
-            MessageBox.Show(message, "نتیجهٔ ایمپورت", MessageBoxButton.OK,
+            MessageBox.Show(message, "نتیجه ایمپورت", MessageBoxButton.OK,
                 failed ? MessageBoxImage.Warning : MessageBoxImage.Information);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            Log("HistoryView.ImportLegacy", ex);
-            MessageBox.Show("ایمپورت ناموفق بود: " + ex.Message, "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
+            MessageBox.Show("ایمپورت انجام نشد. دوباره تلاش کن.", "خطا", MessageBoxButton.OK, MessageBoxImage.Error);
         }
         finally
         {
@@ -206,21 +188,9 @@ public partial class HistoryView : UserControl, INavigationAware
         {
             _vm.ScanCandidates();
         }
-        catch (Exception ex)
+        catch
         {
-            Log("HistoryView.ScanLegacy", ex);
         }
     }
 
-    private static void Log(string where, Exception ex)
-    {
-        try
-        {
-            var dir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName)
-                      ?? AppDomain.CurrentDomain.BaseDirectory;
-            File.AppendAllText(Path.Combine(dir, "startup.log"),
-                $"[{DateTime.Now}] {where}: {ex.GetType().Name}: {ex.Message}\n{ex.StackTrace}\n");
-        }
-        catch { }
-    }
 }

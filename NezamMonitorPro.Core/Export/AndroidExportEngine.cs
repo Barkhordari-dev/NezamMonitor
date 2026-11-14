@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -21,8 +22,12 @@ public sealed class AndroidExportEngine
 
     /// <summary>
     /// Export current snapshot data to a .nzmdata file.
+    /// When <paramref name="exportPassword"/> is given, data.json is stored
+    /// encrypted (AES-256-GCM, PBKDF2-SHA256, random salt+nonce per export);
+    /// the manifest records the encryption parameters and the checksum is
+    /// over the stored (encrypted) bytes.
     /// </summary>
-    public ExportResult Export(string outputPath, string? applicationVersion = null)
+    public ExportResult Export(string outputPath, string? applicationVersion = null, string? exportPassword = null)
     {
         var result = new ExportResult();
 
@@ -51,18 +56,34 @@ public sealed class AndroidExportEngine
             };
             var dataJson = JsonSerializer.Serialize(exportData, camelCaseOptions);
 
-            // 4. Build manifest
+            // SEC-015: optional encryption of the stored data.json bytes.
+            var encrypted = !string.IsNullOrEmpty(exportPassword);
+            byte[] dataBytes = Encoding.UTF8.GetBytes(dataJson);
+            byte[]? salt = null;
+            byte[]? nonce = null;
+            if (encrypted)
+            {
+                salt = RandomNumberGenerator.GetBytes(32);
+                nonce = RandomNumberGenerator.GetBytes(12);
+                dataBytes = EncryptBytes(dataBytes, exportPassword!, salt, nonce);
+            }
+
+            // 4. Build manifest (checksum is over the bytes stored in the zip)
             var manifest = new ExportManifest
             {
                 Format = FORMAT_NAME,
                 Version = FORMAT_VERSION,
-                FormatVersion = "1",
+                FormatVersion = "2",
                 CreatedAt = DateTime.UtcNow.ToString("o"),
                 SourceApplication = "NezamMonitor Windows",
                 SourceApplicationVersion = applicationVersion ?? "1.0",
                 RecordCount = cases.Count,
                 SchemaVersion = "1",
-                Checksum = ComputeChecksum(dataJson),
+                Checksum = ComputeChecksum(dataBytes),
+                Encrypted = encrypted,
+                Encryption = encrypted ? "AES-256-GCM" : "",
+                Salt = encrypted ? Convert.ToBase64String(salt!) : "",
+                Nonce = encrypted ? Convert.ToBase64String(nonce!) : "",
                 ExportedEntities = new List<string>
                 {
                     "cases", "specifications", "engineers", "fees", "reports", "followUpEdits", "feeReceipts"
@@ -94,10 +115,22 @@ public sealed class AndroidExportEngine
             using (var zip = ZipFile.Open(outputPath, ZipArchiveMode.Create))
             {
                 AddEntry(zip, "manifest.json", manifestJson);
-                AddEntry(zip, "data.json", dataJson);
+                AddEntry(zip, "data.json", dataBytes);
                 AddEntry(zip, "metadata.json", metadataJson);
 
-                // Empty attachments directory placeholder
+                // V5: generated PDFs ride along in attachments/ so the phone
+                // can open them from the history without a second download.
+                // Name: <caseNumber>_<stage>_<fileName> (caseNumber sanitized).
+                foreach (var g in _db.GetGeneratedReports())
+                {
+                    if (string.IsNullOrEmpty(g.PdfPath) || !File.Exists(g.PdfPath)) continue;
+                    var safeCase = (g.CaseNumber ?? "").Replace("/", "-").Replace("\\", "-");
+                    var entryName = $"attachments/{safeCase}_{g.Stage}_{Path.GetFileName(g.PdfPath)}";
+                    try { zip.CreateEntryFromFile(g.PdfPath, entryName, CompressionLevel.Optimal); }
+                    catch { /* a missing/unreadable PDF must not break the export */ }
+                }
+
+                // Empty attachments directory placeholder (kept for v1 readers)
                 AddEntry(zip, "attachments/.gitkeep", "");
             }
 
@@ -133,7 +166,7 @@ public sealed class AndroidExportEngine
                 Serial = c.Serial,
                 Owner = c.Owner,
                 OwnerMobile = c.OwnerMobile,
-                Responsibility = c.Responsibility,
+                Responsibility = c.Responsibility ?? "",
                 CapacityDate = c.CapacityDate,
                 Office = c.Office,
                 ReportDate1 = c.ReportDate1,
@@ -144,7 +177,32 @@ public sealed class AndroidExportEngine
                 OwnerAddress = c.OwnerAddress,
                 OwnerZip = c.OwnerZip,
                 OwnerTel = c.OwnerTel,
-                OwnerBirthLoc = c.OwnerBirthLoc
+                OwnerBirthLoc = c.OwnerBirthLoc,
+                // V3: the سامانه-side id (db_id) and the archive flag ride along.
+                DbId = c.ApiDbId ?? "",
+                Archived = c.Archived,
+                // V4: the case-level API fields Android reads from the case
+                // object (its import wipes them when they are missing). They
+                // all come from this case's own records — Specification for
+                // the permit/building fields, Responsibility for discipline.
+                // stateTitle/workType/unitTitle/orderPart/executionDate have
+                // no Windows source, so they stay absent (Android defaults "").
+                PermitNumber = c.Specification?.PermitNumber ?? "",
+                PermitDate = c.Specification?.PermitDate ?? "",
+                RenovationCode = c.Specification?.RenovationCode ?? "",
+                Address = c.Specification?.Address ?? "",
+                BlockNumber = c.Specification?.BlockTitle ?? "",
+                LandArea = c.Specification?.LandArea ?? "",
+                MunicipalArea = c.Specification?.ParafArea ?? "",
+                EffectiveArea = c.Specification?.CapacityArea ?? "",
+                Floors = c.Specification?.Floors ?? "",
+                Units = c.Specification?.Units ?? "",
+                BuildingGroup = c.Specification?.BuildingGroup ?? "",
+                StructureType = c.Specification?.StructureType ?? "",
+                UsageType = c.Specification?.UsageType ?? "",
+                PlanZone = c.Specification?.PlanZone ?? "",
+                Issuer = c.Specification?.Issuer ?? "",
+                Discipline = c.Responsibility ?? ""
             };
 
             // Specification
@@ -228,7 +286,8 @@ public sealed class AndroidExportEngine
                 VisitDate = r.VisitDate,
                 CeilingCount = r.CeilingCount,
                 Indicator = r.Indicator,
-                HasFile = r.HasFile
+                HasFile = r.HasFile,
+                ImageName = r.ImageName ?? ""
             }).ToList();
 
             // Follow-up edits
@@ -240,7 +299,9 @@ public sealed class AndroidExportEngine
                     CaseNumberEdit = edit.CaseNumberEdit,
                     OwnerEdit = edit.OwnerEdit,
                     AddressEdit = edit.AddressEdit,
-                    OwnerMobileEdit = edit.OwnerMobileEdit
+                    OwnerMobileEdit = edit.OwnerMobileEdit,
+                    CreatedAt = edit.CreatedAt,
+                    UpdatedAt = edit.UpdatedAt
                 };
             }
 
@@ -283,12 +344,43 @@ public sealed class AndroidExportEngine
         writer.Write(content);
     }
 
+    private static void AddEntry(ZipArchive zip, string entryName, byte[] content)
+    {
+        var entry = zip.CreateEntry(entryName, CompressionLevel.Optimal);
+        using var stream = entry.Open();
+        stream.Write(content, 0, content.Length);
+    }
+
     private static string ComputeChecksum(string data)
     {
+        return ComputeChecksum(Encoding.UTF8.GetBytes(data));
+    }
+
+    private static string ComputeChecksum(byte[] bytes)
+    {
         using var sha = System.Security.Cryptography.SHA256.Create();
-        var bytes = Encoding.UTF8.GetBytes(data);
         var hash = sha.ComputeHash(bytes);
         return Convert.ToHexString(hash);
+    }
+
+    // SEC-015: AES-256-GCM — key from PBKDF2-SHA256 (password + random salt,
+    // 600,000 iterations); output = ciphertext + 16-byte tag (same layout
+    // as BackupEngine, so the import side can decrypt it).
+    private const int Pbkdf2Iterations = 600_000;
+
+    private static byte[] EncryptBytes(byte[] plainBytes, string password, byte[] salt, byte[] nonce)
+    {
+        // .NET 10: Rfc2898DeriveBytes constructors are obsolete (SYSLIB0060);
+        // the static Pbkdf2 method derives the identical key.
+        var key = Rfc2898DeriveBytes.Pbkdf2(password, salt, Pbkdf2Iterations, HashAlgorithmName.SHA256, 32);
+        var cipher = new byte[plainBytes.Length];
+        var tag = new byte[16];
+        using var aesGcm = new AesGcm(key, 16);
+        aesGcm.Encrypt(nonce, plainBytes, cipher, tag);
+        var result = new byte[cipher.Length + tag.Length];
+        Buffer.BlockCopy(cipher, 0, result, 0, cipher.Length);
+        Buffer.BlockCopy(tag, 0, result, cipher.Length, tag.Length);
+        return result;
     }
 }
 
@@ -315,6 +407,14 @@ public class ExportManifest
     public int RecordCount { get; set; }
     public string SchemaVersion { get; set; } = "";
     public string Checksum { get; set; } = "";
+    /// <summary>SEC-015: true when the stored data.json entry is encrypted.</summary>
+    public bool Encrypted { get; set; }
+    /// <summary>Encryption algorithm id, e.g. "AES-256-GCM" (empty when not encrypted).</summary>
+    public string Encryption { get; set; } = "";
+    /// <summary>Random per-export salt (Base64) for the PBKDF2 key.</summary>
+    public string Salt { get; set; } = "";
+    /// <summary>Random per-export nonce (Base64) for AES-GCM.</summary>
+    public string Nonce { get; set; } = "";
     public List<string> ExportedEntities { get; set; } = new();
 }
 
@@ -355,6 +455,24 @@ public class ExportCase
     public string OwnerZip { get; set; } = "";
     public string OwnerTel { get; set; } = "";
     public string OwnerBirthLoc { get; set; } = "";
+    public string DbId { get; set; } = "";
+    public bool Archived { get; set; }
+    public string PermitNumber { get; set; } = "";
+    public string PermitDate { get; set; } = "";
+    public string RenovationCode { get; set; } = "";
+    public string Address { get; set; } = "";
+    public string BlockNumber { get; set; } = "";
+    public string LandArea { get; set; } = "";
+    public string MunicipalArea { get; set; } = "";
+    public string EffectiveArea { get; set; } = "";
+    public string Floors { get; set; } = "";
+    public string Units { get; set; } = "";
+    public string BuildingGroup { get; set; } = "";
+    public string StructureType { get; set; } = "";
+    public string UsageType { get; set; } = "";
+    public string PlanZone { get; set; } = "";
+    public string Issuer { get; set; } = "";
+    public string Discipline { get; set; } = "";
     public ExportSpecification? Specification { get; set; }
     public List<ExportEngineer> Engineers { get; set; } = new();
     public List<ExportFee> Fees { get; set; } = new();
@@ -435,6 +553,7 @@ public class ExportReport
     public string CeilingCount { get; set; } = "";
     public string Indicator { get; set; } = "";
     public bool HasFile { get; set; }
+    public string ImageName { get; set; } = "";
 }
 
 public class ExportFollowUpEdit
@@ -444,4 +563,6 @@ public class ExportFollowUpEdit
     public string OwnerEdit { get; set; } = "";
     public string AddressEdit { get; set; } = "";
     public string OwnerMobileEdit { get; set; } = "";
+    public string CreatedAt { get; set; } = "";
+    public string UpdatedAt { get; set; } = "";
 }
