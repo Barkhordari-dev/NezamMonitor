@@ -290,6 +290,55 @@ public sealed class DirectoryService : INotifyPropertyChanged
     /// <summary>آیا این مقدار یعنی «چیزی ثبت نشده» (خالی یا «_» یا «-»).</summary>
     public static bool IsMissing(string? value) => DirectoryParser.IsMissingDirectoryValue(value ?? "");
 
+    /// <summary>
+    /// بایت‌های عکس مهندس از یک URL (اسنپ‌شات یا صفحه جزئیات). مثل اندروید
+    /// (ResilientHttpClient): هر تلاش یک درخواست تازه با Connection: close و
+    /// بدون فشرده‌سازی است؛ تا ۳ بار تلاش می‌کند. ناموفق = null + یک خط در
+    /// لاگ خطا (دیگر بی‌صدا نیست — ولی هیچ پنجره‌ای باز نمی‌شود).
+    /// چرا بایت، نه خودِ URL؟ بارگذاری مستقیم URL در WPF (BitmapImage)
+    /// به سرور ناپایدار دفترچه (قطع‌شدن وسط دانلود، همان «unexpected end
+    /// of stream» اندروید 3.11.2) باخت و بی‌هیچ دلیلی عکس را پنهان می‌کرد؛
+    /// اینجا خودمان با همان کلاینت مقاوم دانلود می‌کنیم.
+    /// </summary>
+    public async Task<byte[]?> FetchPhotoBytesAsync(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        Exception? lastError = null;
+        for (var attempt = 0; attempt < 3; attempt++)
+        {
+            try
+            {
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.UserAgent.ParseAdd(DesktopUserAgent);
+                request.Headers.ConnectionClose = true;
+                request.Headers.AcceptEncoding.ParseAdd("identity");
+                using var response = await PhotoHttp.SendAsync(request);
+                if (!response.IsSuccessStatusCode)
+                {
+                    lastError = new HttpRequestException($"HTTP {(int)response.StatusCode}");
+                    continue;
+                }
+                var mediaType = response.Content.Headers.ContentType?.MediaType;
+                if (mediaType != null && !mediaType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+                {
+                    lastError = new HttpRequestException($"unexpected content type {mediaType}");
+                    continue;
+                }
+                var bytes = await response.Content.ReadAsByteArrayAsync();
+                if (bytes.Length == 0)
+                {
+                    lastError = new HttpRequestException("empty photo body");
+                    continue;
+                }
+                return bytes;
+            }
+            catch (Exception ex) { lastError = ex; }
+        }
+        ErrorLog.Write(lastError ?? new HttpRequestException("photo download failed"),
+            $"DirectoryService.FetchPhotoBytesAsync url={url}");
+        return null;
+    }
+
     /// <summary>عکس ذخیره‌شده در اسنپ‌شات؛ خالی یا images.png یعنی «عکس ندارد».</summary>
     public static string? StoredPhotoUrl(string? photo)
     {

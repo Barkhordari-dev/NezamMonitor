@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using NezamMonitorPro.Core.Data;
 
 namespace NezamMonitorPro.Tests;
@@ -222,6 +223,48 @@ public class DirectoryResolverTests
     [InlineData("<p>no image here</p>")]
     public void ParseEngineerPhotoFromHtml_NoImgFluidReturnsEmpty(string html)
         => Assert.Equal("", DirectoryParser.ParseEngineerPhotoFromHtml(html));
+
+    [Fact]
+    public void ParseEngineerPhotoFromHtml_MultilineImgTag_ReturnsAbsoluteUrl()
+    {
+        // v12.11: the real detail page splits the <img> tag across lines
+        // (src on one line, the closing > on the next) — the tag regex
+        // must span lines, or the fresh photo is never found.
+        const string url = "http://service.yazdnezam.ir:8033/resume/Resume/public/uploads/img/ftpscanmohandesin/Pic/31-1-0-00103.jpg";
+        var html = "<img src=\"" + url + "\" class=\"img-fluid rounded float-right\" alt=\"Responsive image\"\n                 style=\"width: 120px;\">";
+        Assert.Equal(url, DirectoryParser.ParseEngineerPhotoFromHtml(html));
+    }
+
+    // ---------- XAML visible text: no tofu characters (v12.11) ----------
+
+    [Theory]
+    [InlineData("NezamMonitorPro.App/Views/DirectoryOfficeDetailWindow.xaml")]
+    [InlineData("NezamMonitorPro.App/Views/DirectoryEngineerProfileWindow.xaml")]
+    [InlineData("NezamMonitorPro.App/Views/ReportWizardWindow.xaml")]
+    public void XamlVisibleText_HasNoTofuCharacters(string relativePath)
+    {
+        // B Nazanin has no glyphs for Arabic diacritics (U+064B–U+0652,
+        // U+0654, U+0655, U+0670), tatweel (U+0640) or ة/ء/أ/ؤ/ئ — they
+        // show as squares. The v12.1 sweep removed them from source;
+        // v12.6/v12.7 reintroduced five (مسئول، پایهٔ، دقیقاً). This pins
+        // the visible strings (Text/Content/ToolTip) of the directory +
+        // wizard windows so no new one slips back in.
+        var path = TestHelpers.FindRepoFile(relativePath.Replace('/', Path.DirectorySeparatorChar));
+        Assert.True(path != null, relativePath + " not found under the repo root.");
+        var text = File.ReadAllText(path!);
+        foreach (Match m in Regex.Matches(text, "(?:Text|Content|ToolTip)=\"([^\"]*)\""))
+        {
+            var value = m.Groups[1].Value;
+            foreach (var ch in value)
+            {
+                Assert.False(
+                    (ch >= '\u064B' && ch <= '\u0652') || ch == '\u0654' || ch == '\u0655' ||
+                    ch == '\u0670' || ch == '\u0640' ||
+                    ch == '\u0629' || ch == '\u0621' || ch == '\u0623' || ch == '\u0624' || ch == '\u0626',
+                    $"{relativePath}: tofu character U+{(int)ch:X4} in visible text {value}");
+            }
+        }
+    }
 
     // ---------- Seeded snapshot (real data) ----------
 

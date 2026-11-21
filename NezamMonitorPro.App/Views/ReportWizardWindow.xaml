@@ -93,7 +93,7 @@
                 <StackPanel>
                     <TextBlock Text="در هر ردیف فقط یکی را انتخاب کن؛ تیک انتخاب‌شده در گزارش نهایی به‌صورت تیک سیاه درمی‌آید."
                                TextWrapping="Wrap" FontSize="13" Opacity="0.8" Margin="0,0,0,10"
-                               ToolTip="ردیف‌ها و ستون‌ها دقیقاً از خود تمپلیت خوانده شده‌اند."/>
+                               ToolTip="ردیف‌ها و ستون‌ها دقیقا از خود تمپلیت خوانده شده‌اند."/>
                     <ItemsControl ItemsSource="{Binding CheckRows}">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
@@ -224,7 +224,7 @@
             <Button Content="تولید گزارش" Click="GenerateButton_Click" IsEnabled="{Binding CanGenerate}"
                     Visibility="{Binding IsLastStep, Converter={StaticResource BoolToVis}}"
                     Margin="0,0,6,0" Padding="14,6" FontSize="14" FontWeight="Bold"
-                    ToolTip="گزارش را با همین فیلدها و تیک‌ها و توضیحات می‌سازد؛ دقیقاً مثل دکمه تولید معمولی."/>
+                    ToolTip="گزارش را با همین فیلدها و تیک‌ها و توضیحات می‌سازد؛ دقیقا مثل دکمه تولید معمولی."/>
             <Button Content="بستن" Click="CloseButton_Click" Padding="14,6" FontSize="14"
                     ToolTip="پنجره را می‌بندد؛ گزارشی ساخته نمی‌شود."/>
         </StackPanel>

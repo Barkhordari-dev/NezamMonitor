@@ -1,6 +1,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Threading.Tasks;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using NezamMonitorPro.App.Services;
 using NezamMonitorPro.Core.Data;
 
@@ -27,6 +30,7 @@ public sealed class DirectoryEngineerProfileViewModel : ViewModelBase
     private string _initials = "؟";
     private string _discipline = "";
     private string _officeName = "";
+    private ImageSource? _photoImage;
     private string? _photoUrl;
     private string _designGrade = "";
     private string _supervisionGrade = "";
@@ -62,17 +66,21 @@ public sealed class DirectoryEngineerProfileViewModel : ViewModelBase
     public string OfficeName { get => _officeName; private set => SetProperty(ref _officeName, value); }
     public bool HasOffice => !string.IsNullOrWhiteSpace(OfficeName) && OfficeName != "ثبت نشده";
 
-    public string? PhotoUrl
+    /// <summary>عکس پروفایل، آماده برای نمایش — بایت‌های دانلودشده، نه URL خام.
+    /// WPF با بارگذاری مستقیم URL از سرور ناپایدار دفترچه باخت و بی‌هیچ
+    /// دلیلی عکس را پنهان می‌کرد؛ اینجا بایت‌ها با کلاینت مقاوم دانلود
+    /// و از حافظه ساخته می‌شوند. null یعنی «عکس ندارد» → حروف اول نام.</summary>
+    public ImageSource? PhotoImage
     {
-        get => _photoUrl;
+        get => _photoImage;
         private set
         {
-            if (!SetProperty(ref _photoUrl, value)) return;
+            if (!SetProperty(ref _photoImage, value)) return;
             OnPropertyChanged(nameof(HasPhoto));
         }
     }
 
-    public bool HasPhoto => !string.IsNullOrWhiteSpace(PhotoUrl);
+    public bool HasPhoto => PhotoImage != null;
 
     // ── کارت ۲: مشخصات پروانه ──
     public string DesignGrade { get => _designGrade; private set => SetProperty(ref _designGrade, value); }
@@ -143,7 +151,9 @@ public sealed class DirectoryEngineerProfileViewModel : ViewModelBase
             OnPropertyChanged(nameof(HasUpdatedAt));
 
             // عکس ذخیره‌شده اول نشان داده می‌شود؛ تازه‌اش بعداً جایش را می‌گیرد.
-            PhotoUrl = DirectoryService.StoredPhotoUrl(e.Photo);
+            // دانلود بایت‌ها در پس‌زمینه است تا متن پروفایل معطل عکس نماند.
+            _photoUrl = DirectoryService.StoredPhotoUrl(e.Photo);
+            _ = LoadStoredPhotoAsync(_siteId, _photoUrl);
 
             HistoryRows.Clear();
             foreach (var h in profile.History)
@@ -197,13 +207,52 @@ public sealed class DirectoryEngineerProfileViewModel : ViewModelBase
     }
 
     /// <summary>وقتی عکس بارگذاری نشد (ImageFailed)، حروف اول نام می‌ماند.</summary>
-    public void HidePhoto() => PhotoUrl = null;
+    public void HidePhoto() => PhotoImage = null;
+
+    /// <summary>دانلود عکس ذخیره‌شده و نشان‌دادنش؛ نشد حروف اول نام می‌ماند.</summary>
+    private async Task LoadStoredPhotoAsync(int siteId, string? url)
+    {
+        var image = await LoadPhotoImageAsync(url);
+        if (image != null && _siteId == siteId)
+            PhotoImage = image;
+    }
+
+    /// <summary>بایت‌های یک عکس را می‌گیرد و BitmapImage آماده نمایش می‌سازد؛
+    /// نشد null برمی‌گرداند (دلیلش را سرویس در لاگ خطا نوشته است).</summary>
+    private async Task<ImageSource?> LoadPhotoImageAsync(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return null;
+        var bytes = await _service.FetchPhotoBytesAsync(url);
+        if (bytes == null || bytes.Length == 0) return null;
+        try
+        {
+            using var stream = new MemoryStream(bytes);
+            var bmp = new BitmapImage();
+            bmp.BeginInit();
+            bmp.CacheOption = BitmapCacheOption.OnLoad;
+            bmp.StreamSource = stream;
+            bmp.EndInit();
+            bmp.Freeze();
+            return bmp;
+        }
+        catch (System.Exception ex)
+        {
+            NezamMonitorPro.App.Services.ErrorLog.Write(ex, "DirectoryEngineerProfileViewModel.LoadPhotoImageAsync");
+            return null;
+        }
+    }
 
     private async Task RefreshPhotoAsync(int siteId)
     {
         var fresh = await _service.FetchPhotoUrlAsync(siteId);
-        if (fresh != null && _siteId == siteId && HasProfile)
-            PhotoUrl = fresh;
+        if (fresh == null || fresh == _photoUrl) return;
+        if (_siteId != siteId || !HasProfile) return;
+        var image = await LoadPhotoImageAsync(fresh);
+        if (image != null && _siteId == siteId)
+        {
+            _photoUrl = fresh;
+            PhotoImage = image;
+        }
     }
 
     private static void AddGradeLine(List<string> lines, string label, string? date)

@@ -66,10 +66,10 @@
                             <TextBlock Grid.Row="1" Grid.Column="0" Text="شماره مجوز:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
                             <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Licence}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,6"
                                        Opacity="{Binding Licence, Converter={StaticResource PlaceholderOpacity}}"/>
-                            <TextBlock Grid.Row="2" Grid.Column="0" Text="مسئول دفتر:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="مسول دفتر:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
                             <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Manager}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,6"
                                        Opacity="{Binding Manager, Converter={StaticResource PlaceholderOpacity}}"/>
-                            <TextBlock Grid.Row="3" Grid.Column="0" Text="همراه مسئول:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="همراه مسول:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
                             <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding ManagerMobile}" FontSize="14" TextWrapping="Wrap" Margin="0,0,0,6"
                                        Opacity="{Binding ManagerMobile, Converter={StaticResource PlaceholderOpacity}}"/>
                             <TextBlock Grid.Row="4" Grid.Column="0" Text="رابط دفتر:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>

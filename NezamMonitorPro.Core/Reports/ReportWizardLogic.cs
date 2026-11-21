@@ -170,7 +170,7 @@ public static class ReportWizardLogic
         var sb = new System.Text.StringBuilder(unified.Length);
         foreach (var ch in unified)
         {
-            if ((ch >= '\u064B' && ch <= '\u0652') || ch == '\u0670' || ch == '\u0640') continue;
+            if ((ch >= '\u064B' && ch <= '\u0652') || ch == '\u0654' || ch == '\u0655' || ch == '\u0670' || ch == '\u0640') continue;
             if (ch == '\u0621') continue; // ء deleted
             if (ch == '\u0629') { sb.Append('\u0647'); continue; } // ة -> ه
             if (ch == '\u0623') { sb.Append('\u0627'); continue; } // أ -> ا

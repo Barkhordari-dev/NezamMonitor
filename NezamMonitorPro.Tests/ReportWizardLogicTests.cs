@@ -356,7 +356,9 @@ public class ReportWizardLogicTests
         Assert.DoesNotContain("/", fileName);
 
         var text = DocumentText(result.OutputPath!);
-        Assert.Contains("مالک ویرایش‌شدهٔ آزمایشی", text);
+        // v12.11: the edited owner carried a hamza-above (ٔ) — ToPersianDisplay
+        // strips it on the way in, so the file holds the stripped form.
+        Assert.Contains("مالک ویرایش‌شده آزمایشی", text);
         Assert.Contains("ناظر ویرایش‌شده", text);
         Assert.Contains("بلوک ویرایش‌شده", text);
         Assert.Contains("توضیح آزمایشی ۱", text);
@@ -547,6 +549,18 @@ public class ReportWizardLogicTests
         // أ is not a letter B Nazanin can show — it becomes ا, like the
         // v12.1 source sweep.
         Assert.Equal("تایید", ReportWizardLogic.ToPersianDisplay("تأیید"));
+    }
+
+    [Fact]
+    public void ToPersianDisplay_StripsHamzaAboveAndBelow()
+    {
+        // v12.11: U+0654 (ٔ) and U+0655 (ٕ) are combining marks B Nazanin
+        // cannot show — the v12.1 source sweep deletes them, but
+        // ToPersianDisplay (used for wizard + generator values) did not
+        // strip them: «پایهٔ» showed as «پایه□» in the profile window.
+        // Explicit escapes: the mark sits on the ه of پایه.
+        Assert.Equal("پایه پروانه", ReportWizardLogic.ToPersianDisplay("پایه\u0654 پروانه"));
+        Assert.Equal("دقیقا", ReportWizardLogic.ToPersianDisplay("دقیق\u064Bا"));
     }
 
     [Fact]
