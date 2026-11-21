@@ -5,7 +5,7 @@
     <UserControl.Resources>
         <!-- Light tint of the theme's success color for "changed" rows (G-016):
              the color follows the theme; opacity keeps it light. -->
-        <SolidColorBrush x:Key="ChangedRowBrush" Opacity="0.15" Color="{Binding Source={DynamicResource SuccessBrush}, Path=Color}"/>
+        <SolidColorBrush x:Key="ChangedRowBrush" Opacity="0.15" Color="{Binding Source={StaticResource SuccessBrush}, Path=Color}"/>
     </UserControl.Resources>
     <Grid Margin="15">
         <Grid.RowDefinitions>

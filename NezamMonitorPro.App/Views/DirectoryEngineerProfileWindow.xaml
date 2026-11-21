@@ -60,7 +60,7 @@
                                    HorizontalAlignment="Center" TextWrapping="Wrap"/>
                         <TextBlock FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
                                    HorizontalAlignment="Center" Margin="0,4,0,0">
-                            <Run Text="رشته: "/><Run Text="{Binding Discipline}"/>
+                            <Run Text="رشته: "/><Run Text="{Binding Discipline, Mode=OneWay}"/>
                         </TextBlock>
                         <TextBlock Text="دفتر: ثبت نشده" FontSize="13"
                                    Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.6"
@@ -70,7 +70,7 @@
                                    Cursor="Hand" MouseLeftButtonUp="Office_Click"
                                    Visibility="{Binding HasOffice, Converter={StaticResource BoolToVisConverter}}"
                                    ToolTip="جزییات دفتر باز می‌شود.">
-                            <Run Text="دفتر: " Foreground="{DynamicResource TextSecondaryBrush}"/><Run Text="{Binding OfficeName}" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold"/>
+                            <Run Text="دفتر: " Foreground="{DynamicResource TextSecondaryBrush}"/><Run Text="{Binding OfficeName, Mode=OneWay}" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold"/>
                         </TextBlock>
                     </StackPanel>
                 </Border>
@@ -172,7 +172,7 @@
                                                    Opacity="{Binding DegreeLine, Converter={StaticResource PlaceholderOpacity}}"/>
                                         <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
                                                    Visibility="{Binding HasOrientation, Converter={StaticResource BoolToVisConverter}}">
-                                            <Run Text="گرایش: "/><Run Text="{Binding Orientation}"/>
+                                            <Run Text="گرایش: "/><Run Text="{Binding Orientation, Mode=OneWay}"/>
                                         </TextBlock>
                                         <TextBlock Text="{Binding UniversityLine}" FontSize="12" TextWrapping="Wrap"
                                                    Foreground="{DynamicResource TextSecondaryBrush}"

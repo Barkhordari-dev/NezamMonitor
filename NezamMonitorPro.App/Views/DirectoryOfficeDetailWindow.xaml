@@ -128,7 +128,7 @@
                                                     </TextBlock.Style>
                                                 </TextBlock>
                                                 <TextBlock FontSize="13" Foreground="{DynamicResource TextSecondaryBrush}">
-                                                    <Run Text="رشته: "/><Run Text="{Binding Discipline}"/>
+                                                    <Run Text="رشته: "/><Run Text="{Binding Discipline, Mode=OneWay}"/>
                                                 </TextBlock>
                                             </StackPanel>
                                             <TextBlock Grid.Column="1" Text="{Binding Phone}" FontSize="13"
