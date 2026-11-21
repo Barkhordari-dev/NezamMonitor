@@ -214,10 +214,10 @@
 
         <!-- دکمه‌های ناوبری -->
         <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,8,0,0">
-            <Button Content="◀ بازگشت" Click="BackButton_Click" IsEnabled="{Binding CanGoBack}"
+            <Button Content="بازگشت ▶" Click="BackButton_Click" IsEnabled="{Binding CanGoBack}"
                     Margin="0,0,6,0" Padding="14,6" FontSize="14"
                     ToolTip="به قدم قبل برمی‌گردد."/>
-            <Button Content="بعدی ▶" Click="NextButton_Click" IsEnabled="{Binding CanGoNext}"
+            <Button Content="◀ بعدی" Click="NextButton_Click" IsEnabled="{Binding CanGoNext}"
                     Visibility="{Binding ShowNext, Converter={StaticResource BoolToVis}}"
                     Margin="0,0,6,0" Padding="14,6" FontSize="14"
                     ToolTip="به قدم بعد می‌رود."/>

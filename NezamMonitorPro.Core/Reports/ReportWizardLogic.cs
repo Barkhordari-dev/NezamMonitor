@@ -553,13 +553,18 @@ public static class ReportWizardLogic
         paras = cell.Elements<Paragraph>().ToList();
         // Insert missing paragraphs right before the closing paragraph (the
         // paragraph after the last numbered one), cloning the last numbered
-        // paragraph's runs so the new items look identical.
+        // paragraph's runs AND its paragraph properties, so the new items
+        // look identical — without the properties Word renders the inserted
+        // row left-to-right (no bidi), while the rewritten rows keep theirs.
         while (numbered.Count < items.Count)
         {
             var targetIndex = numbered.Count;
             var closing = numbered[^1] + 1 < paras.Count ? paras[numbered[^1] + 1] : null;
             var source = paras[numbered[^1]];
             var newPara = new Paragraph();
+            var props = source.ParagraphProperties;
+            if (props != null)
+                newPara.ParagraphProperties = (ParagraphProperties)props.CloneNode(true);
             foreach (var run in source.Descendants<Run>())
                 newPara.Append((Run)run.CloneNode(true));
             SetParagraphText(newPara, $"{PersianDigits(targetIndex + 1)}- {items[targetIndex]}");

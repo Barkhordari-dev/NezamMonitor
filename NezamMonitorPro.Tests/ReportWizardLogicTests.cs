@@ -267,6 +267,32 @@ public class ReportWizardLogicTests
     }
 
     [Fact]
+    public void ApplyDescriptionItems_InsertedRowKeepsRtlProperties()
+    {
+        // v12.9: the user added a 3rd description row in the wizard and
+        // Word wrote it left-to-right. The template's numbered paragraphs
+        // carry <w:bidi/> in their <w:pPr>; the inserted paragraph was
+        // built bare (runs only), so Word rendered it LTR. The fix clones
+        // the paragraph properties too.
+        using var tmp = new TestHelpers.TempDirectory();
+        var file = tmp.File("2.docx");
+        File.Copy(TemplatePath(2), file);
+        using (var doc = WordprocessingDocument.Open(file, true))
+        {
+            Assert.True(ReportWizardLogic.ApplyDescriptionItems(doc,
+                new List<string> { "مورد اول", "مورد دوم", "مورد سوم" }));
+            doc.MainDocumentPart!.Document.Save();
+        }
+        var xml = LoadDocumentXml(file);
+        var paras = xml.Descendants(W + "p").ToList();
+        var third = paras.First(p => (p.Value ?? "").Trim().StartsWith("۳- "));
+        Assert.NotNull(third.Element(W + "pPr")?.Element(W + "bidi"));
+        // The second row (rewritten in place) still has it too.
+        var second = paras.First(p => (p.Value ?? "").Trim().StartsWith("۲- "));
+        Assert.NotNull(second.Element(W + "pPr")?.Element(W + "bidi"));
+    }
+
+    [Fact]
     public void CheckboxHeaderBlank_FallsBackToDefaultLabel()
     {
         // The status labels come from the file's own header row — the
