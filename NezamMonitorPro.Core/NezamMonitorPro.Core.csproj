@@ -12,4 +12,8 @@
       <PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" />
     </ItemGroup>
 
+  <ItemGroup>
+    <EmbeddedResource Include="Data\directory-snapshot.json" />
+  </ItemGroup>
+
 </Project>

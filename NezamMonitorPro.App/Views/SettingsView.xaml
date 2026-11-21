@@ -438,6 +438,50 @@
                 </StackPanel>
             </Border>
 
+            <!-- ════════════ دفترچه دفاتر و مهندسین (v12.7) ════════════ -->
+            <Border Style="{StaticResource SettingsCard}">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal" Margin="0,0,0,10">
+                        <Border Width="34" Height="34" CornerRadius="10" Background="#1A7C3AED" Margin="0,0,10,0">
+                            <TextBlock Text="&#xE946;" FontFamily="{DynamicResource IconFontFamily}" FontSize="15"
+                                       Foreground="{DynamicResource AccentTextBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <TextBlock Text="دفترچه دفاتر و مهندسین" Style="{StaticResource SettingsCardTitle}"/>
+                    </StackPanel>
+
+                    <TextBlock Text="فهرست دفاتر طراحی و مهندسین یزد که با برنامه می‌آید؛ از روی پرونده‌ها و با کلیک روی نام دفتر یا مهندس باز می‌شود. به‌روز نمی‌شود."
+                               FontSize="12.5" Foreground="{DynamicResource TextSecondaryBrush}"
+                               TextWrapping="Wrap" Margin="0,0,0,14"/>
+
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="150"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="نسخه اسنپ‌شات:" FontSize="13" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding Directory.VersionText}" FontSize="13" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="وضعیت:" FontSize="13" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding Directory.StateText}" FontSize="13" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="تعداد دفاتر:" FontSize="13" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding Directory.OfficeCountText}" FontSize="13" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="تعداد مهندسین:" FontSize="13" FontWeight="Bold" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding Directory.EngineerCountText}" FontSize="13" Margin="0,0,0,4"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="2" Text="{Binding Directory.Reason}"
+                                   FontSize="12.5" Foreground="{DynamicResource ErrorBrush}" TextWrapping="Wrap"
+                                   Visibility="{Binding Directory.Reason, Converter={StaticResource StringToVisConverter}}"/>
+                    </Grid>
+                </StackPanel>
+            </Border>
+
             <!-- ════════════ Factory reset ════════════ -->
             <Border Style="{StaticResource SettingsCard}" BorderBrush="{DynamicResource ErrorBrush}" BorderThickness="1.4">
                 <StackPanel>

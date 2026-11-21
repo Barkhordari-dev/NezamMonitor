@@ -374,6 +374,80 @@ public sealed partial class NezamDatabase : IDisposable
             )
             """);
         Execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_hidden_overrides_key ON HiddenOverrides (RecordType, RecordKey, Field)");
+
+        // دفترچه دفاتر طراحی و مهندسین یزد (v12.7، پورت اندروید v3.10.0 تا
+        // v3.11.6): فقط از اسنپ‌شاتِ داخلی seed می‌شود، بدون به‌روزرسانی
+        // درون‌برنامه‌ای. SiteId شناسهٔ عددی خودِ سایت است، نه شمارهٔ
+        // نمایشی دفتر. بدون مهاجرت و بدون تغییر نسخه — CREATE IF NOT
+        // EXISTS روی DBهای موجود هم بی‌خطر است.
+        Execute("""
+            CREATE TABLE IF NOT EXISTS directory_offices (
+                SiteId INTEGER PRIMARY KEY,
+                Name TEXT DEFAULT '',
+                Licence TEXT DEFAULT '',
+                Manager TEXT DEFAULT '',
+                Mobile TEXT DEFAULT '',
+                Contact TEXT DEFAULT '',
+                Province TEXT DEFAULT '',
+                City TEXT DEFAULT '',
+                Address TEXT DEFAULT '',
+                Phone TEXT DEFAULT '',
+                Fax TEXT DEFAULT '',
+                Hours TEXT DEFAULT '',
+                DetailUrl TEXT DEFAULT '',
+                MemberCount INTEGER DEFAULT 0,
+                UpdatedAt TEXT DEFAULT ''
+            )
+            """);
+
+        Execute("""
+            CREATE TABLE IF NOT EXISTS directory_engineers (
+                SiteId INTEGER PRIMARY KEY,
+                Name TEXT DEFAULT '',
+                Family TEXT DEFAULT '',
+                Discipline TEXT DEFAULT '',
+                Phone TEXT DEFAULT '',
+                DesignGrade TEXT DEFAULT '',
+                SupervisionGrade TEXT DEFAULT '',
+                ExecutionGrade TEXT DEFAULT '',
+                LicenceIssue TEXT DEFAULT '',
+                LicenceValidity TEXT DEFAULT '',
+                Photo TEXT DEFAULT '',
+                OfficeId INTEGER DEFAULT 0,
+                OfficeName TEXT DEFAULT '',
+                UpdatedAt TEXT DEFAULT ''
+            )
+            """);
+
+        Execute("""
+            CREATE TABLE IF NOT EXISTS directory_education (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                EngineerId INTEGER NOT NULL,
+                Degree TEXT DEFAULT '',
+                Field TEXT DEFAULT '',
+                Orientation TEXT DEFAULT '',
+                UniversityType TEXT DEFAULT '',
+                University TEXT DEFAULT '',
+                City TEXT DEFAULT '',
+                Country TEXT DEFAULT '',
+                Start TEXT DEFAULT '',
+                End TEXT DEFAULT ''
+            )
+            """);
+
+        Execute("""
+            CREATE TABLE IF NOT EXISTS directory_licence_history (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                EngineerId INTEGER NOT NULL,
+                Kind TEXT DEFAULT '',
+                Grade1 TEXT DEFAULT '',
+                Grade2 TEXT DEFAULT '',
+                Grade3 TEXT DEFAULT ''
+            )
+            """);
+
+        Execute("CREATE INDEX IF NOT EXISTS idx_directory_education_engineer ON directory_education (EngineerId)");
+        Execute("CREATE INDEX IF NOT EXISTS idx_directory_licence_history_engineer ON directory_licence_history (EngineerId)");
     }
 
     // ── Hidden menu: database tools ────────────────────────────────────

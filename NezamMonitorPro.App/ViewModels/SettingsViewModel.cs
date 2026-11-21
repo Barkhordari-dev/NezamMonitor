@@ -162,10 +162,24 @@ public sealed class SettingsViewModel : ViewModelBase
     public ICommand ClearErrorLogCommand { get; }
     public ICommand CheckUpdateCommand { get; }
 
-    public SettingsViewModel(Services.ThemeManager themeManager, string dbPath = "")
+    /// <summary>وضعیت سید دفترچه دفاتر و مهندسین، برای کارت تشخیص در تنظیمات.
+    /// در برنامه همیشه از DI می‌آید؛ اگر مستقیم ساخته شود و دیتابیس هنوز باز
+    /// نباشد، null می‌ماند و کارت خالی نشان داده می‌شود.</summary>
+    public DirectoryService? Directory { get; }
+
+    public SettingsViewModel(Services.ThemeManager themeManager, string dbPath = "", DirectoryService? directory = null)
     {
         _themeManager = themeManager;
         _dbPath = dbPath;
+        if (directory != null)
+        {
+            Directory = directory;
+        }
+        else
+        {
+            try { Directory = new DirectoryService(DatabaseService.Instance); }
+            catch { Directory = null; }
+        }
         _theme = themeManager.LoadTheme();
         themeManager.ApplyTheme(_theme);
 

@@ -52,6 +52,9 @@ public static class SettingKeys
     public const string HiddenMenuCachedAt = "hidden_menu_cached_at";
     public const string UiCustom = "ui_custom";
 
+    // ── دفترچه دفاتر و مهندسین یزد ──
+    public const string DirectorySnapshotVersion = "directory_snapshot_version";
+
     // ── پیشوندهای کلیدهای داینامیک ──
     public const string ColumnAlignPrefix = "col_align_";
     public const string ColumnAlignHeaderCenterPrefix = "col_align_hdr_center_";

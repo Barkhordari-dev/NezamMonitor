@@ -131,6 +131,34 @@ public partial class GeneratorView : UserControl, INavigationAware
             };
             menu.Items.Add(genItem);
 
+            // v12.7: صدور مرحله‌ای گزارش — ویزارد قدم‌به‌قدم برای همین ردیف.
+            var wizardItem = new MenuItem { Header = "📝 صدور مرحله‌ای گزارش", Tag = item };
+            wizardItem.Click += (s, args) =>
+            {
+                try
+                {
+                    if (DataContext is not GeneratorViewModel vm) return;
+                    var c = vm.GetCaseForWizard(item);
+                    if (c == null)
+                    {
+                        MessageBox.Show("پرونده پیدا نشد؛ شاید اسکن قدیمی است. یک بار «اسکن پرونده‌ها» را بزن و دوباره تلاش کن.",
+                            "صدور مرحله‌ای گزارش", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+                    new ReportWizardWindow(c, item.RowNumber)
+                    {
+                        Owner = Application.Current?.MainWindow
+                    }.ShowDialog();
+                }
+                catch (Exception ex)
+                {
+                    ErrorLog.Write(ex, "GeneratorView.ReportWizard");
+                    MessageBox.Show("باز کردن ویزارد با خطا مواجه شد.", "صدور مرحله‌ای گزارش",
+                        MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            };
+            menu.Items.Add(wizardItem);
+
             // باز کردن پوشه پرونده
             var openFolder = new MenuItem { Header = "📂 باز کردن پوشه پرونده", Tag = item };
             openFolder.Click += (s, args) =>

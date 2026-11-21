@@ -61,7 +61,34 @@ public partial class EngineersView : UserControl
             menu.Items.Add(copyItem);
         }
 
+        // v12.7 — دفترچه دفاتر و مهندسین: مشاهده پروفایل این مهندس.
+        if (item != null && !string.IsNullOrWhiteSpace(item.Name))
+        {
+            if (menu.HasItems) menu.Items.Add(new Separator());
+            var engineerName = item.Name;
+            var profileItem = new MenuItem { Header = $"👷 مشاهده پروفایل «{engineerName}»" };
+            profileItem.Click += (_, _) => OpenEngineerProfile(engineerName);
+            menu.Items.Add(profileItem);
+        }
+
         if (menu.HasItems) menu.IsOpen = true;
+    }
+
+    // v12.7 — دابل‌کلیک روی ردیف = پروفایل مهندس در دفترچه.
+    private void EngineersGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not DataGrid dg) return;
+        var hit = e.OriginalSource as DependencyObject;
+        var cell = FindDataGridCell(dg, hit);
+        if (cell?.DataContext is EngineerItem item && !string.IsNullOrWhiteSpace(item.Name))
+            OpenEngineerProfile(item.Name);
+    }
+
+    // v12.7 — باز کردن پروفایل مهندس؛ خطا بی‌صدا رد می‌شود.
+    private static void OpenEngineerProfile(string engineerName)
+    {
+        try { new DirectoryEngineerProfileWindow(engineerName) { Owner = Application.Current?.MainWindow }.ShowDialog(); }
+        catch { }
     }
 
     private static DataGridCell? FindDataGridCell(DataGrid dg, DependencyObject? hit)

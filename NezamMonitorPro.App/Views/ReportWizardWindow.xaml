@@ -1,0 +1,232 @@
+<Window x:Class="NezamMonitorPro.App.Views.ReportWizardWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="صدور مرحله‌ای گزارش"
+        Width="760" Height="640" MinWidth="640" MinHeight="520"
+        WindowStartupLocation="CenterOwner"
+        FlowDirection="RightToLeft"
+        Background="{DynamicResource BackgroundBrush}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Window.Resources>
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- سربرگ -->
+        <TextBlock Grid.Row="0" Text="{Binding CaseTitle}" FontSize="15" FontWeight="Bold" Margin="0,0,0,4"
+                   ToolTip="پرونده‌ای که قرار است برایش گزارش ساخته شود."/>
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,0,0,10">
+            <TextBlock Text="{Binding StepTitle}" FontSize="14" FontWeight="Bold"
+                       ToolTip="قدم فعلی ویزارد؛ با «بعدی» جلو می‌روی و با «بازگشت» برمی‌گردی."/>
+            <TextBlock Text="{Binding StepCounter}" FontSize="13" Margin="12,0,0,0" VerticalAlignment="Center" Opacity="0.75"/>
+        </StackPanel>
+
+        <!-- قدم ۰: انتخاب مرحله -->
+        <Grid Grid.Row="2" Visibility="{Binding IsStep0, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="برای کدام مرحله گزارش می‌خواهی؟ مرحله پیشنهادی بر اساس زمان‌بندی پرونده است؛ ولی هر مرحله‌ای را می‌توانی انتخاب کنی."
+                           TextWrapping="Wrap" FontSize="14" Margin="0,0,0,10"
+                           ToolTip="مرحله پیشنهادی از گروه ساختمانی پرونده و رشته‌اش درمی‌آید."/>
+                <ListBox ItemsSource="{Binding StageOptions}" SelectedValuePath="Number"
+                         SelectedValue="{Binding SelectedStage, Mode=TwoWay}" FontSize="14"
+                         ToolTip="روی یک مرحله کلیک کن؛ فیلدها و جدول همان مرحله باز می‌شود.">
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding DisplayName}" Margin="4" FontSize="14"/>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+                <TextBlock Text="{Binding TemplateError}" TextWrapping="Wrap" FontSize="13" Margin="0,12,0,0"
+                           Foreground="{DynamicResource ErrorBrush}"
+                           Visibility="{Binding TemplateError, Converter={StaticResource StringToVisConverter}}"
+                           ToolTip="برای این مرحله تمپلیتی پیدا نشد؛ مرحله دیگری انتخاب کن یا تمپلیت را در پوشه تمپلیت‌ها بگذار."/>
+            </StackPanel>
+        </Grid>
+
+        <!-- قدم ۱: فیلدهای تمپلیت -->
+        <Grid Grid.Row="2" Visibility="{Binding IsStep1, Converter={StaticResource BoolToVis}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto">
+                <ItemsControl ItemsSource="{Binding FieldRows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="150"/>
+                                    <ColumnDefinition Width="*"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{Binding Label}" FontSize="14"
+                                           VerticalAlignment="Center" TextWrapping="Wrap"
+                                           ToolTip="نام این فیلد در تمپلیت."/>
+                                <TextBox Grid.Column="1" Text="{Binding Value, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         FontSize="14" TabIndex="1"
+                                         ToolTip="مقدار این فیلد در گزارش؛ اول همان مقدار معمول پر شده، اگر عوضش کنی همان مقدار جدید در گزارش می‌آید."/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <StackPanel Grid.Row="1" Margin="0,8,0,0">
+                <TextBlock Text="{Binding NoFieldsMessage}" TextWrapping="Wrap" FontSize="13" Margin="0,0,0,6"
+                           Visibility="{Binding NoFieldsMessage, Converter={StaticResource StringToVisConverter}}"
+                           ToolTip="در این قالب جای‌نگه‌داری برای ویرایش نیست؛ فیلدی نشان داده نمی‌شود."/>
+                <CheckBox IsChecked="{Binding UseLtr, Mode=TwoWay}" Content="چپ‌به‌راست (LTR)" FontSize="14"
+                          ToolTip="اگر تیک بزنی، گزارش چپ‌به‌راست ساخته می‌شود؛ فیلدهایی که دست نخورده‌اند با همین حالت دوباره پر می‌شوند."/>
+                <TextBlock Text="فیلدهایی که تغییر نداده‌ای، همان مقدار معمول گزارش را می‌گیرند."
+                           FontSize="13" Opacity="0.75" Margin="0,6,0,0" TextWrapping="Wrap"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- قدم ۲: جدول چک‌باکس -->
+        <Grid Grid.Row="2" Visibility="{Binding IsStep2, Converter={StaticResource BoolToVis}}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding HasCheckboxTable, Converter={StaticResource BoolToVis}}">
+                <StackPanel>
+                    <TextBlock Text="در هر ردیف فقط یکی را انتخاب کن؛ تیک انتخاب‌شده در گزارش نهایی به‌صورت تیک سیاه درمی‌آید."
+                               TextWrapping="Wrap" FontSize="13" Opacity="0.8" Margin="0,0,0,10"
+                               ToolTip="ردیف‌ها و ستون‌ها دقیقاً از خود تمپلیت خوانده شده‌اند."/>
+                    <ItemsControl ItemsSource="{Binding CheckRows}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,0,1" Padding="0,6">
+                                    <StackPanel>
+                                        <TextBlock FontSize="14" TextWrapping="Wrap" Margin="0,0,0,4">
+                                            <Run Text="{Binding Number, Mode=OneWay}" FontWeight="Bold"/><Run Text=". "/><Run Text="{Binding Description, Mode=OneWay}"/>
+                                        </TextBlock>
+                                        <ItemsControl ItemsSource="{Binding Options}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <WrapPanel Orientation="Horizontal"/>
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <ToggleButton Content="{Binding Label}"
+                                                                  IsChecked="{Binding IsChecked, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                                                  Margin="0,0,6,4" Padding="10,4" MinWidth="90" FontSize="13"
+                                                                  ToolTip="روی یکی کلیک کن؛ انتخاب قبلی در همین ردیف برداشته می‌شود."/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </ScrollViewer>
+            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap" FontSize="14"
+                       Text="{Binding CheckboxMissingMessage}"
+                       Visibility="{Binding NoCheckboxTable, Converter={StaticResource BoolToVis}}"/>
+        </Grid>
+
+        <!-- قدم ۳: توضیحات -->
+        <Grid Grid.Row="2" Visibility="{Binding IsStep3, Converter={StaticResource BoolToVis}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+            <ScrollViewer Grid.Row="0" VerticalScrollBarVisibility="Auto"
+                          Visibility="{Binding HasDescriptionTable, Converter={StaticResource BoolToVis}}">
+                <ItemsControl ItemsSource="{Binding DescRows}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,0,0,6">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <CheckBox Grid.Column="0" IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                          VerticalAlignment="Top" Margin="0,8,6,0"
+                                          ToolTip="برای افزودن این توضیح به پیگیری‌های پرونده تیک بزن."/>
+                                <TextBox Grid.Column="1" Text="{Binding Text, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                         FontSize="14" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="40"
+                                         VerticalAlignment="Top"
+                                         ToolTip="متن این توضیح؛ می‌توانی عوضش کنی، چندخطی هم می‌شود."/>
+                                <Button Grid.Column="2" Content="✕" Tag="{Binding}" Click="RemoveDescButton_Click"
+                                        Margin="6,4,0,0" Padding="8,2" VerticalAlignment="Top" FontSize="13"
+                                        ToolTip="این ردیف توضیح را حذف می‌کند."/>
+                            </Grid>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </ScrollViewer>
+            <TextBlock Grid.Row="0" VerticalAlignment="Center" TextWrapping="Wrap" FontSize="14"
+                       Text="{Binding DescriptionMissingMessage}"
+                       Visibility="{Binding NoDescriptionTable, Converter={StaticResource BoolToVis}}"/>
+            <WrapPanel Grid.Row="1" Margin="0,8,0,0" Visibility="{Binding HasDescriptionTable, Converter={StaticResource BoolToVis}}">
+                <Button Content="＋ اضافه کردن ردیف" Click="AddDescButton_Click" Margin="0,0,6,4" Padding="10,4" FontSize="13"
+                        ToolTip="یک توضیح خالی اضافه می‌کند."/>
+                <Button Content="وارد کردن از پیگیری‌ها" Click="ImportFollowUpButton_Click" Margin="0,0,6,4" Padding="10,4" FontSize="13"
+                        ToolTip="توضیحات پیگیری‌های همین پرونده را به لیست اضافه می‌کند."/>
+                <Button Content="نمایش پیگیری این پرونده" Click="ShowFollowUpButton_Click" Margin="0,0,6,4" Padding="10,4" FontSize="13"
+                        ToolTip="پیگیری‌های ثبت‌شده برای همین پرونده را نشان می‌دهد."/>
+                <Button Content="افزودن انتخاب‌شده‌ها به پیگیری" Click="AddToFollowUpButton_Click" Margin="0,0,6,4" Padding="10,4" FontSize="13"
+                        ToolTip="توضیحاتی که تیک زده‌ای را با تاریخ و ساعت امروز به پیگیری‌های پرونده اضافه می‌کند."/>
+            </WrapPanel>
+        </Grid>
+
+        <!-- قدم ۴: متن کامل توضیحات -->
+        <Grid Grid.Row="2" Visibility="{Binding IsStep4, Converter={StaticResource BoolToVis}}">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <TextBlock Grid.Row="0" TextWrapping="Wrap" FontSize="13" Opacity="0.85" Margin="0,0,0,8"
+                       Text="کل متن توضیحات، همان‌طور که در گزارش می‌آید (عنوان، توضیح، موردهای شماره‌دار و خط پایانی). می‌توانی همین‌جا عوضش کنی، خط اضافه کنی یا خطی را حذف کنی. اگر برگردی و ردیف‌های قدم قبل را عوض کنی، این متن دوباره از روی آن‌ها ساخته می‌شود."/>
+            <TextBox Grid.Row="1" Text="{Binding DescriptionFullText, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                     FontSize="14" AcceptsReturn="True" TextWrapping="Wrap" MinHeight="220"
+                     VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
+                     ToolTip="کل متن توضیحات؛ هر خط یک پاراگراف در گزارش می‌شود."/>
+        </Grid>
+
+        <!-- قدم ۵: پایان -->
+        <Grid Grid.Row="2" Visibility="{Binding IsStep5, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+                <TextBlock Text="{Binding SummaryText}" TextWrapping="Wrap" FontSize="14" Margin="0,0,0,10"/>
+                <CheckBox IsChecked="{Binding UseLtr, Mode=TwoWay}" Content="چپ‌به‌راست (LTR)" FontSize="14" Margin="0,0,0,6"
+                          ToolTip="اگر تیک بزنی، گزارش چپ‌به‌راست ساخته می‌شود."/>
+                <CheckBox IsChecked="{Binding MakePdf, Mode=TwoWay}" Content="تبدیل به PDF (نیاز به Word نصب‌شده دارد)" FontSize="14" Margin="0,0,0,10"
+                          ToolTip="اگر تیک بزنی، بعد از ساخت فایل Word، نسخه PDF هم ساخته می‌شود؛ برایش Word باید روی همین کامپیوتر نصب باشد."/>
+                <TextBlock Text="{Binding ResultMessage}" TextWrapping="Wrap" FontSize="14" FontWeight="Bold" Margin="0,0,0,8"/>
+                <StackPanel Orientation="Horizontal" Visibility="{Binding IsGenerated, Converter={StaticResource BoolToVis}}">
+                    <Button Content="باز کردن فایل" Click="OpenFileButton_Click" Margin="0,0,6,0" Padding="10,4" FontSize="13"
+                            ToolTip="فایل Word ساخته‌شده را باز می‌کند."/>
+                    <Button Content="باز کردن پوشه" Click="OpenFolderButton_Click" Padding="10,4" FontSize="13"
+                            ToolTip="پوشه‌ای که گزارش در آن ساخته شده را باز می‌کند."/>
+                </StackPanel>
+            </StackPanel>
+        </Grid>
+
+        <!-- پیام وضعیت -->
+        <TextBlock Grid.Row="3" Text="{Binding StatusMessage}" TextWrapping="Wrap" FontSize="13"
+                   Opacity="0.85" Margin="0,8,0,0" MinHeight="18"/>
+
+        <!-- دکمه‌های ناوبری -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,8,0,0">
+            <Button Content="◀ بازگشت" Click="BackButton_Click" IsEnabled="{Binding CanGoBack}"
+                    Margin="0,0,6,0" Padding="14,6" FontSize="14"
+                    ToolTip="به قدم قبل برمی‌گردد."/>
+            <Button Content="بعدی ▶" Click="NextButton_Click" IsEnabled="{Binding CanGoNext}"
+                    Visibility="{Binding ShowNext, Converter={StaticResource BoolToVis}}"
+                    Margin="0,0,6,0" Padding="14,6" FontSize="14"
+                    ToolTip="به قدم بعد می‌رود."/>
+            <Button Content="تولید گزارش" Click="GenerateButton_Click" IsEnabled="{Binding CanGenerate}"
+                    Visibility="{Binding IsLastStep, Converter={StaticResource BoolToVis}}"
+                    Margin="0,0,6,0" Padding="14,6" FontSize="14" FontWeight="Bold"
+                    ToolTip="گزارش را با همین فیلدها و تیک‌ها و توضیحات می‌سازد؛ دقیقاً مثل دکمه تولید معمولی."/>
+            <Button Content="بستن" Click="CloseButton_Click" Padding="14,6" FontSize="14"
+                    ToolTip="پنجره را می‌بندد؛ گزارشی ساخته نمی‌شود."/>
+        </StackPanel>
+    </Grid>
+</Window>

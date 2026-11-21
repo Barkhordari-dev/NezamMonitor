@@ -241,6 +241,11 @@ public class StageReportGenerator
 
     /// <summary>
     /// Generate a single stage report for a case.
+    /// When <paramref name="wizardOverrides"/> is given (v12.6 wizard),
+    /// the stage-1 field edits replace the auto values, and the checkbox
+    /// marks + توضیحات items are applied to the generated file afterwards.
+    /// Everything else — folder, file name, history inputs — is exactly
+    /// the normal path.
     /// </summary>
     public ReportGenerationResult GenerateReport(
         Case caseData,
@@ -249,7 +254,8 @@ public class StageReportGenerator
         string outputDir,
         DateTime now,
         string? templatePathOverride = null,
-        bool useLtr = false)
+        bool useLtr = false,
+        ReportWizardOverrides? wizardOverrides = null)
     {
         var result = new ReportGenerationResult
         {
@@ -300,7 +306,26 @@ public class StageReportGenerator
 
             // Copy template and replace placeholders
             File.Copy(templatePath, outputPath, false);
-            ReplacePlaceholders(outputPath, caseData, rowNumber, now, useLtr);
+            var replacements = BuildAutoFieldValues(caseData, now, useLtr);
+            if (wizardOverrides != null)
+                MergeWizardFieldOverrides(replacements, wizardOverrides.FieldValues);
+            ReplacePlaceholders(outputPath, replacements);
+
+            // v12.6 wizard: checkbox marks + توضیحات, applied to the
+            // generated file (reopened, edited, saved). A missing table is
+            // not an error — that edit is simply skipped. v12.8: when the
+            // user edited the full توضیحات text (step 4), it wins over the
+            // numbered rows.
+            if (wizardOverrides != null &&
+                (wizardOverrides.CheckboxSelections.Count > 0 || wizardOverrides.DescriptionItems != null
+                 || wizardOverrides.DescriptionFullText != null))
+            {
+                var (applied, marks) = ReportWizardLogic.ApplyWizardEditsToDocx(
+                    outputPath, wizardOverrides.CheckboxSelections, wizardOverrides.DescriptionItems,
+                    wizardOverrides.DescriptionFullText);
+                result.WizardEditsApplied = applied;
+                result.WizardMarksApplied = marks;
+            }
 
             // Verify file was created
             if (!File.Exists(outputPath))
@@ -460,12 +485,15 @@ public class StageReportGenerator
         return string.Join("/", parts);
     }
 
-    private void ReplacePlaceholders(string docxPath, Case caseData, int rowNumber, DateTime now, bool useLtr = false)
+    /// <summary>
+    /// The auto values the normal generation writes for a case — the same
+    /// values the wizard shows in its stage 1 (an un-edited field keeps
+    /// exactly these). Keys are the placeholders WITH guillemets.
+    /// «نام ناظر» is only added when a user name is known: an empty name
+    /// leaves the placeholder visible, never blanks it out (v12.5).
+    /// </summary>
+    public Dictionary<string, string> BuildAutoFieldValues(Case caseData, DateTime now, bool useLtr)
     {
-        using var doc = WordprocessingDocument.Open(docxPath, true);
-        var body = doc.MainDocumentPart?.Document?.Body;
-        if (body == null) return;
-
         var spec = caseData.Specification;
         var engineers = caseData.Engineers;
 
@@ -536,6 +564,42 @@ public class StageReportGenerator
             replacements["\"نام ناظر\""] = UserName;
             replacements["«نام ناظر»"] = UserName;
         }
+
+        return replacements;
+    }
+
+    /// <summary>
+    /// Apply the wizard's stage-1 edits on top of the auto values.
+    /// An edit for a known key replaces it; an edit for «نام ناظر» also
+    /// adds the key when the generator would not have it (no user name
+    /// known yet — the user typed the name by hand). Edits for unknown
+    /// keys are ignored. Edited values are normalized to Persian script
+    /// with diacritics stripped, like every filled value in Android.
+    /// </summary>
+    private static void MergeWizardFieldOverrides(
+        Dictionary<string, string> replacements, Dictionary<string, string> overrides)
+    {
+        foreach (var (key, value) in overrides)
+        {
+            var clean = ReportWizardLogic.ToPersianDisplay(value);
+            if (replacements.ContainsKey(key))
+                replacements[key] = clean;
+            else if (key == "«نام ناظر»")
+            {
+                replacements["\"نام ناظر\""] = clean;
+                replacements["«نام ناظر»"] = clean;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Replace all placeholders in the DOCX file.
+    /// </summary>
+    private static void ReplacePlaceholders(string docxPath, Dictionary<string, string> replacements)
+    {
+        using var doc = WordprocessingDocument.Open(docxPath, true);
+        var body = doc.MainDocumentPart?.Document?.Body;
+        if (body == null) return;
 
         // Also add trailing-space variants (Word may add spaces)
         var extraReplacements = new Dictionary<string, string>();
@@ -728,4 +792,10 @@ public sealed class ReportGenerationResult
     public string? FolderPath { get; set; }
     public string? FileName { get; set; }
     public string ReportDate { get; set; } = "";
+    /// <summary>v12.6 wizard: true when the wizard's checkbox/descriptions
+    /// edits were applied to the generated file (false when the file could
+    /// not be reopened, or when there was nothing to apply).</summary>
+    public bool WizardEditsApplied { get; set; }
+    /// <summary>v12.6 wizard: how many ☐ cells were actually marked ☑.</summary>
+    public int WizardMarksApplied { get; set; }
 }

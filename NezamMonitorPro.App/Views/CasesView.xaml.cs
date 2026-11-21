@@ -350,6 +350,14 @@ public partial class CasesView : UserControl, INavigationAware
             copyCell.Click += (_, _) => { try { Clipboard.SetText(cellText); } catch { } };
             menu.Items.Add(copyCell);
         }
+        // v12.7 — دفترچه دفاتر و مهندسین: مشاهده دفتر این پرونده.
+        if (item != null && !string.IsNullOrWhiteSpace(item.Office))
+        {
+            var officeText = item.Office;
+            var officeItem = new MenuItem { Header = $"🏢 مشاهده دفتر «{Truncate(officeText, 32)}»" };
+            officeItem.Click += (_, _) => OpenOfficeDetail(officeText);
+            menu.Items.Add(officeItem);
+        }
         if (item != null)
         {
             var copyRow = new MenuItem { Header = $"📄 کپی ردیف {item.CaseNumber}" };
@@ -374,6 +382,39 @@ public partial class CasesView : UserControl, INavigationAware
 
         menu.IsOpen = true;
         e.Handled = true;
+    }
+
+    // v12.7 — دابل‌کلیک روی سلول «دفتر» = جزییات دفتر. تک‌کلیک طبق معمول
+    // تیک ردیف را می‌زند و دست نخورده باقی مانده است.
+    private void CasesGrid_MouseDoubleClick(object sender, MouseButtonEventArgs e)
+    {
+        var hit = e.OriginalSource as DependencyObject;
+        var cell = FindDataGridCell(CasesGrid, hit);
+        if (cell == null) return;
+        if (cell.Column != ColOffice) return;
+        if (cell.DataContext is CaseDisplayItem item && !string.IsNullOrWhiteSpace(item.Office))
+            OpenOfficeDetail(item.Office);
+    }
+
+    // v12.7 — کلیک روی نام ناظر در پنل جزییات = پروفایل مهندس.
+    private void DetailEngineer_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is TextBlock tb && tb.Tag is string name && !string.IsNullOrWhiteSpace(name))
+            OpenEngineerProfile(name);
+    }
+
+    // v12.7 — باز کردن پنجره‌های مودال دفترچه؛ خطا (مثلاً سید نشدن دفترچه)
+    // بی‌صدا رد می‌شود تا جدول پرونده‌ها هیچ‌وقت به‌خاطر دفترچه نلرزد.
+    private static void OpenOfficeDetail(string rawOffice)
+    {
+        try { new DirectoryOfficeDetailWindow(rawOffice) { Owner = Application.Current?.MainWindow }.ShowDialog(); }
+        catch { }
+    }
+
+    private static void OpenEngineerProfile(string engineerName)
+    {
+        try { new DirectoryEngineerProfileWindow(engineerName) { Owner = Application.Current?.MainWindow }.ShowDialog(); }
+        catch { }
     }
 
     private void CopySelected_Click(object sender, RoutedEventArgs e)

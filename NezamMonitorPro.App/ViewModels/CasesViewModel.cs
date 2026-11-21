@@ -72,6 +72,10 @@ public sealed class CasesViewModel : ViewModelBase
     public string StatusMessage { get => _statusMessage; set => SetProperty(ref _statusMessage, value); }
     public string DetailTitle { get => _detailTitle; set => SetProperty(ref _detailTitle, value); }
     public string DetailEngineers { get => _detailEngineers; set => SetProperty(ref _detailEngineers, value); }
+    /// <summary>ناظرین پرونده به‌صورت آیتم‌های قابل‌کلیک (v12.7): همان خط‌های
+    /// DetailEngineers، ولی هر نام جداگانه پروفایلش را باز می‌کند. متن
+    /// DetailEngineers دست نخورده باقی می‌ماند.</summary>
+    public ObservableCollection<DetailEngineerLink> DetailEngineerItems { get; } = new();
     public string DetailFees { get => _detailFees; set => SetProperty(ref _detailFees, value); }
     public string DetailReports { get => _detailReports; set => SetProperty(ref _detailReports, value); }
     public string DetailSpecs { get => _detailSpecs; set => SetProperty(ref _detailSpecs, value); }
@@ -198,6 +202,23 @@ public sealed class CasesViewModel : ViewModelBase
         else
             DetailEngineers = "  (ندارد)";
 
+        // v12.7 — همان خط‌ها به‌صورت آیتم قابل‌کلیک برای پنل جزییات.
+        DetailEngineerItems.Clear();
+        if (engineers.Count > 0)
+        {
+            foreach (var e in engineers)
+            {
+                var role = string.IsNullOrEmpty(e.Role) ? "" : $" ({e.Role})";
+                DetailEngineerItems.Add(new DetailEngineerLink
+                {
+                    Display = $"  {e.Discipline}: {e.Name}{role}",
+                    Name = e.Name
+                });
+            }
+        }
+        else
+            DetailEngineerItems.Add(new DetailEngineerLink { Display = "  (ندارد)", Name = null });
+
         // Fees — نگاشت نوع خدمت مثل منو حق‌الزحمه (به‌جای حروف n/b/ho/t/pn)
         var fees = item.RawCase.Fees;
         if (fees.Count > 0)
@@ -283,6 +304,7 @@ public sealed class CasesViewModel : ViewModelBase
         SelectedCase = null;
         DetailTitle = "";
         DetailEngineers = "";
+        DetailEngineerItems.Clear();
         DetailFees = "";
         DetailReports = "";
         DetailSpecs = "";
@@ -450,4 +472,14 @@ public sealed class CaseDisplayItem : System.ComponentModel.INotifyPropertyChang
         SearchSerial = CasesViewModel.NormalizeForSearch(c.Serial);
         SearchId = c.Id.ToString();
     }
+}
+
+/// <summary>یک ناظر در پنل جزییات پرونده (v12.7): همان خط متنی قدیمی
+/// (رشته: نام (نقش)) ولی نامش قابل‌کلیک است و پروفایل را باز می‌کند.
+/// Name خالی یعنی ردیف «(ندارد)» و قابل‌کلیک نیست.</summary>
+public sealed class DetailEngineerLink
+{
+    public string Display { get; set; } = "";
+    public string? Name { get; set; }
+    public bool IsClickable => !string.IsNullOrWhiteSpace(Name);
 }

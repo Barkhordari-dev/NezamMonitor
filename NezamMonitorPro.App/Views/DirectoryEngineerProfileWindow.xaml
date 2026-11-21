@@ -1,0 +1,197 @@
+<Window x:Class="NezamMonitorPro.App.Views.DirectoryEngineerProfileWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:conv="clr-namespace:NezamMonitorPro.App.Converters"
+        Title="پروفایل مهندس"
+        Width="680" Height="640" MinWidth="560" MinHeight="480"
+        WindowStartupLocation="CenterOwner"
+        FlowDirection="RightToLeft"
+        Background="{DynamicResource BackgroundBrush}">
+    <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+        <conv:PlaceholderTextOpacityConverter x:Key="PlaceholderOpacity"/>
+    </Window.Resources>
+    <Grid Margin="16">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- سربرگ -->
+        <TextBlock Grid.Row="0" Text="{Binding FullName}" FontSize="16" FontWeight="Bold" Margin="0,0,0,10"
+                   TextWrapping="Wrap"
+                   ToolTip="مهندسی که انتخاب شده است."/>
+
+        <!-- در حال بارگذاری -->
+        <TextBlock Grid.Row="1" Text="در حال دریافت اطلاعات مهندس…" FontSize="14"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   Visibility="{Binding IsLoading, Converter={StaticResource BoolToVis}}"/>
+
+        <!-- یافت نشد / دلیل سید -->
+        <TextBlock Grid.Row="1" Text="{Binding Message}" TextWrapping="Wrap" FontSize="14"
+                   HorizontalAlignment="Center" VerticalAlignment="Center" Margin="24"
+                   Visibility="{Binding HasMessage, Converter={StaticResource BoolToVis}}"/>
+
+        <!-- پروفایل: هر چهار کارت همیشه به همین ترتیب -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto"
+                      Visibility="{Binding HasProfile, Converter={StaticResource BoolToVis}}">
+            <StackPanel>
+
+                <!-- کارت ۱: سربرگ — عکس، نام، رشته، دفتر -->
+                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="{DynamicResource RadiusMedium}" Padding="14" Margin="0,0,0,12">
+                    <StackPanel HorizontalAlignment="Center">
+                        <Grid Width="96" Height="96" Margin="0,0,0,10">
+                            <Border CornerRadius="48" Background="{DynamicResource PanelBrush}"
+                                    BorderBrush="{DynamicResource BorderBrush}" BorderThickness="1"/>
+                            <TextBlock Text="{Binding Initials}" FontSize="32" FontWeight="Bold"
+                                       Foreground="{DynamicResource PrimaryBrush}"
+                                       HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            <Image Source="{Binding PhotoUrl}" Stretch="UniformToFill"
+                                   ImageFailed="Photo_ImageFailed"
+                                   Visibility="{Binding HasPhoto, Converter={StaticResource BoolToVisConverter}}">
+                                <Image.Clip>
+                                    <EllipseGeometry Center="48,48" RadiusX="48" RadiusY="48"/>
+                                </Image.Clip>
+                            </Image>
+                        </Grid>
+                        <TextBlock Text="{Binding FullName}" FontWeight="Bold" FontSize="16"
+                                   HorizontalAlignment="Center" TextWrapping="Wrap"/>
+                        <TextBlock FontSize="14" Foreground="{DynamicResource TextSecondaryBrush}"
+                                   HorizontalAlignment="Center" Margin="0,4,0,0">
+                            <Run Text="رشته: "/><Run Text="{Binding Discipline}"/>
+                        </TextBlock>
+                        <TextBlock Text="دفتر: ثبت نشده" FontSize="13"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.6"
+                                   HorizontalAlignment="Center" Margin="0,4,0,0"
+                                   Visibility="{Binding HasOffice, Converter={StaticResource InverseBoolConverter}}"/>
+                        <TextBlock FontSize="13" HorizontalAlignment="Center" Margin="0,4,0,0"
+                                   Cursor="Hand" MouseLeftButtonUp="Office_Click"
+                                   Visibility="{Binding HasOffice, Converter={StaticResource BoolToVisConverter}}"
+                                   ToolTip="جزییات دفتر باز می‌شود.">
+                            <Run Text="دفتر: " Foreground="{DynamicResource TextSecondaryBrush}"/><Run Text="{Binding OfficeName}" Foreground="{DynamicResource PrimaryBrush}" FontWeight="Bold"/>
+                        </TextBlock>
+                    </StackPanel>
+                </Border>
+
+                <!-- کارت ۲: مشخصات پروانه -->
+                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="{DynamicResource RadiusMedium}" Padding="14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="مشخصات پروانه" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="150"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Grid.Column="0" Text="پایه طراحی:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding DesignGrade}" FontSize="14" Margin="0,0,0,6"
+                                       Opacity="{Binding DesignGrade, Converter={StaticResource PlaceholderOpacity}}"/>
+                            <TextBlock Grid.Row="1" Grid.Column="0" Text="پایه نظارت:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding SupervisionGrade}" FontSize="14" Margin="0,0,0,6"
+                                       Opacity="{Binding SupervisionGrade, Converter={StaticResource PlaceholderOpacity}}"/>
+                            <TextBlock Grid.Row="2" Grid.Column="0" Text="پایه اجرا:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ExecutionGrade}" FontSize="14" Margin="0,0,0,6"
+                                       Opacity="{Binding ExecutionGrade, Converter={StaticResource PlaceholderOpacity}}"/>
+                            <TextBlock Grid.Row="3" Grid.Column="0" Text="تاریخ صدور پروانه:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="3" Grid.Column="1" Text="{Binding LicenceIssue}" FontSize="14" Margin="0,0,0,6"
+                                       Opacity="{Binding LicenceIssue, Converter={StaticResource PlaceholderOpacity}}"/>
+                            <TextBlock Grid.Row="4" Grid.Column="0" Text="تاریخ اعتبار پروانه:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="4" Grid.Column="1" Text="{Binding LicenceValidity}" FontSize="14" Margin="0,0,0,6"
+                                       Opacity="{Binding LicenceValidity, Converter={StaticResource PlaceholderOpacity}}"/>
+                            <TextBlock Grid.Row="5" Grid.Column="0" Text="همراه:" FontWeight="Bold" FontSize="14" Margin="0,0,0,6"/>
+                            <TextBlock Grid.Row="5" Grid.Column="1" Text="{Binding Phone}" FontSize="14" Margin="0,0,0,6"
+                                       Opacity="{Binding Phone, Converter={StaticResource PlaceholderOpacity}}"/>
+                            <TextBlock Grid.Row="6" Grid.Column="0" Text="آخرین بروزرسانی:" FontWeight="Bold" FontSize="14"
+                                       Visibility="{Binding HasUpdatedAt, Converter={StaticResource BoolToVis}}"/>
+                            <TextBlock Grid.Row="6" Grid.Column="1" Text="{Binding UpdatedAt}" FontSize="14"
+                                       Visibility="{Binding HasUpdatedAt, Converter={StaticResource BoolToVis}}"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+
+                <!-- کارت ۳: تاریخ اخذ پروانه -->
+                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="{DynamicResource RadiusMedium}" Padding="14" Margin="0,0,0,12">
+                    <StackPanel>
+                        <TextBlock Text="تاریخ اخذ پروانه" FontWeight="Bold" FontSize="15" Margin="0,0,0,4"/>
+                        <TextBlock Text="تاریخ اخذ هر پایهٔ پروانه" FontSize="12"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,10"/>
+                        <TextBlock Text="موردی ثبت نشده است" FontSize="13"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.7"
+                                   Visibility="{Binding HasHistory, Converter={StaticResource InverseBoolConverter}}"/>
+                        <ItemsControl ItemsSource="{Binding HistoryRows}"
+                                      Visibility="{Binding HasHistory, Converter={StaticResource BoolToVisConverter}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,8">
+                                        <TextBlock Text="{Binding Kind}" FontSize="13" FontWeight="Bold"/>
+                                        <ItemsControl ItemsSource="{Binding GradeLines}">
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <TextBlock Text="{Binding}" FontSize="12"
+                                                               Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
+                                        <TextBlock Text="ثبت نشده" FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.7"
+                                                   Visibility="{Binding HasGrades, Converter={StaticResource InverseBoolConverter}}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+
+                <!-- کارت ۴: مدارک تحصیلی -->
+                <Border Background="{DynamicResource CardBrush}" BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1" CornerRadius="{DynamicResource RadiusMedium}" Padding="14">
+                    <StackPanel>
+                        <TextBlock Text="مدارک تحصیلی" FontWeight="Bold" FontSize="15" Margin="0,0,0,10"/>
+                        <TextBlock Text="موردی ثبت نشده است" FontSize="13"
+                                   Foreground="{DynamicResource TextSecondaryBrush}" Opacity="0.7"
+                                   Visibility="{Binding HasEducation, Converter={StaticResource InverseBoolConverter}}"/>
+                        <ItemsControl ItemsSource="{Binding EducationRows}"
+                                      Visibility="{Binding HasEducation, Converter={StaticResource BoolToVisConverter}}">
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,0,0,10">
+                                        <TextBlock Text="{Binding DegreeLine}" FontSize="13" FontWeight="Bold" TextWrapping="Wrap"
+                                                   Opacity="{Binding DegreeLine, Converter={StaticResource PlaceholderOpacity}}"/>
+                                        <TextBlock FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Visibility="{Binding HasOrientation, Converter={StaticResource BoolToVisConverter}}">
+                                            <Run Text="گرایش: "/><Run Text="{Binding Orientation}"/>
+                                        </TextBlock>
+                                        <TextBlock Text="{Binding UniversityLine}" FontSize="12" TextWrapping="Wrap"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   Opacity="{Binding UniversityLine, Converter={StaticResource PlaceholderOpacity}}"/>
+                                        <TextBlock Text="{Binding DateText}" FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- دکمه بستن -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Left" Margin="0,10,0,0">
+            <Button Content="بستن" Click="CloseButton_Click" Padding="14,6" FontSize="14"
+                    ToolTip="پنجره را می‌بندد."/>
+        </StackPanel>
+    </Grid>
+</Window>

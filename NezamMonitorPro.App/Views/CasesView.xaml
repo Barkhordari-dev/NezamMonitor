@@ -79,6 +79,7 @@
                       SelectionMode="Extended" SelectionUnit="FullRow"
                       PreviewMouseLeftButtonDown="CasesGrid_PreviewMouseLeftButtonDown"
                       PreviewMouseRightButtonUp="CasesGrid_PreviewMouseRightButtonUp"
+                      MouseDoubleClick="CasesGrid_MouseDoubleClick"
                       SelectionChanged="CasesGrid_SelectionChanged" FlowDirection="{DynamicResource TableFlowDirection}">
                 <DataGrid.Columns>
                     <DataGridCheckBoxColumn Binding="{Binding IsSelected, UpdateSourceTrigger=PropertyChanged}" Width="Auto" MinWidth="50" CanUserSort="False">
@@ -169,8 +170,31 @@
                             <StackPanel>
                                 <TextBlock Text="👷 ناظرین" FontWeight="Bold" FontSize="{DynamicResource FontSize}" Margin="0,0,0,8" ToolTip="ناظرین این پرونده با نقش و تلفن."
                                            Foreground="{DynamicResource TextBrush}"/>
-                                <TextBlock Text="{Binding DetailEngineers}" TextWrapping="Wrap"
-                                           FontSize="{DynamicResource FontSize}" Foreground="{DynamicResource TextBrush}"/>
+                                <!-- v12.7 — همان خط‌های قبلی، ولی نام هر ناظر قابل‌کلیک است و پروفایلش را باز می‌کند. -->
+                                <ItemsControl ItemsSource="{Binding DetailEngineerItems}"
+                                              FontSize="{DynamicResource FontSize}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <TextBlock Text="{Binding Display}" TextWrapping="Wrap"
+                                                       Tag="{Binding Name}" MouseLeftButtonUp="DetailEngineer_Click"
+                                                       ToolTip="پروفایل مهندس در دفترچه دفاتر و مهندسین باز می‌شود.">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{DynamicResource TextBrush}"/>
+                                                        <Setter Property="Cursor" Value="Arrow"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsClickable}" Value="True">
+                                                                <Setter Property="Foreground" Value="{DynamicResource PrimaryBrush}"/>
+                                                                <Setter Property="FontWeight" Value="Bold"/>
+                                                                <Setter Property="Cursor" Value="Hand"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
                             </StackPanel>
                         </ScrollViewer>
                     </Border>

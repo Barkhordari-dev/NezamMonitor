@@ -60,6 +60,9 @@ public partial class App : Application
     private static void RegisterViewModels(IServiceCollection services)
     {
         services.AddSingleton<NezamDatabase>(_ => DatabaseService.Instance);
+        // v12.7 — دفترچه دفاتر و مهندسین: یک نمونه برای کل برنامه، روی همان
+        // اتصال DatabaseService.Instance؛ سید اسنپ‌شات از همین‌جا خوانده می‌شود.
+        services.AddSingleton<DirectoryService>(sp => new DirectoryService(sp.GetRequiredService<NezamDatabase>()));
         services.AddSingleton<ThemeManager>(sp => new ThemeManager(sp.GetRequiredService<NezamDatabase>()));
         services.AddTransient<MainViewModel>();
         services.AddTransient<AndroidExportViewModel>();
@@ -76,7 +79,8 @@ public partial class App : Application
         services.AddTransient<ReportsViewModel>();
         services.AddTransient<UpdateViewModel>();
         services.AddTransient<SettingsViewModel>(sp => new SettingsViewModel(
-            sp.GetRequiredService<ThemeManager>(), DatabaseService.DatabasePath));
+            sp.GetRequiredService<ThemeManager>(), DatabaseService.DatabasePath,
+            sp.GetRequiredService<DirectoryService>()));
     }
 
     /// <summary>
@@ -258,6 +262,16 @@ public partial class App : Application
                 System.Threading.Thread.Sleep(TimeSpan.FromSeconds(delaySeconds));
             }
             NezamMonitorPro.App.Services.DatabaseService.Initialize(_encryptedConnection.Connection);
+            // v12.7 — دفترچه دفاتر و مهندسین: سید اسنپ‌شات در پس‌زمینه انجام
+            // می‌شود؛ راه‌اندازی را معطل نمی‌کند، خطا نمی‌دهد و پنجره‌ای باز نمی‌کند.
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    await _serviceProvider!.GetRequiredService<DirectoryService>().EnsureSeededAsync();
+                }
+                catch { }
+            });
             Application.Current.ShutdownMode = ShutdownMode.OnMainWindowClose;
             var mainWindow = new MainWindow();
             Application.Current.MainWindow = mainWindow;

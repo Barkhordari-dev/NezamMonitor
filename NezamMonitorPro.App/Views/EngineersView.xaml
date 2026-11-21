@@ -69,7 +69,8 @@
         <DataGrid ScrollViewer.HorizontalScrollBarVisibility="Auto" ScrollViewer.VerticalScrollBarVisibility="Auto" Grid.Row="2" x:Name="EngineersGrid" ItemsSource="{Binding Engineers}" AutoGenerateColumns="False"
                   IsReadOnly="True" AlternatingRowBackground="{DynamicResource PanelBrush}" GridLinesVisibility="Horizontal"
                   HeadersVisibility="Column" BorderThickness="1" BorderBrush="{DynamicResource BorderBrush}"
-                  MouseRightButtonUp="EngineersGrid_MouseRightButtonUp" FlowDirection="{DynamicResource TableFlowDirection}">
+                  MouseRightButtonUp="EngineersGrid_MouseRightButtonUp"
+                  MouseDoubleClick="EngineersGrid_MouseDoubleClick" FlowDirection="{DynamicResource TableFlowDirection}">
             <DataGrid.Columns>
                 <DataGridTextColumn Header="پرونده" Binding="{Binding CaseNumber}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>
                 <DataGridTextColumn Header="مالک" Binding="{Binding Owner}" Width="Auto" ElementStyle="{StaticResource GridCellEllipsis}"/>

@@ -1926,6 +1926,21 @@ public sealed class GeneratorViewModel : ViewModelBase
 
     /// <summary>تولید مجدد یک ردیف جدول تولید که قبلا تولید شده (با تایید)؛
     /// تولید دسته‌ای چنین ردیف‌هایی را رد می‌کند، پس منوی راست‌کلیک اینجا را صدا می‌زند.</summary>
+    /// <summary>Load the full Case (with Specification + children) behind
+    /// a Generate-grid row, for the step-by-step wizard («صدور مرحله‌ای
+    /// گزارش»). The grid is built from the active snapshot's cases, so
+    /// the case is re-loaded from there by number. Null when the row is
+    /// null or the case is gone (e.g. a stale scan).</summary>
+    public Case? GetCaseForWizard(CaseReportItem? item)
+    {
+        if (item == null) return null;
+        var c = _db.LoadCases(_db.GetActiveSnapshotId())
+            .FirstOrDefault(x => x.CaseNumber == item.CaseNumber);
+        if (c == null) return null;
+        _db.LoadCaseChildren(c);
+        return c;
+    }
+
     public void RegenerateCaseReport(CaseReportItem item)
     {
         if (item == null) { StatusMessage = "موردی انتخاب نشده"; return; }
